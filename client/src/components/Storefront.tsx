@@ -4,6 +4,7 @@
  */
 import { Button } from "@/components/ui/button";
 import { categories, products, store, type Product } from "@/lib/storeData";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
@@ -29,8 +30,6 @@ import {
   Phone,
   Search,
   ShoppingCart,
-  SlidersHorizontal,
-  Star,
   Trees,
   Truck,
   UserRound,
@@ -73,8 +72,9 @@ export function PageMeta({ title, description }: { title: string; description: s
 }
 
 function Wordmark() {
+  const { t } = useLanguage();
   return (
-    <Link href="/" className="brand-mark" aria-label="ЖОАН — към началната страница">
+    <Link href="/" className="brand-mark" aria-label={`ЖОАН — ${t("home")}`}>
       <img src="/manus-storage/joan-symbol_8ab1677a.png" alt="" className="brand-symbol" />
       <span className="brand-word">ЖОАН</span>
       <span className="brand-subword">строителен хипермаркет</span>
@@ -83,6 +83,7 @@ function Wordmark() {
 }
 
 function Header() {
+  const { language, setLanguage, t } = useLanguage();
   const [location, setLocation] = useLocation();
   const [megaOpen, setMegaOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -104,21 +105,21 @@ function Header() {
     }
     setLocation("/category/instrumenti");
     setSearchFocused(false);
-    toast("Показваме представителни продукти от категория Инструменти.");
+    toast(t("noMatches"));
   }
 
   function doAction(action: string) {
-    toast(`${action} е част от подготвената клиентска функционалност и изисква свързване с магазинната система.`);
+    toast(`${action} — ${t("mockSecurity")}`);
   }
 
   return (
     <header className="site-header">
       <div className="utility-rail">
         <div className="page-frame utility-inner">
-          <p><Truck size={14} /> Експресна доставка след потвърждение от оператор</p>
+          <p><Truck size={14} /> {language === "bg" ? "Експресна доставка след потвърждение от оператор" : "Express delivery after operator confirmation"}</p>
           <div className="utility-actions">
-            <Link href="/delivery">Доставка</Link>
-            <Link href="/contact">Контакти</Link>
+            <Link href="/delivery">{t("delivery")}</Link>
+            <Link href="/contact">{t("contacts")}</Link>
             <a href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={13} /> {store.phones[2]}</a>
           </div>
         </div>
@@ -127,20 +128,20 @@ function Header() {
       <div className="page-frame masthead">
         <Wordmark />
         <form className="search-wrap" onSubmit={submitSearch} role="search">
-          <label htmlFor="site-search" className="sr-only">Търсене в ЖОАН</label>
+          <label htmlFor="site-search" className="sr-only">{t("searchLabel")}</label>
           <Search size={20} aria-hidden="true" />
           <input
             id="site-search"
             value={query}
             onFocus={() => setSearchFocused(true)}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Търсете продукт, категория, марка..."
+            placeholder={t("searchPlaceholder")}
             autoComplete="off"
           />
-          <Button type="submit" className="search-submit">Търси</Button>
+          <Button type="submit" className="search-submit">{t("search")}</Button>
           {searchFocused && query && (
             <div className="search-panel">
-              <p className="eyebrow">Подходящи предложения</p>
+              <p className="eyebrow">{t("matching")}</p>
               {searchMatches.length ? searchMatches.map((product) => (
                 <button
                   key={product.slug}
@@ -157,33 +158,34 @@ function Header() {
                   <span><b>{product.brand}</b>{product.name}</span>
                   <ChevronRight size={16} />
                 </button>
-              )) : <p className="search-empty">Няма съвпадение в представителния каталог.</p>}
+              )) : <p className="search-empty">{t("noMatches")}</p>}
             </div>
           )}
         </form>
-        <div className="header-actions" aria-label="Клиентски действия">
-          <button type="button" onClick={() => doAction("Вход")}><UserRound size={21} /><span>Вход</span></button>
-          <button type="button" onClick={() => doAction("Любими")}><Heart size={21} /><span>Любими</span></button>
-          <button type="button" onClick={() => doAction("Количка")}><ShoppingCart size={21} /><span>Количка</span><i>0</i></button>
+        <div className="header-actions" aria-label={t("customerInfo")}>
+          <div className="language-toggle" aria-label={t("language")}><button type="button" className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}>BG</button><button type="button" className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}>EN</button></div>
+          <button type="button" onClick={() => doAction(t("account"))}><UserRound size={21} /><span>{t("account")}</span></button>
+          <button type="button" onClick={() => doAction(t("favorites"))}><Heart size={21} /><span>{t("favorites")}</span></button>
+          <Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1" className="header-cart"><ShoppingCart size={21} /><span>{t("cart")}</span><i>1</i></Link>
         </div>
-        <button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label="Отвори менюто"><Menu size={24} /></button>
+        <button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label={t("allCategories")}><Menu size={24} /></button>
       </div>
 
       <div className="nav-shell">
         <div className="page-frame primary-nav">
           <button type="button" className="catalogue-trigger" onClick={() => setMegaOpen(!megaOpen)} aria-expanded={megaOpen}>
-            <Menu size={20} /> Всички категории <ChevronDown size={16} />
+            <Menu size={20} /> {t("allCategories")} <ChevronDown size={16} />
           </button>
           <nav aria-label="Основна навигация" className="desktop-links">
-            <Link href="/">Начало</Link>
-            <Link href="/category/instrumenti">Инструменти</Link>
-            <Link href="/category/gradina">Градина</Link>
-            <Link href="/category/stroitelstvo">Строителство</Link>
-            <Link href="/category/boi-lakove-mazilki">Бои и мазилки</Link>
-            <Link href="/about">За Жоан</Link>
-            <Link href="/contact">Магазин и контакти</Link>
+            <Link href="/">{t("home")}</Link>
+            <Link href="/category/instrumenti">{t("tools")}</Link>
+            <Link href="/category/gradina">{t("garden")}</Link>
+            <Link href="/category/stroitelstvo">{t("construction")}</Link>
+            <Link href="/category/boi-lakove-mazilki">{t("paints")}</Link>
+            <Link href="/about">{t("about")}</Link>
+            <Link href="/contact">{t("storeContacts")}</Link>
           </nav>
-          <Link href="/category/instrumenti" className="promo-nav-link"><span>ПРОМО</span> Виж предложенията</Link>
+          <Link href="/category/instrumenti" className="promo-nav-link"><span>{t("promo")}</span> {t("viewOffers")}</Link>
         </div>
       </div>
 
@@ -192,10 +194,10 @@ function Header() {
           <div className="page-frame mega-grid">
             <aside className="mega-intro">
               <span className="signal-line" />
-              <p className="eyebrow">Каталог Жоан</p>
-              <h2>Изберете по задача, не по догадки.</h2>
-              <p>Подредени категории за ремонт, дом, градина и професионална работа.</p>
-              <Link href="/category/instrumenti" onClick={() => setMegaOpen(false)} className="text-link">Виж всички продукти <ArrowRight size={16} /></Link>
+              <p className="eyebrow">{t("catalogue")}</p>
+              <h2>{t("chooseTask")}</h2>
+              <p>{t("catalogueIntro")}</p>
+              <Link href="/category/instrumenti" onClick={() => setMegaOpen(false)} className="text-link">{t("viewAllProducts")} <ArrowRight size={16} /></Link>
             </aside>
             <div className="mega-categories">
               {categories.map((category) => {
@@ -212,25 +214,25 @@ function Header() {
       )}
 
       {mobileOpen && (
-        <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Навигация">
-          <div className="mobile-drawer-head"><Wordmark /><button type="button" onClick={() => setMobileOpen(false)} aria-label="Затвори менюто"><X size={24} /></button></div>
+        <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label={t("allCategories")}>
+          <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}>BG</button><button type="button" className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}>EN</button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close"><X size={24} /></button></div></div>
           <div className="mobile-drawer-links">
-            <Link href="/" onClick={() => setMobileOpen(false)}>Начало</Link>
-            <Link href="/about" onClick={() => setMobileOpen(false)}>За Жоан</Link>
-            <Link href="/delivery" onClick={() => setMobileOpen(false)}>Доставка</Link>
-            <Link href="/contact" onClick={() => setMobileOpen(false)}>Контакти</Link>
+            <Link href="/" onClick={() => setMobileOpen(false)}>{t("home")}</Link>
+            <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
+            <Link href="/delivery" onClick={() => setMobileOpen(false)}>{t("delivery")}</Link>
+            <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
           </div>
-          <p className="mobile-drawer-label">Категории</p>
+          <p className="mobile-drawer-label">{t("categories")}</p>
           <div className="mobile-category-grid">
             {categories.map((category) => {
               const Icon = categoryIcons[category.icon];
               return <Link key={category.slug} href={`/category/${category.slug}`} onClick={() => setMobileOpen(false)}><Icon size={18} /> {category.label}</Link>;
             })}
           </div>
-          <div className="mobile-contact"><Phone size={18} /><span><b>Нужна е помощ?</b>{store.phones[2]}</span></div>
+          <div className="mobile-contact"><Phone size={18} /><span><b>{t("help")}</b>{store.phones[2]}</span></div>
         </div>
       )}
-      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">Начало</Link><ChevronRight size={14} /><span>{location.startsWith("/category") ? "Каталог" : location.startsWith("/product") ? "Продукт" : "Информация"}</span></div>}
+      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/category") ? t("catalogue") : location.startsWith("/product") ? t("representativeProduct") : t("customerInfo")}</span></div>}
     </header>
   );
 }
@@ -240,20 +242,21 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 function Footer() {
+  const { t } = useLanguage();
   return (
     <footer className="site-footer">
-      <div className="footer-cta"><div className="page-frame footer-cta-inner"><div><span className="eyebrow">Нуждаете се от съдействие?</span><h2>Потърсете екипа на Жоан.</h2></div><Link href="/contact" className="button-ghost-light">Свържете се с нас <ArrowRight size={18} /></Link></div></div>
+      <div className="footer-cta"><div className="page-frame footer-cta-inner"><div><span className="eyebrow">{t("help")}</span><h2>{t("contacts")}</h2></div><Link href="/contact" className="button-ghost-light">{t("contacts")} <ArrowRight size={18} /></Link></div></div>
       <div className="page-frame footer-main">
         <div className="footer-brand">
           <Wordmark />
-          <p>Строителен хипермаркет за материали, инструменти и решения за дома.</p>
+          <p>{t("catalogueIntro")}</p>
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
           <img className="existing-brand-logo" src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Съществуващо лого на Строителен хипермаркет Жоан" />
         </div>
-        <div><h3>Категории</h3>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>Клиентска информация</h3><Link href="/delivery">Доставка</Link><Link href="/terms">Условия за ползване</Link><Link href="/contact">Работно време</Link><button type="button" onClick={() => toast("Профилът на клиента се свързва при бъдеща интеграция с магазинната система.")}>Профил на клиента</button><button type="button" onClick={() => toast("Връщанията ще се обработват чрез свързания магазинен процес.")}>Връщане</button></div>
-        <div><h3>Магазин Жоан</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><p className="footer-address"><Clock3 size={16} /> Пн–Пт: 08:00–19:00</p><Link href="/about">За нас</Link><Link href="/contact">Контакти</Link><a href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer"><Facebook size={15} /> Facebook</a></div>
+        <div><h3>{t("categories")}</h3>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/contact">{languageText(t, "Работно време", "Opening hours")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link><button type="button" onClick={() => toast(t("mockSecurity"))}>{t("returns")}</button></div>
+        <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><p className="footer-address"><Clock3 size={16} /> Пн–Пт: 08:00–19:00</p><Link href="/about">{t("about")}</Link><Link href="/contact">{t("contacts")}</Link><a href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer"><Facebook size={15} /> Facebook</a></div>
       </div>
       <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Статичен демонстрационен storefront, подготвен за каталогова интеграция.</span></div></div>
     </footer>
@@ -261,7 +264,8 @@ function Footer() {
 }
 
 export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
-  return <nav className="breadcrumbs" aria-label="Навигационна пътека"><Link href="/">Начало</Link>{items.map((item) => <span key={item.label}><ChevronRight size={14} />{item.href ? <Link href={item.href}>{item.label}</Link> : <b>{item.label}</b>}</span>)}</nav>;
+  const { t } = useLanguage();
+  return <nav className="breadcrumbs" aria-label={t("catalogue")}><Link href="/">{t("home")}</Link>{items.map((item) => <span key={item.label}><ChevronRight size={14} />{item.href ? <Link href={item.href}>{item.label}</Link> : <b>{item.label}</b>}</span>)}</nav>;
 }
 
 export function SectionHeading({ eyebrow, title, text, action }: { eyebrow?: string; title: string; text?: string; action?: ReactNode }) {
@@ -269,6 +273,7 @@ export function SectionHeading({ eyebrow, title, text, action }: { eyebrow?: str
 }
 
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
   function action(label: string) {
     toast(`${label}: ${product.name}`);
@@ -276,8 +281,8 @@ export function ProductCard({ product, compact = false }: { product: Product; co
   return (
     <article className={`product-card ${compact ? "product-card-compact" : ""}`}>
       <div className="product-image-box">
-        {product.discount && <span className="discount-tag">Промо {product.discount}</span>}
-        <button type="button" aria-label={`Добави ${product.name} в любими`} className="product-icon-button" onClick={() => action("Добавено в любими")}><Heart size={18} /></button>
+        {product.discount && <span className="discount-tag">{t("promo")} {product.discount}</span>}
+        <button type="button" aria-label={`${t("favorites")}: ${product.name}`} className="product-icon-button" onClick={() => action(t("favorites"))}><Heart size={18} /></button>
         <Link href={`/product/${product.slug}`}><img src={product.image} alt={product.imageAlt} loading={compact ? "lazy" : "eager"} /></Link>
       </div>
       <div className="product-card-body">
@@ -286,19 +291,22 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         {!compact && <p className="product-features">{product.features.slice(0, 2).join(" · ")}</p>}
         <div className="product-buy-row">
           <div className="product-price">
-            {product.price ? <><span className="old-price">{product.oldPrice} <small>{product.oldPriceBgn}</small></span><b>{product.price}</b><small>{product.priceBgn}</small></> : <b className="ask-price">Запитване</b>}
+            {product.price ? <><span className="old-price">{product.oldPrice} <small>{product.oldPriceBgn}</small></span><b>{product.price}</b><small>{product.priceBgn}</small></> : <b className="ask-price">{t("enquiry")}</b>}
           </div>
-          <button type="button" className="cart-square" aria-label={`Запитай за ${product.name}`} onClick={() => { setLocation("/contact"); toast("Изберете „Информация за продукт“ във формата за запитване."); }}><MessageCircle size={19} /></button>
+          {product.price ? <Link href={`/checkout?product=${product.slug}&qty=1`} className="cart-square" aria-label={`${t("checkout")}: ${product.name}`}><ShoppingCart size={19} /></Link> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
         </div>
-        <div className="availability"><span />{product.availability}</div>
+        <div className="availability"><span />{t("checkAvailability")}</div>
       </div>
     </article>
   );
 }
 
 export function ServiceStrip() {
-  return <section className="service-strip" aria-label="Услуги Жоан"><div className="page-frame service-grid"><div><Truck /><span><b>Експресна доставка</b><small>След потвърждение от оператор</small></span></div><div><PackageCheck /><span><b>20 000+ артикула на склад</b><small>Според публикуваната информация на Жоан</small></span></div><div><MapPin /><span><b>Магазин в Силистра</b><small>ул. Тутракан №22</small></span></div><div><Phone /><span><b>Нужна е помощ?</b><small>{store.phones[2]}</small></span></div></div></section>;
+  const { language, t } = useLanguage();
+  return <section className="service-strip" aria-label={t("business")}><div className="page-frame service-grid"><div><Truck /><span><b>{languageText(t, "Експресна доставка", "Express delivery")}</b><small>{languageText(t, "След потвърждение от оператор", "After operator confirmation")}</small></span></div><div><PackageCheck /><span><b>{languageText(t, "20 000+ артикула на склад", "20,000+ items in stock")}</b><small>{languageText(t, "Според публикуваната информация на Жоан", "According to Joan’s published information")}</small></span></div><div><MapPin /><span><b>{languageText(t, "Магазин в Силистра", "Store in Silistra")}</b><small>ул. Тутракан №22</small></span></div><div><Phone /><span><b>{t("help")}</b><small>{store.phones[2]}</small></span></div></div></section>;
 }
+
+function languageText(t: (key: "language") => string, bg: string, en: string) { return t("language") === "Language" ? en : bg; }
 
 export function CategoryIcon({ icon, size = 22 }: { icon: keyof typeof categoryIcons; size?: number }) {
   const Icon = categoryIcons[icon];

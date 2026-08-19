@@ -73,3 +73,6 @@ The Joan mark is a confident red **J** constructed from a vertical steel-like ba
 - Joan Signal Red appears primarily on actions, promotional and status markers, active navigation, price emphasis, and thin signal rails. Full red fields are reserved for rare brand-campaign moments only.
 - Every major page includes at least one Joan catalog motif: a signal rail, product specification strip, cut-corner label, or rule-based workbench grid.
 - Imagery is treated as practical and material-led, emphasizing tools, surfaces, store context, and trade-use texture rather than generic lifestyle showroom aesthetics.
+- Product cards and detail pages visibly pair a red signal rail with compact operational metadata for price, availability, and key attributes.
+- Customer-facing purchase guidance reads as an operational request flow; prototype constraints are isolated in a clear technical notice rather than repeated as primary marketing copy.
+- The red Joan J and custom JOAN wordmark remain primary. The legacy yellow store badge is a subdued secondary heritage stamp only.
