@@ -2,24 +2,37 @@
 import { CategoryIcon, JsonLd, Layout, PageMeta, ProductCard, SectionHeading, ServiceStrip } from "@/components/Storefront";
 import { store } from "@/lib/storeData";
 import { useCatalogue } from "@/hooks/useCatalogue";
-import { ArrowRight, ChevronRight, ExternalLink, MapPin, PlayCircle, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, FileText, MapPin, Pause, Play, PlayCircle, Search, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 
-const liveCatalogueRoutes = [
-  { label: "Инструменти", detail: "Електроинструменти, ръчни инструменти и консумативи", href: "https://joan.bg/%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%B8-%D0%BC%D0%B0%D1%82%D0%B5%D1%80%D0%B8%D0%B0%D0%BB%D0%B8/instrumenti" },
-  { label: "Градина", detail: "Градинска техника, инструменти и принадлежности", href: "https://joan.bg/%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%B8-%D0%BC%D0%B0%D1%82%D0%B5%D1%80%D0%B8%D0%B0%D0%BB%D0%B8/dom-i-gradina" },
-  { label: "Строителство", detail: "Материали, строителна химия и сухи смеси", href: "https://joan.bg/%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%B8-%D0%BC%D0%B0%D1%82%D0%B5%D1%80%D0%B8%D0%B0%D0%BB%D0%B8/stroitelstvo" },
-  { label: "Промоции", detail: "Актуалните предложения в поддържания магазин", href: "https://joan.bg/special" },
+const brochurePages = [
+  "/manus-storage/page-1_7884f6f6.jpg",
+  "/manus-storage/page-2_9b25fc80.jpg",
+  "/manus-storage/page-3_6c0ba892.jpg",
+  "/manus-storage/page-4_b096aaa9.jpg",
+  "/manus-storage/page-5_a794f27b.jpg",
+  "/manus-storage/page-6_be1779c9.jpg",
+  "/manus-storage/page-7_4cdd94c0.jpg",
+  "/manus-storage/page-8_d10987e1.jpg",
 ];
 
 export default function Home() {
   const { categories, products } = useCatalogue();
-  function scrollToLiveCatalogue(event: React.MouseEvent<HTMLAnchorElement>) {
+  const [activeBrochurePage, setActiveBrochurePage] = useState(0);
+  const [brochurePaused, setBrochurePaused] = useState(false);
+  function scrollToBrochure(event: React.MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
-    const target = document.getElementById("live-catalogue");
+    const target = document.getElementById("brochure");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   }
+  function setBrochurePage(nextPage: number) { setActiveBrochurePage((nextPage + brochurePages.length) % brochurePages.length); }
+  useEffect(() => {
+    if (brochurePaused) return;
+    const timer = window.setInterval(() => setActiveBrochurePage((page) => (page + 1) % brochurePages.length), 6000);
+    return () => window.clearInterval(timer);
+  }, [brochurePaused]);
   return <Layout>
     <PageMeta title="Строителен хипермаркет" description="Жоан: строителни материали, инструменти, продукти за дома и градината в Силистра." />
     <JsonLd />
@@ -27,11 +40,11 @@ export default function Home() {
       <section className="hero-video">
         <video className="hero-video-media" autoPlay muted loop playsInline preload="metadata" aria-label="Видео от Строителен хипермаркет Жоан"><source src="/manus-storage/joan-hero_0c2a067a.mp4" type="video/mp4" /></video>
         <div className="hero-video-overlay" />
-        <div className="page-frame hero-content"><div className="hero-kicker"><span /> Строителен хипермаркет Жоан</div><h1>Всичко за ремонта,<br /><em>на едно място.</em></h1><p>Открийте материали, инструменти и решения за дома, градината и професионалната работа.</p><div className="hero-actions"><a href="#live-catalogue" className="button-solid" onClick={scrollToLiveCatalogue} aria-controls="live-catalogue">Разгледайте каталога <ArrowRight size={18} /></a><Link href="/contact" className="button-outline-light"><MapPin size={18} /> Посетете магазина</Link></div></div><div className="hero-bottom-note"><div><PlayCircle size={18} /><span>ЖОАН В ДВИЖЕНИЕ<br /><b>Силистра · ул. Тутракан №22</b></span></div><a href="#live-catalogue" onClick={scrollToLiveCatalogue}>Изберете категория <ChevronRight size={17} /></a></div>
+        <div className="page-frame hero-content"><div className="hero-kicker"><span /> Строителен хипермаркет Жоан</div><h1>Всичко за ремонта,<br /><em>на едно място.</em></h1><p>Открийте материали, инструменти и решения за дома, градината и професионалната работа.</p><div className="hero-actions"><a href="#brochure" className="button-solid" onClick={scrollToBrochure} aria-controls="brochure">Разгледайте брошурата <ArrowRight size={18} /></a></div></div><div className="hero-bottom-note"><div><PlayCircle size={18} /><span>ЖОАН В ДВИЖЕНИЕ<br /><b>Силистра · ул. Тутракан №22</b></span></div><a href="#brochure" onClick={scrollToBrochure}>Виж брошурата <ChevronRight size={17} /></a></div>
       </section>
       <ServiceStrip />
-      <section id="live-catalogue" className="live-catalogue-bridge" aria-labelledby="live-catalogue-title">
-        <div className="page-frame"><div className="live-catalogue-heading"><div><p className="eyebrow">Актуален каталог</p><h2 id="live-catalogue-title">Разгледайте реалните артикули в Жоан.</h2><p>Изберете категория, за да отворите поддържания каталог на Joan.bg с текущи продукти, наличности и предложения.</p></div><a href="https://joan.bg" target="_blank" rel="noreferrer" className="live-store-link">Отвори Joan.bg <ExternalLink size={17} /></a></div><div className="live-catalogue-grid">{liveCatalogueRoutes.map((route, index) => <a key={route.label} href={route.href} target="_blank" rel="noreferrer" className="live-catalogue-card"><span>0{index + 1}</span><div><h3>{route.label}</h3><p>{route.detail}</p></div><ExternalLink size={19} /></a>)}</div><p className="live-catalogue-note">Тук се използват връзки към поддържания магазин на Жоан. При предоставен официален API или CSV/XML export, тази секция може да показва текущи продукти директно в сайта.</p></div>
+      <section id="brochure" className="brochure-section" aria-labelledby="brochure-title">
+        <div className="page-frame"><div className="brochure-heading"><div><p className="eyebrow">Нова брошура</p><h2 id="brochure-title">Оферти от Жоан, страница по страница.</h2><p>Прегледайте актуалната брошура директно тук. Използвайте стрелките, миниатюрите или оставете слайдшоуто да продължи автоматично.</p></div><div className="brochure-heading-meta"><FileText size={21} /><span><b>Промо брошура</b>01.08.2026 — 31.08.2026</span></div></div><div className="brochure-workbench"><div className="brochure-index"><span>БРОШУРА</span><b>{String(activeBrochurePage + 1).padStart(2, "0")}</b><small>/ {String(brochurePages.length).padStart(2, "0")}</small><i /><p>Страница<br />{activeBrochurePage + 1}</p></div><div className="brochure-stage"><img key={brochurePages[activeBrochurePage]} src={brochurePages[activeBrochurePage]} alt={`Промоционална брошура Жоан — страница ${activeBrochurePage + 1} от ${brochurePages.length}`} /><div className="brochure-stage-tools"><button type="button" onClick={() => setBrochurePage(activeBrochurePage - 1)} aria-label="Предишна страница от брошурата"><ChevronLeft size={21} /></button><button type="button" className="brochure-play-toggle" onClick={() => setBrochurePaused((paused) => !paused)} aria-pressed={brochurePaused} aria-label={brochurePaused ? "Пусни автоматичното слайдшоу" : "Спри автоматичното слайдшоу"}>{brochurePaused ? <Play size={17} fill="currentColor" /> : <Pause size={17} fill="currentColor" />}</button><button type="button" onClick={() => setBrochurePage(activeBrochurePage + 1)} aria-label="Следваща страница от брошурата"><ChevronRight size={21} /></button></div></div></div><div className="brochure-thumbs" role="tablist" aria-label="Страници на брошурата">{brochurePages.map((page, index) => <button key={page} type="button" className={index === activeBrochurePage ? "is-active" : ""} onClick={() => setActiveBrochurePage(index)} role="tab" aria-selected={index === activeBrochurePage} aria-label={`Отвори страница ${index + 1}`}><img src={page} alt="" /><span>{String(index + 1).padStart(2, "0")}</span></button>)}</div></div>
       </section>
       <section id="categories" className="page-frame category-section"><SectionHeading eyebrow="Започнете оттук" title="Категории за всяка задача" text="Подредете ремонта по етапи, материал или инструмент — без излишно търсене." action={<Link className="section-action" href="/category/instrumenti">Всички категории <ArrowRight size={17} /></Link>} /><div className="feature-category-grid all-category-grid">{categories.map((category) => <Link key={category.slug} href={`/category/${category.slug}`} className="feature-category-card"><img src={category.image} alt="" loading="lazy" /><div className="feature-card-scrim" /><div><span className="feature-icon"><CategoryIcon icon={category.icon} size={20} /></span><p>{category.label}</p><small>{category.description}</small></div><ArrowRight className="feature-arrow" size={19} /></Link>)}</div></section>
       <section id="promotions" className="promotions-section"><div className="page-frame"><SectionHeading eyebrow="Топ промоции" title="Акценти от текущите предложения" text="Тестови продукти и цени за проверка на маршрутите в каталога. За реална наличност — изпратете запитване." action={<Link className="section-action" href="/category/instrumenti">Виж продукти <ArrowRight size={17} /></Link>} /><div className="product-grid homepage-products">{products.filter((product) => product.discount).slice(0, 4).map((product) => <ProductCard key={product.slug} product={product} />)}</div></div></section>

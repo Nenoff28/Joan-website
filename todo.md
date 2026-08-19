@@ -49,3 +49,7 @@
 - [x] Verify desktop/mobile workflows, data integrity, and save the professional admin upgrade checkpoint.
 - [x] Capture authenticated owner-session evidence for the upgraded operations console on desktop and mobile.
 - [x] Save the professional administrator workspace checkpoint after the final authenticated-session verification.
+- [x] Inspect and prepare the supplied brochure PDF for deployment-safe slideshow use.
+- [x] Remove the homepage store-visit action and retitle the brochure CTA with smooth scrolling.
+- [x] Replace the homepage current-catalogue module with an accessible brochure slideshow.
+- [x] Verify desktop/mobile brochure controls and save the homepage brochure update checkpoint.
