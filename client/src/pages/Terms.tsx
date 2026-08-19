@@ -1,0 +1,7 @@
+/** DESIGN REMINDER — Red Workshop Modernism: legal information stays uncluttered, factual, and visibly distinct from commercial messaging. */
+import { Layout, PageMeta } from "@/components/Storefront";
+import { ArrowUpRight, FileText, ShieldCheck } from "lucide-react";
+
+export default function Terms() {
+  return <Layout><PageMeta title="Условия и информация" description="Информация за условията за ползване и бъдещата миграция на одобрените правни документи за Joan.bg." /><main className="terms-page"><section className="page-frame legal-intro"><p className="eyebrow">Клиентска информация</p><h1>Условия, поверителност и клиентски права</h1><p>Тази страница организира правната информация за бъдещото издание на магазина. Преди публикуване следва да се постави пълният одобрен от Жоан текст.</p></section><section className="page-frame legal-grid"><div className="legal-card"><FileText size={25} /><h2>Условия за ползване</h2><p>Съществуващият сайт поддържа отделна страница за условия. В този статичен редизайн не пресъздаваме правен текст без одобрена актуална версия.</p><a href="https://joan.bg/terms" target="_blank" rel="noreferrer">Вижте текущата страница <ArrowUpRight size={16} /></a></div><div className="legal-card"><ShieldCheck size={25} /><h2>Следваща стъпка преди стартиране</h2><p>Добавете финално одобрени текстове за условия, защита на лични данни, плащане, връщане, гаранционни условия и обработка на запитвания. Проверете ги заедно с техническия и правния собственик.</p></div></section></main></Layout>;
+}
