@@ -20,3 +20,5 @@
 - [x] Verify category filters, product routes, cart/checkout handoffs, and language switching.
 - [x] Perform responsive, console, and production-build QA; fix defects found.
 - [x] Save the verified complete test catalogue checkpoint.
+- [x] Replace BG/EN text controls with accessible circular Bulgarian and English flag buttons.
+- [x] Verify active, hover, focus, desktop, and mobile language-toggle states; save a delivery checkpoint.

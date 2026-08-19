@@ -160,7 +160,7 @@ function Header() {
           )}
         </form>
         <div className="header-actions" aria-label={t("customerInfo")}>
-          <div className="language-toggle" aria-label={t("language")}><button type="button" className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}>BG</button><button type="button" className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}>EN</button></div>
+          <div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div>
           <button type="button" onClick={() => doAction(t("account"))}><UserRound size={21} /><span>{t("account")}</span></button>
           <button type="button" onClick={() => doAction(t("favorites"))}><Heart size={21} /><span>{t("favorites")}</span></button>
           <Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1" className="header-cart"><ShoppingCart size={21} /><span>{t("cart")}</span><i>1</i></Link>
@@ -212,7 +212,7 @@ function Header() {
 
       {mobileOpen && (
         <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label={t("allCategories")}>
-          <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}>BG</button><button type="button" className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}>EN</button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close"><X size={24} /></button></div></div>
+          <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close"><X size={24} /></button></div></div>
           <div className="mobile-drawer-links">
             <Link href="/" onClick={() => setMobileOpen(false)}>{t("home")}</Link>
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
