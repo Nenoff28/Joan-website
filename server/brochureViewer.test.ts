@@ -19,4 +19,19 @@ describe("3D brochure viewer", () => {
     expect(styleSource).toContain("brochure-sheet-enter");
     expect(styleSource).toContain("brochure-gloss");
   });
+
+  it("provides fullscreen, touch swipe, keyboard navigation, and focus-return hooks", () => {
+    expect(homeSource).toContain("requestFullscreen");
+    expect(homeSource).toContain("exitFullscreen");
+    expect(homeSource).toContain("onTouchStart={handleBrochureTouchStart}");
+    expect(homeSource).toContain("onTouchEnd={handleBrochureTouchEnd}");
+    expect(homeSource).toContain('event.key === "Escape"');
+    expect(homeSource).toContain("fullscreenTriggerRef.current?.focus()");
+  });
+
+  it("uses a crop-focused side-preview treatment rather than contained page margins", () => {
+    expect(styleSource).toContain(".brochure-page-preview { height: 302px; overflow: hidden; }");
+    expect(styleSource).toContain(".brochure-page-preview img { height: 332px; object-fit: cover");
+    expect(styleSource).toContain(".brochure-viewer-shell:fullscreen");
+  });
 });

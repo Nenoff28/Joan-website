@@ -64,3 +64,7 @@
 - [x] Run a browser-level reduced-motion rendering check for the 3D brochure viewer before the redesign checkpoint.
 - [x] Save the verified 3D brochure-viewer redesign checkpoint.
 - [x] Save the verified 3D brochure-viewer redesign checkpoint.
+- [x] Define fullscreen, swipe, focus-return, and adjacent-page crop behavior for the brochure viewer.
+- [x] Add fullscreen viewing controls and keyboard-safe exit behavior to the brochure viewer.
+- [x] Add mobile swipe page navigation and crop the adjacent-page previews to remove white page margins.
+- [x] Verify fullscreen, swipe, mobile, desktop, and accessibility behavior before saving the enhanced viewer checkpoint.
