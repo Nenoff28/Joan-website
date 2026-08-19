@@ -9,3 +9,8 @@
 - [x] Verify CTA scrolling, external catalogue routing, and responsive behavior; save a delivery checkpoint.
 - [x] Add subtle hover and focus-visible animations to the live catalogue bridge cards.
 - [x] Verify desktop/mobile behavior and save the interaction refinement checkpoint.
+- [x] Replace the top-left header mark with the real Joan logo treatment.
+- [x] Remove the footer working-hours link and prevent contact self-links on the contact page.
+- [x] Connect the map action to the supplied Google Maps URL.
+- [x] Add practical visual treatments for all remaining category tiles.
+- [x] Verify links and responsive visual updates; save a delivery checkpoint.

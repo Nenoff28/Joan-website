@@ -12,7 +12,6 @@ import {
   BrickWall,
   ChevronDown,
   ChevronRight,
-  Clock3,
   Drill,
   Facebook,
   HardHat,
@@ -75,9 +74,7 @@ function Wordmark() {
   const { t } = useLanguage();
   return (
     <Link href="/" className="brand-mark" aria-label={`ЖОАН — ${t("home")}`}>
-      <img src="/manus-storage/joan-symbol_8ab1677a.png" alt="" className="brand-symbol" />
-      <span className="brand-word">ЖОАН</span>
-      <span className="brand-subword">строителен хипермаркет</span>
+      <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Лого на Строителен хипермаркет Жоан" className="brand-real-logo" />
     </Link>
   );
 }
@@ -243,22 +240,23 @@ export function Layout({ children }: { children: ReactNode }) {
 
 function Footer() {
   const { t } = useLanguage();
+  const [location] = useLocation();
+  const isContactPage = location === "/contact";
   return (
     <footer className="site-footer">
-      <div className="footer-cta"><div className="page-frame footer-cta-inner"><div><span className="eyebrow">{t("help")}</span><h2>{t("contacts")}</h2></div><Link href="/contact" className="button-ghost-light">{t("contacts")} <ArrowRight size={18} /></Link></div></div>
+      {!isContactPage && <div className="footer-cta"><div className="page-frame footer-cta-inner"><div><span className="eyebrow">{t("help")}</span><h2>{t("contacts")}</h2></div><Link href="/contact" className="button-ghost-light">{t("contacts")} <ArrowRight size={18} /></Link></div></div>}
       <div className="page-frame footer-main">
         <div className="footer-brand">
           <Wordmark />
           <p>{t("catalogueIntro")}</p>
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
-          <img className="existing-brand-logo" src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Съществуващо лого на Строителен хипермаркет Жоан" />
         </div>
         <div><h3>{t("categories")}</h3>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/contact">{languageText(t, "Работно време", "Opening hours")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link><button type="button" onClick={() => toast(t("mockSecurity"))}>{t("returns")}</button></div>
-        <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><p className="footer-address"><Clock3 size={16} /> Пн–Пт: 08:00–19:00</p><Link href="/about">{t("about")}</Link><Link href="/contact">{t("contacts")}</Link><a href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer"><Facebook size={15} /> Facebook</a></div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link><button type="button" onClick={() => toast(t("mockSecurity"))}>{t("returns")}</button></div>
+        <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer"><Facebook size={15} /> Facebook</a></div>
       </div>
-      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Статичен демонстрационен storefront, подготвен за каталогова интеграция.</span></div></div>
+      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.</span></div></div>
     </footer>
   );
 }

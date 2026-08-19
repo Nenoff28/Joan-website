@@ -80,3 +80,6 @@ The Joan mark is a confident red **J** constructed from a vertical steel-like ba
 - Homepage category and product modules use numbering, red edge rails, compact operating metadata, and hairline dividers to reinforce the trade-catalog system.
 - Every homepage module carries a retail utility signal—category route, availability/service cue, location cue, price/product cue, or compact catalog metadata.
 - Editorial and support blocks reuse the same workbench grammar: red signal rails, indexed bays, hairline dividers, compact facts, and direct operational copy.
+- Remaining category visuals prioritize trade-use materials, tools, hardware, surfaces, packaging, and construction context rather than showroom styling.
+- Contact and support layouts use numbered information bays, red signal rails, and direct operational labels to remain part of the same retail system.
+- The user-selected real Joan heritage logo is retained as the visible brand mark despite the modern system’s preference for the red symbol.
