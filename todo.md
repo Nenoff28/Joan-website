@@ -25,3 +25,7 @@
 - [x] Retrieve the original Joan About-page image and add it to the redesigned About section.
 - [x] Source and map real product photography for all 55 test-catalogue items where available.
 - [x] Verify image loading and responsive layouts, then save a media-update checkpoint.
+- [x] Replace all test labels with exact Joan catalogue product names and source data.
+- [x] Add zoomable multi-image galleries to product detail pages.
+- [x] Implement working brand, availability, price-range, search, and sorting controls in category listings.
+- [x] Run responsive functional QA and save the verified catalogue enhancement checkpoint.

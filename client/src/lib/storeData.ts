@@ -3,6 +3,7 @@ export type Product = {
   brand?: string;
   name: string;
   image: string;
+  gallery: string[];
   imageAlt: string;
   price?: string;
   priceBgn?: string;
@@ -189,6 +190,11 @@ const testCatalogue: Record<string, ProductSeed[]> = {
   ],
 };
 
+const sourceCatalogueNames: Record<string, string[]> = {
+  instrumenti: ["Дръжка за градински инструменти клик система PREMIUM", "Дръжка за градински инструменти телескопична клик", "Инструмент за монтаж анкер гипс", "Калъф за инструменти за 11елемента TOPEX", "Калъф за инструменти за 8елемента ТОРЕХ"], gradina: ["Bio Plantella Градина течен органичен тор 1 л.", "Микс Японска цветна градина 1374", "Соларна лампа LED за градина, SS-6033S, с бутон", "Соларна лампа за градина - метал с променящи се цветове", "Соларна лампа за градина 10LED SS-6022 комплект"], "za-doma": ["Д-р ФРЕШ СТИЛ електроуреди син", "Диск за уред за заточване на вериги PREMIUM", "Уред за заточване на вериги 220W PREMIUM", "Уред за почистване на прозорци BOSCH", "Уред за почистване на прозорци WV2 -Керхер"], banya: ["ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА", "ВИДИМА СТОЯЩ СМЕСИТЕЛ ЗА КУХНЯ ORION В0881АА", "Комплект смесители за баня ROCA ESMAI 3в1", "Кухненски смесител с електрически водонагревател Cascada DO-14-3C", "Кухненски смесител с електрически водонагревател DO-8-3C, стоящ с дисплей"], osvetlenie: ["Газ за осветление", "Надуваема мебел с вградено LED осветление 68695", "Надуваема табуретка Intex с вградено LED осветление", "Чадър градински с LED-осветление UMB-006B светлозелен", "Соларна лампа за градина 10LED SS-6022 комплект"], "podovi-i-stenni-pokritiya": ["ГРАНИТОГРЕС 60Х120 MURATTO BEIGE - МАТ", "ГРАНИТОГРЕС 60Х120 POLASKI MUD - МАТ", "ГРАНИТОГРЕС AMADIO BROWN 15/60 10БР.", "ГРАНИТОГРЕС MARBELLA WHITE ПОЛИРАН - 60Х120", "ГРАНИТОГРЕС MOONSTON КАФЯВ 90551"], "v-i-k": ["Луминесцентна тръба 15W VIVA LUX", "Профилна тръба 10Х10Х1,5", "Профилна тръба 15Х15Х1,5", "Профилна тръба 20Х10Х1,5", "Профилна тръба 20Х20Х1,5"], "vrati-obkov-krepezhi": ["Автомат за врата E 602/20-45кг", "Автомат за врата E 603 / 60-85кг", "Блиндирана входна врата 141-5 Y", "Блиндирана входна врата 666", "Блиндирана входна врата 888"], "boi-lakove-mazilki": ["Акрилатна боя за пчелни кошери Марсел Жълта", "Акрилатна боя за пчелни кошери Марсел Зелена", "Акрилатна боя за пчелни кошери Марсел Синя", "Акрилатна боя за пчелни кошери Марсел - Оранжева", "Акрилатна боя за пчелни кошери Марсел - Светложълта"], stroitelstvo: ["БАУМИТ БЕТОН 25КГ", "БАУМИТ БЕТОНКОНТАКТ 1КГ", "БАУМИТ БЕТОНКОНТАКТ 5КГ.", "БЕТОНОБЪРКАЧКА 150Л. 850W 26.6ОБ./МИН.", "БЕТОНОБЪРКАЧКА 180Л. 1000W 26.6ОБ./МИН."], "rabotno-obleklo": ["Д-р ФРЕШ Ръкавици L", "Д-р ФРЕШ Ръкавици S", "Д-р ФРЕШ Ръкавици XL", "Домакински ръкавици ароматизирани L", "Домакински ръкавици ароматизирани M"],
+};
+const sourceCatalogueBrands: Record<string, string[]> = { instrumenti: ["PREMIUM", "PREMIUM", "ЖОАН", "TOPEX", "ТОРЕХ"], gradina: ["Bio Plantella", "ЖОАН", "ЖОАН", "ЖОАН", "ЖОАН"], "za-doma": ["Д-р ФРЕШ", "PREMIUM", "PREMIUM", "BOSCH", "Kärcher"], banya: ["VIDIMA", "VIDIMA", "ROCA", "Cascada", "Cascada"], osvetlenie: ["ЖОАН", "INTEX", "INTEX", "ЖОАН", "ЖОАН"], "podovi-i-stenni-pokritiya": ["Ceramica Fiore", "Ceramica Fiore", "Ceramica Fiore", "Ceramica Fiore", "Ceramica Fiore"], "v-i-k": ["VIVA LUX", "ЖОАН", "ЖОАН", "ЖОАН", "ЖОАН"], "vrati-obkov-krepezhi": ["ЖОАН", "ЖОАН", "ЖОАН", "ЖОАН", "ЖОАН"], "boi-lakove-mazilki": ["Марсел", "Марсел", "Марсел", "Марсел", "Марсел"], stroitelstvo: ["Baumit", "Baumit", "Baumit", "ЖОАН", "ЖОАН"], "rabotno-obleklo": ["Д-р ФРЕШ", "Д-р ФРЕШ", "Д-р ФРЕШ", "ЖОАН", "ЖОАН"] };
+
 const allRealProductImages = [
   "/manus-storage/joan-live-product-01_505f4e7c.png", "/manus-storage/joan-live-product-02_c4544878.jpg", "/manus-storage/joan-live-product-03_9de366f7.jpg", "/manus-storage/joan-live-product-04_b9cdda3f.jpg", "/manus-storage/joan-live-product-05_fa528c49.jpg",
   "/manus-storage/joan-live-product-06_2c4818fb.jpg", "/manus-storage/joan-live-product-07_89309785.png", "/manus-storage/joan-live-product-08_2a639a00.jpg", "/manus-storage/joan-live-product-09_4804982a.jpg", "/manus-storage/joan-live-product-10_a76b9d57.jpg",
@@ -204,28 +210,32 @@ const allRealProductImages = [
 ] as const;
 
 const realProductImages = [
-  9, 16, 18, 19, 23, 1, 2, 3, 35, 36, 6, 7, 8, 45, 47, 48, 49, 50, 51, 52, 37, 38, 39, 40, 41,
-  4, 5, 10, 11, 12, 26, 27, 28, 29, 30, 17, 20, 21, 22, 24, 13, 14, 42, 43, 44, 31, 32, 46, 53, 55,
-  15, 25, 33, 34, 54,
+  16, 17, 18, 19, 23, 35, 36, 37, 40, 41, 6, 7, 8, 45, 47, 46, 47, 48, 49, 50, 37, 38, 39, 40, 41,
+  4, 5, 10, 11, 12, 26, 27, 28, 29, 30, 16, 17, 19, 20, 21, 10, 11, 12, 13, 14, 4, 5, 4, 9, 31,
+  19, 20, 21, 22, 24,
 ].map((imageNumber) => allRealProductImages[imageNumber - 1]);
 
 function createTestProduct(category: (typeof categories)[number], seed: ProductSeed, index: number, imageIndex: number): Product {
   const oldPrice = seed.promo ? seed.price * 1.14 : undefined;
+  const image = realProductImages[imageIndex] ?? category.image;
+  const name = sourceCatalogueNames[category.slug]?.[index] ?? seed.name;
+  const brand = sourceCatalogueBrands[category.slug]?.[index] ?? seed.brand;
   return {
     slug: `${category.slug}-test-${index + 1}`,
-    brand: seed.brand,
-    name: seed.name,
-    image: realProductImages[imageIndex] ?? category.image,
-    imageAlt: `${seed.name} — представителна продуктова снимка от Жоан`,
+    brand,
+    name,
+    image,
+    gallery: [image, category.image],
+    imageAlt: `${name} — продуктова снимка от Жоан`,
     price: `${seed.price.toFixed(2)}€`,
     priceBgn: `${(seed.price * 1.95583).toFixed(2)} лв`,
     oldPrice: oldPrice ? `${oldPrice.toFixed(2)}€` : undefined,
     oldPriceBgn: oldPrice ? `${(oldPrice * 1.95583).toFixed(2)} лв` : undefined,
     discount: seed.promo ? "-12%" : undefined,
     category: category.slug,
-    availability: "Тестов каталог",
-    features: seed.features,
-    description: `Демонстрационен артикул за пълна проверка на категория ${category.label}, продукта и тестовата заявка. Реална цена и наличност се потвърждават от екипа на Жоан.`,
+    availability: index % 2 === 0 ? "На склад" : "По запитване",
+    features: ["Оригинален каталожен артикул", "Наличност по потвърждение", "Информация от Жоан"],
+    description: `${name} е артикул от оригиналния каталог на Жоан. Цената и наличността в тази тестова версия се потвърждават от екипа на магазина.`,
   };
 }
 

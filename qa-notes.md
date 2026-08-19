@@ -19,3 +19,11 @@ Successful-path setup for `osvetlenie-test-2` preserves quantity two and a €7.
 After acknowledgement, the populated `osvetlenie-test-2` checkout reaches its explicit local success state. It confirms that no order was created and no data was sent, preserving the test-only checkout boundary.
 
 Global search was verified with “Цимент” and routed directly to `stroitelstvo-test-1`. That product page shows the matched Construction record, a priced checkout route, and three same-category recommendations.
+
+After source-name mapping, the Instruments category displays exact Joan catalogue labels and individual source product photos. The PREMIUM filter reduced the list from five items to two matching records, and the low-to-high price sort changed the active sort state without navigation or runtime errors.
+
+The exact-source product detail route exposes a two-image gallery. Selecting thumbnail 02 replaces the primary source product image with the contextual category image while retaining the quantity controls, checkout action, technical data, and recommendations.
+
+Selecting the “Приближи” control opens an accessible modal dialog containing the active gallery image. The close action returns to the unchanged product-detail state, confirming both opening and closing paths work without navigation.
+
+Desktop and mobile screenshot review confirmed that source-named products, filter controls, sort options, thumbnail gallery, zoom control, purchase action, and related products remain legible and reachable. The final console and network-log pass recorded no runtime exceptions or 4xx/5xx product-media requests.

@@ -85,3 +85,5 @@ The Joan mark is a confident red **J** constructed from a vertical steel-like ba
 - The user-selected real Joan heritage logo is retained as the visible brand mark despite the modern system’s preference for the red symbol.
 - Category listings prioritize compact scan density: price, availability, brand, and technical cues lead, while imagery supports discovery rather than dominating the page.
 - Checkout adopts the same workbench grammar through indexed request stages, rule-based form bays, and a structured request summary.
+- Category and product interfaces use indexed operational bays, hairline rules, and compact product metadata so findability outranks editorial atmosphere.
+- Product imagery supports inspection: white product fields, visible scale, and technical request data take priority over decorative lifestyle framing.
