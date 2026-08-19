@@ -2,3 +2,4 @@
 - [x] Add Bulgarian and English language switching for the extended customer journey.
 - [x] Build a client-side mock checkout with clear form validation and non-payment disclosure.
 - [x] Verify mobile layouts and save a delivery checkpoint.
+- [x] Fix homepage hero CTA overlap around “Разгледайте каталога” and verify responsive spacing.
