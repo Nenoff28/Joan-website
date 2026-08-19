@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueCategories, catalogueProducts, orderRequests } from "../drizzle/schema";
+import { adminActivities, catalogueCategories, catalogueProducts, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 
@@ -221,6 +221,34 @@ export async function getAdminSummary() {
   };
 }
 
+/** Returns real operational queues derived from current catalogue, request, and audit records. */
+export async function getAdminOperations() {
+  await ensureCatalogueSeeded();
+  const db = await requireDb();
+  const [products, orders, activityRows] = await Promise.all([
+    getAdminProducts(),
+    getAdminOrders(),
+    db.select({ activity: adminActivities, adminName: users.name, adminEmail: users.email }).from(adminActivities).innerJoin(users, eq(adminActivities.adminUserId, users.id)).orderBy(desc(adminActivities.createdAt)).limit(24),
+  ]);
+  const activeProducts = products.filter((product) => product.isActive);
+  const promotions = activeProducts.filter((product) => Boolean(product.discount || product.oldPrice));
+  const inventoryQueue = activeProducts.filter((product) => product.availabilityCode !== "out_of_stock" && (product.stockQuantity ?? 0) <= 2).slice(0, 12);
+  const qualityQueue = activeProducts.map((product) => {
+    const issues = [!product.sku ? "Липсва код" : null, !product.price ? "Липсва цена" : null, product.gallery.length < 2 ? "Непълна галерия" : null, product.features.length === 0 ? "Липсват характеристики" : null].filter((item): item is string => Boolean(item));
+    return { ...product, issues };
+  }).filter((product) => product.issues.length > 0).slice(0, 12);
+  const orderCounts: Record<OrderRequestStatus, number> = { new: 0, contacted: 0, confirmed: 0, closed: 0, cancelled: 0 };
+  orders.forEach((order) => { orderCounts[order.status] += 1; });
+  return {
+    metrics: { activeProducts: activeProducts.length, promotions: promotions.length, stockAttention: inventoryQueue.length, catalogueIssues: qualityQueue.length, openRequests: orderCounts.new + orderCounts.contacted + orderCounts.confirmed },
+    promotions: promotions.slice(0, 24),
+    inventoryQueue,
+    qualityQueue,
+    orderCounts,
+    activities: activityRows.map((row) => ({ id: row.activity.id, action: row.activity.action, entityType: row.activity.entityType, entityId: row.activity.entityId, metadata: (() => { try { return JSON.parse(row.activity.metadataJson) as Record<string, unknown>; } catch { return {}; } })(), createdAt: row.activity.createdAt, adminName: row.adminName ?? row.adminEmail ?? "Администратор" })),
+  };
+}
+
 export async function logAdminActivity(adminUserId: number, action: string, entityType: string, entityId?: number | null, metadata: Record<string, unknown> = {}) {
   const db = await requireDb();
   await db.insert(adminActivities).values({ adminUserId, action, entityType, entityId: entityId ?? null, metadataJson: JSON.stringify(metadata) });
@@ -242,6 +270,24 @@ export async function updateAdminProduct(id: number, payload: ProductPayload, ad
     categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), priceBgn: asDecimal(payload.priceBgn), oldPriceEur: asDecimal(payload.oldPriceEur), oldPriceBgn: asDecimal(payload.oldPriceBgn), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
   }).where(eq(catalogueProducts.id, id));
   await logAdminActivity(adminUserId, "product.updated", "product", id, { slug: payload.slug, name: payload.name });
+}
+
+export async function adjustProductStock(id: number, delta: number, adminUserId: number) {
+  const db = await requireDb();
+  const [product] = await db.select().from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1);
+  if (!product) throw new Error("Product was not found");
+  const stockQuantity = Math.max(0, Math.min(999999, product.stockQuantity + delta));
+  await db.update(catalogueProducts).set({ stockQuantity }).where(eq(catalogueProducts.id, id));
+  await logAdminActivity(adminUserId, "inventory.adjusted", "product", id, { delta, stockQuantity, slug: product.slug, name: product.name });
+  return { id, stockQuantity };
+}
+
+export async function saveProductPromotion(input: { id: number; priceEur: number | null; priceBgn: number | null; oldPriceEur: number | null; oldPriceBgn: number | null; discountLabel: string | null }, adminUserId: number) {
+  const db = await requireDb();
+  const [product] = await db.select().from(catalogueProducts).where(eq(catalogueProducts.id, input.id)).limit(1);
+  if (!product) throw new Error("Product was not found");
+  await db.update(catalogueProducts).set({ priceEur: asDecimal(input.priceEur), priceBgn: asDecimal(input.priceBgn), oldPriceEur: asDecimal(input.oldPriceEur), oldPriceBgn: asDecimal(input.oldPriceBgn), discountLabel: input.discountLabel?.trim() || null }).where(eq(catalogueProducts.id, input.id));
+  await logAdminActivity(adminUserId, "promotion.updated", "product", input.id, { slug: product.slug, name: product.name, discountLabel: input.discountLabel ?? null });
 }
 
 export async function saveAdminCategory(id: number | undefined, payload: CategoryPayload, adminUserId: number) {

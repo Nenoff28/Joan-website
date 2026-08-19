@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 
 const service = vi.hoisted(() => ({
+  adjustProductStock: vi.fn(),
   createAdminProduct: vi.fn(),
   createOrderRequest: vi.fn(),
   getAdminCategories: vi.fn(),
   getAdminOrders: vi.fn(),
   getAdminProducts: vi.fn(),
   getAdminSummary: vi.fn(),
+  getAdminOperations: vi.fn(),
   getPublicCatalogue: vi.fn(),
   saveAdminCategory: vi.fn(),
+  saveProductPromotion: vi.fn(),
   updateAdminProduct: vi.fn(),
   updateOrderRequest: vi.fn(),
   uploadProductImage: vi.fn(),
@@ -61,6 +64,20 @@ describe("administrator management procedures", () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.updateOrder({ id: 9, status: "contacted", adminNote: "Customer contacted by phone." })).resolves.toBeUndefined();
     expect(service.updateOrderRequest).toHaveBeenCalledWith(9, "contacted", "Customer contacted by phone.", 17);
+  });
+
+  it("passes a bounded inventory adjustment to the authenticated administrator service", async () => {
+    service.adjustProductStock.mockResolvedValueOnce({ id: 9, stockQuantity: 7 });
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.adjustStock({ id: 9, delta: 2 })).resolves.toEqual({ id: 9, stockQuantity: 7 });
+    expect(service.adjustProductStock).toHaveBeenCalledWith(9, 2, 17);
+  });
+
+  it("passes completed price details and a promotion label to the protected promotion workflow", async () => {
+    service.saveProductPromotion.mockResolvedValueOnce(undefined);
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.savePromotion({ id: 9, priceEur: 10, priceBgn: 19.56, oldPriceEur: 12, oldPriceBgn: 23.47, discountLabel: "-17%" })).resolves.toBeUndefined();
+    expect(service.saveProductPromotion).toHaveBeenCalledWith({ id: 9, priceEur: 10, priceBgn: 19.56, oldPriceEur: 12, oldPriceBgn: 23.47, discountLabel: "-17%" }, 17);
   });
 
   it("accepts a public delivery request only after validating its contact and product fields", async () => {

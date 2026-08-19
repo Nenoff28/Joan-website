@@ -4,14 +4,17 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import {
+  adjustProductStock,
   createAdminProduct,
   createOrderRequest,
   getAdminCategories,
   getAdminOrders,
   getAdminProducts,
   getAdminSummary,
+  getAdminOperations,
   getPublicCatalogue,
   saveAdminCategory,
+  saveProductPromotion,
   updateAdminProduct,
   updateOrderRequest,
   uploadProductImage,
@@ -77,11 +80,14 @@ export const appRouter = router({
   }),
   admin: router({
     summary: adminProcedure.query(() => getAdminSummary()),
+    operations: adminProcedure.query(() => getAdminOperations()),
     products: adminProcedure.query(() => getAdminProducts()),
     categories: adminProcedure.query(() => getAdminCategories()),
     orders: adminProcedure.query(() => getAdminOrders()),
     createProduct: adminProcedure.input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.user.id)),
     updateProduct: adminProcedure.input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.user.id)),
+    adjustStock: adminProcedure.input(z.object({ id: z.number().int().positive(), delta: z.number().int().min(-999999).max(999999).refine((value) => value !== 0) })).mutation(({ input, ctx }) => adjustProductStock(input.id, input.delta, ctx.user.id)),
+    savePromotion: adminProcedure.input(z.object({ id: z.number().int().positive(), priceEur: z.number().nonnegative().nullable(), priceBgn: z.number().nonnegative().nullable(), oldPriceEur: z.number().nonnegative().nullable(), oldPriceBgn: z.number().nonnegative().nullable(), discountLabel: z.string().trim().max(48).nullable() })).mutation(({ input, ctx }) => saveProductPromotion(input, ctx.user.id)),
     uploadProductImage: adminProcedure.input(z.object({ dataUrl: z.string().min(32).max(6_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadProductImage(input, ctx.user.id)),
     saveCategory: adminProcedure.input(z.object({ id: z.number().int().positive().optional(), category: categoryPayloadSchema })).mutation(({ input, ctx }) => saveAdminCategory(input.id, input.category, ctx.user.id)),
     updateOrder: adminProcedure.input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateOrderRequest(input.id, input.status, input.adminNote, ctx.user.id)),

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Boxes, ClipboardList, LayoutDashboard, LogOut, PanelLeft, Tags } from "lucide-react";
+import { BadgePercent, Boxes, ClipboardList, History, LayoutDashboard, LogOut, PackageSearch, PanelLeft, Tags } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -30,8 +30,11 @@ import { Button } from "./ui/button";
 const menuItems = [
   { icon: LayoutDashboard, label: "Обзор", path: "/admin" },
   { icon: Boxes, label: "Артикули", path: "/admin/products" },
+  { icon: PackageSearch, label: "Наличности", path: "/admin/inventory" },
+  { icon: BadgePercent, label: "Промоции", path: "/admin/promotions" },
   { icon: Tags, label: "Категории", path: "/admin/categories" },
   { icon: ClipboardList, label: "Заявки", path: "/admin/orders" },
+  { icon: History, label: "Активност", path: "/admin/activity" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -257,14 +260,14 @@ function DashboardLayoutContent({
 
       <SidebarInset>
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="admin-mobile-bar">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
+                <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Жоан" className="admin-mobile-logo" />
+                <div className="admin-mobile-title">
+                  <small>ЖОАН · ОПЕРАТИВЕН РЕЖИМ</small>
+                  <span>{activeMenuItem?.label ?? "Меню"}</span>
                 </div>
               </div>
             </div>
