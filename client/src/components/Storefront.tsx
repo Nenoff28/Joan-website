@@ -5,6 +5,7 @@
 import { Button } from "@/components/ui/button";
 import { categories, products, store, type Product } from "@/lib/storeData";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
@@ -81,6 +82,7 @@ function Wordmark() {
 
 function Header() {
   const { language, setLanguage, t } = useLanguage();
+  const { count } = useFavorites();
   const [location, setLocation] = useLocation();
   const [megaOpen, setMegaOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -162,7 +164,7 @@ function Header() {
         <div className="header-actions" aria-label={t("customerInfo")}>
           <div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div>
           <button type="button" onClick={() => doAction(t("account"))}><UserRound size={21} /><span>{t("account")}</span></button>
-          <button type="button" onClick={() => doAction(t("favorites"))}><Heart size={21} /><span>{t("favorites")}</span></button>
+          <Link href="/favorites" className="header-favorites" aria-label={t("favorites")}><Heart size={21} /><span>{t("favorites")}</span>{count > 0 && <i>{count}</i>}</Link>
           <Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1" className="header-cart"><ShoppingCart size={21} /><span>{t("cart")}</span><i>1</i></Link>
         </div>
         <button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label={t("allCategories")}><Menu size={24} /></button>
@@ -218,6 +220,7 @@ function Header() {
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
             <Link href="/delivery" onClick={() => setMobileOpen(false)}>{t("delivery")}</Link>
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
+            <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
           </div>
           <p className="mobile-drawer-label">{t("categories")}</p>
           <div className="mobile-category-grid">
@@ -229,7 +232,7 @@ function Header() {
           <div className="mobile-contact"><Phone size={18} /><span><b>{t("help")}</b>{store.phones[2]}</span></div>
         </div>
       )}
-      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/category") ? t("catalogue") : location.startsWith("/product") ? t("representativeProduct") : t("customerInfo")}</span></div>}
+      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/category") ? t("catalogue") : location.startsWith("/product") ? t("representativeProduct") : location.startsWith("/favorites") ? t("favorites") : t("customerInfo")}</span></div>}
     </header>
   );
 }
@@ -272,15 +275,18 @@ export function SectionHeading({ eyebrow, title, text, action }: { eyebrow?: str
 
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const { t } = useLanguage();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [, setLocation] = useLocation();
-  function action(label: string) {
-    toast(`${label}: ${product.name}`);
+  const favorite = isFavorite(product.slug);
+  function handleFavorite() {
+    toggleFavorite(product.slug);
+    toast(favorite ? t("removedFromFavorites") : t("addedToFavorites"));
   }
   return (
     <article className={`product-card ${compact ? "product-card-compact" : ""}`}>
       <div className="product-image-box">
         {product.discount && <span className="discount-tag">{t("promo")} {product.discount}</span>}
-        <button type="button" aria-label={`${t("favorites")}: ${product.name}`} className="product-icon-button" onClick={() => action(t("favorites"))}><Heart size={18} /></button>
+        <button type="button" aria-label={`${t("favorites")}: ${product.name}`} aria-pressed={favorite} className={`product-icon-button ${favorite ? "is-favorite" : ""}`} onClick={handleFavorite}><Heart size={18} fill={favorite ? "currentColor" : "none"} /></button>
         <Link href={`/product/${product.slug}`}><img src={product.image} alt={product.imageAlt} loading={compact ? "lazy" : "eager"} /></Link>
       </div>
       <div className="product-card-body">

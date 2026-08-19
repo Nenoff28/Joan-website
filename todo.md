@@ -29,3 +29,7 @@
 - [x] Add zoomable multi-image galleries to product detail pages.
 - [x] Implement working brand, availability, price-range, search, and sorting controls in category listings.
 - [x] Run responsive functional QA and save the verified catalogue enhancement checkpoint.
+- [x] Add persistent client-side Favorites state for saved product IDs.
+- [x] Wire save/remove actions across product cards and product detail pages.
+- [x] Add a responsive Favorites page with empty, saved-product, remove, and checkout states.
+- [x] Verify persistence and responsive behavior, then save a delivery checkpoint.

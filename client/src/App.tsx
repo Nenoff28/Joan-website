@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { FavoritesProvider } from "./contexts/FavoritesContext";
 import Home from "./pages/Home";
 import Category from "./pages/Category";
 import Product from "./pages/Product";
@@ -13,6 +14,7 @@ import Contact from "./pages/Contact";
 import Delivery from "./pages/Delivery";
 import Terms from "./pages/Terms";
 import Checkout from "./pages/Checkout";
+import Favorites from "./pages/Favorites";
 
 
 function Router() {
@@ -26,6 +28,7 @@ function Router() {
       <Route path={"/delivery"} component={Delivery} />
       <Route path={"/terms"} component={Terms} />
       <Route path={"/checkout"} component={Checkout} />
+      <Route path={"/favorites"} component={Favorites} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -43,10 +46,12 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <LanguageProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
+          <FavoritesProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </FavoritesProvider>
         </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
