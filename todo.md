@@ -14,3 +14,5 @@
 - [x] Connect the map action to the supplied Google Maps URL.
 - [x] Add practical visual treatments for all remaining category tiles.
 - [x] Verify links and responsive visual updates; save a delivery checkpoint.
+- [x] Retrieve the original Joan favicon and apply it to the browser tab.
+- [x] Verify the favicon reference and save the updated project version.
