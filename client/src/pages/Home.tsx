@@ -2,11 +2,12 @@
 import { CategoryIcon, JsonLd, Layout, PageMeta, ProductCard, SectionHeading, ServiceStrip } from "@/components/Storefront";
 import { store } from "@/lib/storeData";
 import { useCatalogue } from "@/hooks/useCatalogue";
+import { trpc } from "@/lib/trpc";
 import { ArrowRight, ChevronLeft, ChevronRight, FileText, MapPin, Pause, Play, PlayCircle, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 
-const brochurePages = [
+const fallbackBrochurePages = [
   "/manus-storage/page-1_7884f6f6.jpg",
   "/manus-storage/page-2_9b25fc80.jpg",
   "/manus-storage/page-3_6c0ba892.jpg",
@@ -19,6 +20,9 @@ const brochurePages = [
 
 export default function Home() {
   const { categories, products } = useCatalogue();
+  const brochureQuery = trpc.catalogue.brochure.useQuery();
+  const brochurePages = brochureQuery.data?.pageUrls?.length ? brochureQuery.data.pageUrls : fallbackBrochurePages;
+  const brochureTitle = brochureQuery.data?.title ?? "Промо брошура";
   const [activeBrochurePage, setActiveBrochurePage] = useState(0);
   const [brochurePaused, setBrochurePaused] = useState(false);
   function scrollToBrochure(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -28,11 +32,12 @@ export default function Home() {
     target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   }
   function setBrochurePage(nextPage: number) { setActiveBrochurePage((nextPage + brochurePages.length) % brochurePages.length); }
+  useEffect(() => { if (activeBrochurePage >= brochurePages.length) setActiveBrochurePage(0); }, [activeBrochurePage, brochurePages.length]);
   useEffect(() => {
     if (brochurePaused) return;
     const timer = window.setInterval(() => setActiveBrochurePage((page) => (page + 1) % brochurePages.length), 6000);
     return () => window.clearInterval(timer);
-  }, [brochurePaused]);
+  }, [brochurePaused, brochurePages.length]);
   return <Layout>
     <PageMeta title="Строителен хипермаркет" description="Жоан: строителни материали, инструменти, продукти за дома и градината в Силистра." />
     <JsonLd />
@@ -44,7 +49,7 @@ export default function Home() {
       </section>
       <ServiceStrip />
       <section id="brochure" className="brochure-section" aria-labelledby="brochure-title">
-        <div className="page-frame"><div className="brochure-heading"><div><p className="eyebrow">Нова брошура</p><h2 id="brochure-title">Оферти от Жоан, страница по страница.</h2><p>Прегледайте актуалната брошура директно тук. Използвайте стрелките, миниатюрите или оставете слайдшоуто да продължи автоматично.</p></div><div className="brochure-heading-meta"><FileText size={21} /><span><b>Промо брошура</b>01.08.2026 — 31.08.2026</span></div></div><div className="brochure-workbench"><div className="brochure-index"><span>БРОШУРА</span><b>{String(activeBrochurePage + 1).padStart(2, "0")}</b><small>/ {String(brochurePages.length).padStart(2, "0")}</small><i /><p>Страница<br />{activeBrochurePage + 1}</p></div><div className="brochure-stage"><img key={brochurePages[activeBrochurePage]} src={brochurePages[activeBrochurePage]} alt={`Промоционална брошура Жоан — страница ${activeBrochurePage + 1} от ${brochurePages.length}`} /><div className="brochure-stage-tools"><button type="button" onClick={() => setBrochurePage(activeBrochurePage - 1)} aria-label="Предишна страница от брошурата"><ChevronLeft size={21} /></button><button type="button" className="brochure-play-toggle" onClick={() => setBrochurePaused((paused) => !paused)} aria-pressed={brochurePaused} aria-label={brochurePaused ? "Пусни автоматичното слайдшоу" : "Спри автоматичното слайдшоу"}>{brochurePaused ? <Play size={17} fill="currentColor" /> : <Pause size={17} fill="currentColor" />}</button><button type="button" onClick={() => setBrochurePage(activeBrochurePage + 1)} aria-label="Следваща страница от брошурата"><ChevronRight size={21} /></button></div></div></div><div className="brochure-thumbs" role="tablist" aria-label="Страници на брошурата">{brochurePages.map((page, index) => <button key={page} type="button" className={index === activeBrochurePage ? "is-active" : ""} onClick={() => setActiveBrochurePage(index)} role="tab" aria-selected={index === activeBrochurePage} aria-label={`Отвори страница ${index + 1}`}><img src={page} alt="" /><span>{String(index + 1).padStart(2, "0")}</span></button>)}</div></div>
+        <div className="page-frame"><div className="brochure-heading"><div><p className="eyebrow">Нова брошура</p><h2 id="brochure-title">Оферти от Жоан, страница по страница.</h2><p>Прегледайте актуалната брошура директно тук. Използвайте стрелките, миниатюрите или оставете слайдшоуто да продължи автоматично.</p></div><div className="brochure-heading-meta"><FileText size={21} /><span><b>{brochureTitle}</b>{brochurePages.length} страници · управлява се от администраторския панел</span></div></div><div className="brochure-workbench"><div className="brochure-index"><span>БРОШУРА</span><b>{String(activeBrochurePage + 1).padStart(2, "0")}</b><small>/ {String(brochurePages.length).padStart(2, "0")}</small><i /><p>Страница<br />{activeBrochurePage + 1}</p></div><div className="brochure-stage"><img key={brochurePages[activeBrochurePage]} src={brochurePages[activeBrochurePage]} alt={`${brochureTitle} — страница ${activeBrochurePage + 1} от ${brochurePages.length}`} /><div className="brochure-stage-tools"><button type="button" onClick={() => setBrochurePage(activeBrochurePage - 1)} aria-label="Предишна страница от брошурата"><ChevronLeft size={21} /></button><button type="button" className="brochure-play-toggle" onClick={() => setBrochurePaused((paused) => !paused)} aria-pressed={brochurePaused} aria-label={brochurePaused ? "Пусни автоматичното слайдшоу" : "Спри автоматичното слайдшоу"}>{brochurePaused ? <Play size={17} fill="currentColor" /> : <Pause size={17} fill="currentColor" />}</button><button type="button" onClick={() => setBrochurePage(activeBrochurePage + 1)} aria-label="Следваща страница от брошурата"><ChevronRight size={21} /></button></div></div></div><div className="brochure-thumbs" role="tablist" aria-label="Страници на брошурата">{brochurePages.map((page, index) => <button key={page} type="button" className={index === activeBrochurePage ? "is-active" : ""} onClick={() => setActiveBrochurePage(index)} role="tab" aria-selected={index === activeBrochurePage} aria-label={`Отвори страница ${index + 1}`}><img src={page} alt="" /><span>{String(index + 1).padStart(2, "0")}</span></button>)}</div></div>
       </section>
       <section id="categories" className="page-frame category-section"><SectionHeading eyebrow="Започнете оттук" title="Категории за всяка задача" text="Подредете ремонта по етапи, материал или инструмент — без излишно търсене." action={<Link className="section-action" href="/category/instrumenti">Всички категории <ArrowRight size={17} /></Link>} /><div className="feature-category-grid all-category-grid">{categories.map((category) => <Link key={category.slug} href={`/category/${category.slug}`} className="feature-category-card"><img src={category.image} alt="" loading="lazy" /><div className="feature-card-scrim" /><div><span className="feature-icon"><CategoryIcon icon={category.icon} size={20} /></span><p>{category.label}</p><small>{category.description}</small></div><ArrowRight className="feature-arrow" size={19} /></Link>)}</div></section>
       <section id="promotions" className="promotions-section"><div className="page-frame"><SectionHeading eyebrow="Топ промоции" title="Акценти от текущите предложения" text="Тестови продукти и цени за проверка на маршрутите в каталога. За реална наличност — изпратете запитване." action={<Link className="section-action" href="/category/instrumenti">Виж продукти <ArrowRight size={17} /></Link>} /><div className="product-grid homepage-products">{products.filter((product) => product.discount).slice(0, 4).map((product) => <ProductCard key={product.slug} product={product} />)}</div></div></section>

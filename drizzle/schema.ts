@@ -76,6 +76,20 @@ export const orderRequests = mysqlTable("order_requests", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("order_requests_status_created_idx").on(table.status, table.createdAt)]);
 
+/** Versioned brochure records reference source PDFs and pre-rendered page images held in storage. */
+export const catalogueBrochures = mysqlTable("catalogue_brochures", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  sourcePdfKey: text("sourcePdfKey"),
+  sourcePdfUrl: text("sourcePdfUrl"),
+  pageUrlsJson: text("pageUrlsJson").notNull(),
+  pageCount: int("pageCount").notNull(),
+  isActive: boolean("isActive").default(false).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("brochures_active_archived_idx").on(table.isActive, table.isArchived)]);
+
 /** Compact audit log for substantive management activity. */
 export const adminActivities = mysqlTable("admin_activities", {
   id: int("id").autoincrement().primaryKey(),
@@ -92,3 +106,4 @@ export type InsertUser = typeof users.$inferInsert;
 export type CatalogueCategory = typeof catalogueCategories.$inferSelect;
 export type CatalogueProduct = typeof catalogueProducts.$inferSelect;
 export type OrderRequest = typeof orderRequests.$inferSelect;
+export type CatalogueBrochure = typeof catalogueBrochures.$inferSelect;

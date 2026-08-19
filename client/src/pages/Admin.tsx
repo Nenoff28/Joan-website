@@ -1,7 +1,9 @@
 /** Joan operations console: live store control without invented customer, sales, or stock data. */
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Archive, ArrowDown, ArrowUp, ArrowUpRight, BadgePercent, Boxes, CheckCircle2, ClipboardList, Filter, History, ImagePlus, Loader2, PackageCheck, PackageSearch, Plus, Save, Tags, Trash2 } from "lucide-react";
+import { AlertTriangle, Archive, ArrowDown, ArrowUp, ArrowUpRight, BadgePercent, BookOpen, Boxes, CheckCircle2, ClipboardList, Download, FileCheck2, FileUp, Filter, History, ImagePlus, Loader2, PackageCheck, PackageSearch, Plus, Save, Tags, Trash2 } from "lucide-react";
+import { GlobalWorkerOptions, getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs?url";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -12,6 +14,7 @@ type ProductForm = { id?: number; categoryId: number; slug: string; sku: string;
 type CategoryForm = { id?: number; slug: string; name: string; description: string; imageUrl: string; icon: string; subcategoriesText: string; sortOrder: string; isActive: boolean };
 type AdminProduct = { id: number; categoryId: number; categoryName: string; slug: string; sku?: string; brand?: string; name: string; image: string; gallery: string[]; imageAlt: string; price?: string; priceBgn?: string; oldPrice?: string; oldPriceBgn?: string; discount?: string; availability: string; availabilityCode?: Availability; stockQuantity?: number; features: string[]; description: string; isActive: boolean };
 type AdminOrder = { id: number; requestNumber: string; productName: string; productImageUrl: string; quantity: number; totalEur: string | null; fullName: string; email: string; phone: string; address: string; city: string; postcode: string; status: OrderStatus; adminNote: string | null; createdAt: Date };
+type AdminBrochure = { id: number; title: string; pageUrls: string[]; pageCount: number; sourcePdfUrl: string | null; isActive: boolean; isArchived: boolean; createdAt: Date | null; updatedAt: Date | null };
 
 const statusLabels: Record<OrderStatus, string> = { new: "Нова", contacted: "Свързване", confirmed: "Потвърдена", closed: "Приключена", cancelled: "Отказана" };
 const availabilityLabels: Record<Availability, string> = { in_stock: "На склад", on_request: "По запитване", out_of_stock: "Изчерпан" };
@@ -20,6 +23,8 @@ const textLines = (value: string) => value.split("\n").map((item) => item.trim()
 const formatDate = (value: Date | string) => new Date(value).toLocaleString("bg-BG", { dateStyle: "medium", timeStyle: "short" });
 const money = (value?: string) => value?.replace("€", "") ?? "";
 const leva = (value?: string) => value?.replace(" лв", "") ?? "";
+
+GlobalWorkerOptions.workerSrc = pdfWorker;
 
 function ShellHeading({ section, title, text, action }: { section: string; title: string; text: string; action?: React.ReactNode }) { return <header className="admin-heading"><div><p className="admin-kicker">ЖОАН · {section}</p><h1>{title}</h1><p>{text}</p></div>{action}</header>; }
 
@@ -117,12 +122,71 @@ function AdminOrders() {
 
 function AdminActivity() { const operations = trpc.admin.operations.useQuery(); if (operations.isLoading) return <LoadingState />; if (!operations.data) return <ErrorState />; return <section className="admin-workspace"><ShellHeading section="АКТИВНОСТ" title="Одитна история" text="Проверете материалните промени по каталог, наличности, промоции и заявки за потвърждение." /><section className="admin-panel"><div className="admin-panel-head"><div><p className="admin-kicker">ПОСЛЕДНИ ДЕЙСТВИЯ</p><h2>Кой и какво е променил</h2></div><span className="admin-count">{operations.data.activities.length} записа</span></div>{operations.data.activities.length ? <div className="admin-activity-timeline">{operations.data.activities.map((activity) => <ActivityLine key={activity.id} activity={activity} detailed />)}</div> : <EmptyState icon={History} title="Няма записани действия." text="След промяна на оперативен запис тук ще има одитна следа." />}</section></section>; }
 
-function ActivityLine({ activity, detailed = false }: { activity: { id: number; action: string; entityType: string; metadata: Record<string, unknown>; createdAt: Date; adminName: string }; detailed?: boolean }) { const label: Record<string, string> = { "product.created": "добави артикул", "product.updated": "обнови артикул", "category.created": "добави категория", "category.updated": "обнови категория", "inventory.adjusted": "коригира наличност", "promotion.updated": "обнови промоция", "order.updated": "обнови заявка", "product_image.uploaded": "качи изображение" }; return <div className="admin-activity-row"><span className="admin-activity-dot" /><div><b>{activity.adminName} {label[activity.action] ?? activity.action}</b><p>{String(activity.metadata.name ?? activity.metadata.slug ?? activity.entityType)}{activity.metadata.delta ? ` · промяна: ${String(activity.metadata.delta)}` : ""}</p></div>{detailed && <small>{formatDate(activity.createdAt)}</small>}</div>; }
+async function brochurePagesFromPdf(file: File) {
+  const pdf = await getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  if (pdf.numPages < 1 || pdf.numPages > 16) throw new Error("Брошурата трябва да съдържа между 1 и 16 страници.");
+  const pages: Array<{ dataUrl: string; fileName: string }> = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const viewport = page.getViewport({ scale: Math.min(1.65, 1180 / baseViewport.width) });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Не може да се подготви страница от PDF.");
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.86);
+    if (dataUrl.length > 4_500_000) throw new Error(`Страница ${pageNumber} е прекалено голяма след обработка.`);
+    pages.push({ dataUrl, fileName: `page-${String(pageNumber).padStart(2, "0")}.jpg` });
+  }
+  return pages;
+}
+
+function AdminBrochures() {
+  const utils = trpc.useUtils();
+  const brochures = trpc.admin.brochures.useQuery();
+  const [title, setTitle] = useState("Промо брошура");
+  const [activateNow, setActivateNow] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const activate = trpc.admin.activateBrochure.useMutation({ onSuccess: async () => { await Promise.all([utils.admin.brochures.invalidate(), utils.catalogue.brochure.invalidate(), utils.admin.operations.invalidate()]); toast("Брошурата е активна на началната страница."); } });
+  const archive = trpc.admin.archiveBrochure.useMutation({ onSuccess: async () => { await utils.admin.brochures.invalidate(); toast("Брошурата е архивирана."); } });
+  const upload = trpc.admin.uploadBrochure.useMutation({ onSuccess: async () => { await utils.admin.brochures.invalidate(); toast("Брошурата е качена като неактивна версия."); }, onError: (error) => toast(error.message || "Брошурата не можа да бъде качена.") });
+  const uploadPage = trpc.admin.uploadBrochurePage.useMutation();
+  const replace = trpc.admin.replaceBrochure.useMutation({ onSuccess: async () => { await Promise.all([utils.admin.brochures.invalidate(), utils.catalogue.brochure.invalidate(), utils.admin.operations.invalidate()]); toast("Новата брошура е активна на началната страница."); }, onError: (error) => toast(error.message || "Брошурата не можа да бъде заменена.") });
+  async function handlePdfUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isPdf || file.size > 20 * 1024 * 1024) { toast("Изберете PDF файл до 20 MB."); return; }
+    try {
+      setProcessing(true);
+      const pages = await brochurePagesFromPdf(file);
+      const pageUrls: string[] = [];
+      for (const page of pages) { const stored = await uploadPage.mutateAsync(page); pageUrls.push(stored.url); }
+      const payload = { title: title.trim() || "Промо брошура", pageUrls };
+      if (activateNow) replace.mutate(payload); else toast("Всички страници са качени. Активирайте версията след създаване на нов запис.");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "PDF файлът не може да бъде обработен.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+  const active = (brochures.data ?? []).find((brochure) => brochure.isActive);
+  return <section className="admin-workspace"><ShellHeading section="БРОШУРИ" title="Промоционални брошури" text="Качете PDF файл, страниците му се подготвят като slideshow и избраната версия се показва на началната страница." />
+    <section className="admin-brochure-command"><div><p className="admin-kicker">АКТИВНА ВЕРСИЯ</p><h2>{active?.title ?? "Няма активна брошура"}</h2><p>{active ? `${active.pageCount} страници · последна промяна ${active.updatedAt ? formatDate(active.updatedAt) : "—"}` : "Качете и активирайте първата брошура."}</p></div>{active?.pageUrls[0] && <img src={active.pageUrls[0]} alt="" />}</section>
+    <section className="admin-edit-panel admin-brochure-upload"><div className="admin-panel-head"><div><p className="admin-kicker">НОВА ВЕРСИЯ</p><h2>Качване на PDF брошура</h2></div><span className="admin-count">до 16 страници · до 20 MB</span></div><div className="admin-form-grid"><label>Заглавие на брошурата<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="напр. Промо брошура · септември 2026" /></label><label className="admin-checkbox"><input type="checkbox" checked={activateNow} onChange={(event) => setActivateNow(event.target.checked)} /> Активирай автоматично след качване</label></div><div className="admin-brochure-upload-zone"><FileUp size={30} /><div><b>{processing || uploadPage.isPending || upload.isPending || replace.isPending ? "Подготовка и качване..." : "Изберете PDF брошура"}</b><p>PDF страниците се превръщат в оптимизирани JPEG изображения и се качват една по една за надеждно homepage slideshow обновяване.</p></div><label className="admin-primary"><FileUp size={17} /> Избери PDF<input type="file" accept="application/pdf,.pdf" onChange={handlePdfUpload} disabled={processing || uploadPage.isPending || upload.isPending || replace.isPending || activate.isPending} /></label></div>{(upload.error || replace.error || uploadPage.error) && <p className="admin-form-error">{upload.error?.message ?? replace.error?.message ?? uploadPage.error?.message}</p>}</section>
+    <section className="admin-panel"><div className="admin-panel-head"><div><p className="admin-kicker">ВЕРСИИ</p><h2>История на брошурите</h2></div><span className="admin-count">{brochures.data?.length ?? 0} версии</span></div>{brochures.isLoading ? <LoadingState /> : <div className="admin-brochure-list">{(brochures.data ?? []).map((brochure: AdminBrochure) => <article key={brochure.id} className={brochure.isActive ? "is-active" : ""}><img src={brochure.pageUrls[0]} alt="" /><div><div className="admin-brochure-record-head"><span className={`admin-status ${brochure.isActive ? "availability-in_stock" : brochure.isArchived ? "availability-out_of_stock" : "availability-on_request"}`}>{brochure.isActive ? "Активна" : brochure.isArchived ? "Архив" : "Неактивна"}</span><small>{brochure.pageCount} страници</small></div><h3>{brochure.title}</h3><p>{brochure.updatedAt ? `Променена ${formatDate(brochure.updatedAt)}` : "Нова версия"}</p><div className="admin-brochure-actions">{brochure.sourcePdfUrl && <a href={brochure.sourcePdfUrl} target="_blank" rel="noreferrer"><Download size={15} /> PDF</a>}{!brochure.isActive && !brochure.isArchived && <button type="button" className="admin-primary" disabled={activate.isPending} onClick={() => activate.mutate({ id: brochure.id })}><FileCheck2 size={15} /> Активирай</button>}{!brochure.isActive && !brochure.isArchived && <button type="button" className="admin-text-action" disabled={archive.isPending} onClick={() => archive.mutate({ id: brochure.id })}><Archive size={15} /> Архивирай</button>}</div></div></article>)}</div>}</section>
+  </section>;
+}
+
+function ActivityLine({ activity, detailed = false }: { activity: { id: number; action: string; entityType: string; metadata: Record<string, unknown>; createdAt: Date; adminName: string }; detailed?: boolean }) { const label: Record<string, string> = { "product.created": "добави артикул", "product.updated": "обнови артикул", "category.created": "добави категория", "category.updated": "обнови категория", "inventory.adjusted": "коригира наличност", "promotion.updated": "обнови промоция", "order.updated": "обнови заявка", "product_image.uploaded": "качи изображение", "brochure.uploaded": "качи брошура", "brochure.activated": "активира брошура", "brochure.archived": "архивира брошура" }; return <div className="admin-activity-row"><span className="admin-activity-dot" /><div><b>{activity.adminName} {label[activity.action] ?? activity.action}</b><p>{String(activity.metadata.name ?? activity.metadata.title ?? activity.metadata.slug ?? activity.entityType)}{activity.metadata.delta ? ` · промяна: ${String(activity.metadata.delta)}` : ""}</p></div>{detailed && <small>{formatDate(activity.createdAt)}</small>}</div>; }
 function OrderCard({ order, busy, onSave }: { order: AdminOrder; busy: boolean; onSave: (status: OrderStatus, note: string | null) => void }) { const [status, setStatus] = useState<OrderStatus>(order.status); const [note, setNote] = useState(order.adminNote ?? ""); return <article className="admin-order-card"><div className="admin-order-product"><img src={order.productImageUrl} alt="" /><div><p className="admin-kicker">{order.requestNumber}</p><h3>{order.productName}</h3><span>Количество: {order.quantity}{order.totalEur ? ` · ${Number(order.totalEur).toFixed(2)}€` : " · По запитване"}</span></div></div><div className="admin-order-contact"><b>{order.fullName}</b><a href={`mailto:${order.email}`}>{order.email}</a><a href={`tel:${order.phone.replace(/[^0-9+]/g, "")}`}>{order.phone}</a><span>{order.address}, {order.postcode} {order.city}</span><small>{formatDate(order.createdAt)}</small></div><div className="admin-order-actions"><label>Статус<select value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>{(Object.keys(statusLabels) as OrderStatus[]).map((item) => <option key={item} value={item}>{statusLabels[item]}</option>)}</select></label><label>Вътрешна бележка<textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="видимо само за администратори" /></label><button type="button" className="admin-primary" disabled={busy} onClick={() => onSave(status, note.trim() || null)}><Save size={16} /> Запази</button></div></article>; }
 function LoadingState() { return <div className="admin-loading"><Loader2 size={22} className="animate-spin" /> Зареждане на данни…</div>; }
 function ErrorState() { return <div className="admin-error">Данните не могат да бъдат заредени в момента. Обновете страницата или проверете достъпа си.</div>; }
 function EmptyState({ icon: Icon, title, text }: { icon: typeof Archive; title: string; text: string }) { return <div className="admin-empty"><Icon size={25} /><h3>{title}</h3><p>{text}</p></div>; }
 function emptyProductForm(categoryId: number): ProductForm { return { categoryId, slug: "", sku: "", brand: "", name: "", description: "", imageUrl: "", galleryText: "", imageAlt: "", priceEur: "", priceBgn: "", oldPriceEur: "", oldPriceBgn: "", discountLabel: "", availability: "on_request", stockQuantity: "0", featuresText: "", isActive: true }; }
 function emptyCategoryForm(): CategoryForm { return { slug: "", name: "", description: "", imageUrl: "", icon: "drill", subcategoriesText: "", sortOrder: "0", isActive: true }; }
-function AdminWorkspace() { const [location] = useLocation(); if (location === "/admin/products") return <AdminProducts />; if (location === "/admin/inventory") return <AdminInventory />; if (location === "/admin/promotions") return <AdminPromotions />; if (location === "/admin/categories") return <AdminCategories />; if (location === "/admin/orders") return <AdminOrders />; if (location === "/admin/activity") return <AdminActivity />; return <AdminOverview />; }
+function AdminWorkspace() { const [location] = useLocation(); if (location === "/admin/products") return <AdminProducts />; if (location === "/admin/inventory") return <AdminInventory />; if (location === "/admin/promotions") return <AdminPromotions />; if (location === "/admin/brochures") return <AdminBrochures />; if (location === "/admin/categories") return <AdminCategories />; if (location === "/admin/orders") return <AdminOrders />; if (location === "/admin/activity") return <AdminActivity />; return <AdminOverview />; }
 export default function Admin() { return <DashboardLayout><AdminWorkspace /></DashboardLayout>; }

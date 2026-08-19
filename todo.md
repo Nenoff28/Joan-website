@@ -53,3 +53,7 @@
 - [x] Remove the homepage store-visit action and retitle the brochure CTA with smooth scrolling.
 - [x] Replace the homepage current-catalogue module with an accessible brochure slideshow.
 - [x] Verify desktop/mobile brochure controls and save the homepage brochure update checkpoint.
+- [x] Define the managed brochure record, secure upload limits, activation rules, and public rendering contract.
+- [x] Add database-backed brochure storage metadata and administrator-only upload, replacement, activation, and archive procedures.
+- [x] Build a dedicated brochure-management workspace in the administrator panel and connect the homepage to the active brochure record.
+- [x] Verify brochure upload/replacement, active public slideshow behavior, responsive layout, and save the management-workflow checkpoint.

@@ -3,18 +3,25 @@ import type { TrpcContext } from "./_core/context";
 
 const service = vi.hoisted(() => ({
   adjustProductStock: vi.fn(),
+  activateAdminBrochure: vi.fn(),
+  archiveAdminBrochure: vi.fn(),
   createAdminProduct: vi.fn(),
   createOrderRequest: vi.fn(),
   getAdminCategories: vi.fn(),
+  getAdminBrochures: vi.fn(),
   getAdminOrders: vi.fn(),
   getAdminProducts: vi.fn(),
   getAdminSummary: vi.fn(),
   getAdminOperations: vi.fn(),
   getPublicCatalogue: vi.fn(),
+  getPublicBrochure: vi.fn(),
+  replaceAdminBrochure: vi.fn(),
   saveAdminCategory: vi.fn(),
   saveProductPromotion: vi.fn(),
   updateAdminProduct: vi.fn(),
   updateOrderRequest: vi.fn(),
+  uploadAdminBrochure: vi.fn(),
+  uploadBrochurePage: vi.fn(),
   uploadProductImage: vi.fn(),
 }));
 
@@ -84,5 +91,48 @@ describe("administrator management procedures", () => {
     service.createOrderRequest.mockResolvedValueOnce({ requestNumber: "J-20260819-TEST1" });
     const caller = appRouter.createCaller({ ...adminContext(), user: null });
     await expect(caller.catalogue.createOrderRequest({ productSlug: "instrumenti-test-1", quantity: 1, fullName: "Catalogue customer", email: "customer@example.com", phone: "+359888111222", address: "Example address 22", city: "Silistra", postcode: "7500" })).resolves.toEqual({ requestNumber: "J-20260819-TEST1" });
+  });
+
+  it("passes a validated brochure PDF and its rendered pages to the authenticated administrator service", async () => {
+    const sourcePdf = "data:application/pdf;base64,UEZERGF0YQ==";
+    const pageData = "data:image/jpeg;base64,SlBFR0RhdGE=";
+    service.uploadAdminBrochure.mockResolvedValueOnce({ id: 28, pageCount: 1 });
+    const caller = appRouter.createCaller(adminContext());
+    const input = { title: "September brochure", sourcePdf: { dataUrl: sourcePdf, fileName: "september.pdf" }, pages: [{ dataUrl: pageData, fileName: "page-01.jpg" }] };
+    await expect(caller.admin.uploadBrochure(input)).resolves.toEqual({ id: 28, pageCount: 1 });
+    expect(service.uploadAdminBrochure).toHaveBeenCalledWith(input, 17);
+  });
+
+  it("activates a brochure through the protected lifecycle procedure", async () => {
+    service.activateAdminBrochure.mockResolvedValueOnce(undefined);
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.activateBrochure({ id: 28 })).resolves.toBeUndefined();
+    expect(service.activateAdminBrochure).toHaveBeenCalledWith(28, 17);
+  });
+
+  it("replaces the active brochure through one protected upload-and-activation workflow", async () => {
+    const sourcePdf = "data:application/pdf;base64,UEZERGF0YQ==";
+    const pageData = "data:image/jpeg;base64,SlBFR0RhdGE=";
+    const input = { title: "Replacement brochure", pageUrls: ["/manus-storage/brochures/page-01.jpg"] };
+    service.replaceAdminBrochure.mockResolvedValueOnce({ id: 29, pageCount: 1 });
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.replaceBrochure(input)).resolves.toEqual({ id: 29, pageCount: 1 });
+    expect(service.replaceAdminBrochure).toHaveBeenCalledWith(input, 17);
+  });
+
+  it("stores an individual rendered brochure page through the protected page-upload procedure", async () => {
+    const input = { dataUrl: "data:image/jpeg;base64,SlBFR0RhdGE=", fileName: "page-01.jpg" };
+    const stored = { key: "brochures/pages/page-01.jpg", url: "/manus-storage/brochures/pages/page-01.jpg" };
+    service.uploadBrochurePage.mockResolvedValueOnce(stored);
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.uploadBrochurePage(input)).resolves.toEqual(stored);
+    expect(service.uploadBrochurePage).toHaveBeenCalledWith(input, 17);
+  });
+
+  it("returns the active brochure through the public homepage procedure", async () => {
+    const brochure = { id: 1, title: "Active brochure", pageUrls: ["/manus-storage/page.jpg"], pageCount: 1, sourcePdfUrl: "/manus-storage/brochure.pdf", isActive: true, isArchived: false, createdAt: new Date(), updatedAt: new Date(), isManaged: true };
+    service.getPublicBrochure.mockResolvedValueOnce(brochure);
+    const caller = appRouter.createCaller({ ...adminContext(), user: null });
+    await expect(caller.catalogue.brochure()).resolves.toEqual(brochure);
   });
 });

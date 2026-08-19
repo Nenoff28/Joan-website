@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueCategories, catalogueProducts, orderRequests, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProducts, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 
@@ -46,6 +46,19 @@ const availabilityLabels: Record<ProductAvailability, string> = {
   out_of_stock: "Изчерпан",
 };
 
+export type BrochureUploadPayload = {
+  title: string;
+  sourcePdf?: { dataUrl: string; fileName: string };
+  pages: Array<{ dataUrl: string; fileName: string }>;
+};
+
+export type BrochureReplacementPayload = { title: string; pageUrls: string[] };
+
+const fallbackBrochurePages = [
+  "/manus-storage/page-1_7884f6f6.jpg", "/manus-storage/page-2_9b25fc80.jpg", "/manus-storage/page-3_6c0ba892.jpg", "/manus-storage/page-4_b096aaa9.jpg",
+  "/manus-storage/page-5_a794f27b.jpg", "/manus-storage/page-6_be1779c9.jpg", "/manus-storage/page-7_4cdd94c0.jpg", "/manus-storage/page-8_d10987e1.jpg",
+];
+
 function parseJsonArray(value: string) {
   try {
     const parsed = JSON.parse(value);
@@ -78,11 +91,17 @@ async function requireDb() {
 }
 
 let seeded: Promise<void> | null = null;
+let brochureSeeded: Promise<void> | null = null;
 
 /** Imports the existing public catalogue once, keeping current routes stable while admin management takes over. */
 export function ensureCatalogueSeeded() {
   if (!seeded) seeded = seedCatalogue();
   return seeded;
+}
+
+function ensureBrochureSeeded() {
+  if (!brochureSeeded) brochureSeeded = seedBrochure();
+  return brochureSeeded;
 }
 
 async function seedCatalogue() {
@@ -136,6 +155,13 @@ async function seedCatalogue() {
   }
 }
 
+async function seedBrochure() {
+  const db = await requireDb();
+  const [existing] = await db.select({ total: count() }).from(catalogueBrochures);
+  if ((existing?.total ?? 0) > 0) return;
+  await db.insert(catalogueBrochures).values({ title: "Промо брошура · август 2026", sourcePdfKey: null, sourcePdfUrl: null, pageUrlsJson: JSON.stringify(fallbackBrochurePages), pageCount: fallbackBrochurePages.length, isActive: true, isArchived: false });
+}
+
 function publicCategory(category: typeof catalogueCategories.$inferSelect) {
   return {
     id: category.id,
@@ -173,6 +199,18 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
   };
 }
 
+function publicBrochure(brochure: typeof catalogueBrochures.$inferSelect) {
+  const pageUrls = parseJsonArray(brochure.pageUrlsJson);
+  return { id: brochure.id, title: brochure.title, pageUrls, pageCount: brochure.pageCount, sourcePdfUrl: brochure.sourcePdfUrl, isActive: brochure.isActive, isArchived: brochure.isArchived, createdAt: brochure.createdAt, updatedAt: brochure.updatedAt, isManaged: true };
+}
+
+export async function getPublicBrochure() {
+  await ensureBrochureSeeded();
+  const db = await requireDb();
+  const [brochure] = await db.select().from(catalogueBrochures).where(and(eq(catalogueBrochures.isActive, true), eq(catalogueBrochures.isArchived, false))).orderBy(desc(catalogueBrochures.updatedAt)).limit(1);
+  return brochure ? publicBrochure(brochure) : { id: 0, title: "Промо брошура", pageUrls: fallbackBrochurePages, pageCount: fallbackBrochurePages.length, sourcePdfUrl: null, isActive: true, isArchived: false, createdAt: null, updatedAt: null, isManaged: false };
+}
+
 export async function getPublicCatalogue() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
@@ -188,6 +226,13 @@ export async function getAdminCategories() {
   const db = await requireDb();
   const rows = await db.select().from(catalogueCategories).orderBy(asc(catalogueCategories.sortOrder));
   return rows.map((category) => ({ ...publicCategory(category), sortOrder: category.sortOrder, isActive: category.isActive }));
+}
+
+export async function getAdminBrochures() {
+  await ensureBrochureSeeded();
+  const db = await requireDb();
+  const rows = await db.select().from(catalogueBrochures).orderBy(desc(catalogueBrochures.updatedAt));
+  return rows.map(publicBrochure);
 }
 
 export async function getAdminProducts() {
@@ -335,4 +380,81 @@ export async function uploadProductImage(input: { dataUrl: string; fileName: str
   const stored = await storagePut(`catalogue/admin/${safeName}.${extension}`, bytes, contentType);
   await logAdminActivity(adminUserId, "product_image.uploaded", "product_image", null, { key: stored.key });
   return stored;
+}
+
+function decodeDataUrl(dataUrl: string, expression: RegExp, message: string) {
+  const match = dataUrl.match(expression);
+  if (!match) throw new Error(message);
+  return Buffer.from(match[1], "base64");
+}
+
+function safeBrochureName(fileName: string, fallback: string) {
+  return fileName.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80) || fallback;
+}
+
+export async function uploadAdminBrochure(input: BrochureUploadPayload, adminUserId: number) {
+  if (input.pages.length === 0 || input.pages.length > 16) throw new Error("Brochures must contain between 1 and 16 rendered pages");
+  const reference = randomUUID();
+  let sourcePdf: { key: string; url: string } | null = null;
+  if (input.sourcePdf) {
+    const pdfBytes = decodeDataUrl(input.sourcePdf.dataUrl, /^data:(?:application|binary)\/(?:pdf|octet-stream);base64,([A-Za-z0-9+/=]+)$/, "A valid PDF brochure is required");
+    if (pdfBytes.length === 0 || pdfBytes.length > 20 * 1024 * 1024) throw new Error("PDF brochures must be between 1 byte and 20 MB");
+    if (pdfBytes.subarray(0, 4).toString("ascii") !== "%PDF") throw new Error("The uploaded file is not a valid PDF brochure");
+    const safePdfName = safeBrochureName(input.sourcePdf.fileName.replace(/\.pdf$/i, ""), "brochure");
+    sourcePdf = await storagePut(`brochures/${reference}/${safePdfName}.pdf`, pdfBytes, "application/pdf");
+  }
+  const pageUrls: string[] = [];
+  for (let index = 0; index < input.pages.length; index += 1) {
+    const page = input.pages[index];
+    const pageBytes = decodeDataUrl(page.dataUrl, /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/, "Brochure pages must be JPEG images");
+    if (pageBytes.length === 0 || pageBytes.length > 3 * 1024 * 1024) throw new Error("Each brochure page must be between 1 byte and 3 MB");
+    const safePageName = safeBrochureName(page.fileName.replace(/\.(jpg|jpeg)$/i, ""), `page-${index + 1}`);
+    const stored = await storagePut(`brochures/${reference}/${String(index + 1).padStart(2, "0")}-${safePageName}.jpg`, pageBytes, "image/jpeg");
+    pageUrls.push(stored.url);
+  }
+  const db = await requireDb();
+  const result = await db.insert(catalogueBrochures).values({ title: input.title.trim(), sourcePdfKey: sourcePdf?.key ?? null, sourcePdfUrl: sourcePdf?.url ?? null, pageUrlsJson: JSON.stringify(pageUrls), pageCount: pageUrls.length, isActive: false, isArchived: false });
+  const id = Number(result[0].insertId);
+  await logAdminActivity(adminUserId, "brochure.uploaded", "brochure", id, { title: input.title.trim(), pageCount: pageUrls.length, sourcePdfKey: sourcePdf?.key ?? null });
+  return { id, pageCount: pageUrls.length };
+}
+
+export async function uploadBrochurePage(input: { dataUrl: string; fileName: string }, adminUserId: number) {
+  const pageBytes = decodeDataUrl(input.dataUrl, /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/, "Brochure pages must be JPEG images");
+  if (pageBytes.length === 0 || pageBytes.length > 3 * 1024 * 1024) throw new Error("Each brochure page must be between 1 byte and 3 MB");
+  const safePageName = safeBrochureName(input.fileName.replace(/\.(jpg|jpeg)$/i, ""), "brochure-page");
+  const stored = await storagePut(`brochures/pages/${randomUUID()}-${safePageName}.jpg`, pageBytes, "image/jpeg");
+  await logAdminActivity(adminUserId, "brochure.page_uploaded", "brochure_page", null, { key: stored.key });
+  return stored;
+}
+
+export async function activateAdminBrochure(id: number, adminUserId: number) {
+  const db = await requireDb();
+  const [brochure] = await db.select().from(catalogueBrochures).where(eq(catalogueBrochures.id, id)).limit(1);
+  if (!brochure || brochure.isArchived) throw new Error("Brochure is unavailable for activation");
+  await db.transaction(async (tx) => {
+    await tx.update(catalogueBrochures).set({ isActive: false }).where(eq(catalogueBrochures.isActive, true));
+    await tx.update(catalogueBrochures).set({ isActive: true, isArchived: false }).where(eq(catalogueBrochures.id, id));
+  });
+  await logAdminActivity(adminUserId, "brochure.activated", "brochure", id, { title: brochure.title, pageCount: brochure.pageCount });
+}
+
+export async function replaceAdminBrochure(input: BrochureReplacementPayload, adminUserId: number) {
+  if (input.pageUrls.length === 0 || input.pageUrls.length > 16 || input.pageUrls.some((url) => !url.startsWith("/manus-storage/"))) throw new Error("Brochure replacement requires between 1 and 16 managed page images");
+  const db = await requireDb();
+  const result = await db.insert(catalogueBrochures).values({ title: input.title.trim(), sourcePdfKey: null, sourcePdfUrl: null, pageUrlsJson: JSON.stringify(input.pageUrls), pageCount: input.pageUrls.length, isActive: false, isArchived: false });
+  const id = Number(result[0].insertId);
+  await logAdminActivity(adminUserId, "brochure.uploaded", "brochure", id, { title: input.title.trim(), pageCount: input.pageUrls.length, sourcePdfKey: null });
+  await activateAdminBrochure(id, adminUserId);
+  await logAdminActivity(adminUserId, "brochure.replaced", "brochure", id, { title: input.title.trim(), pageCount: input.pageUrls.length });
+  return { id, pageCount: input.pageUrls.length };
+}
+
+export async function archiveAdminBrochure(id: number, adminUserId: number) {
+  const db = await requireDb();
+  const [brochure] = await db.select().from(catalogueBrochures).where(eq(catalogueBrochures.id, id)).limit(1);
+  if (!brochure) throw new Error("Brochure was not found");
+  if (brochure.isActive) throw new Error("Activate another brochure before archiving the current one");
+  await db.update(catalogueBrochures).set({ isArchived: true }).where(eq(catalogueBrochures.id, id));
+  await logAdminActivity(adminUserId, "brochure.archived", "brochure", id, { title: brochure.title });
 }
