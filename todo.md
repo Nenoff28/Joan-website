@@ -57,3 +57,10 @@
 - [x] Add database-backed brochure storage metadata and administrator-only upload, replacement, activation, and archive procedures.
 - [x] Build a dedicated brochure-management workspace in the administrator panel and connect the homepage to the active brochure record.
 - [x] Verify brochure upload/replacement, active public slideshow behavior, responsive layout, and save the management-workflow checkpoint.
+- [x] Define the accessible 3D brochure-viewer motion, focus, and compact-navigation model.
+- [x] Replace the flat brochure stage and full thumbnail strip with a tactile 3D page experience and compact navigation.
+- [x] Verify the 3D viewer across desktop/mobile, reduced-motion preferences, and save the redesign checkpoint.
+- [x] Verify the 3D brochure viewer behavior when reduced motion is preferred.
+- [x] Run a browser-level reduced-motion rendering check for the 3D brochure viewer before the redesign checkpoint.
+- [x] Save the verified 3D brochure-viewer redesign checkpoint.
+- [x] Save the verified 3D brochure-viewer redesign checkpoint.
