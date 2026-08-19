@@ -7,3 +7,5 @@
 - [x] Build the live Joan catalogue bridge using verified real-store routes.
 - [x] Add accessible smooth scrolling to the homepage catalogue CTA.
 - [x] Verify CTA scrolling, external catalogue routing, and responsive behavior; save a delivery checkpoint.
+- [x] Add subtle hover and focus-visible animations to the live catalogue bridge cards.
+- [x] Verify desktop/mobile behavior and save the interaction refinement checkpoint.

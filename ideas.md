@@ -78,3 +78,5 @@ The Joan mark is a confident red **J** constructed from a vertical steel-like ba
 - The red Joan J and custom JOAN wordmark remain primary. The legacy yellow store badge is a subdued secondary heritage stamp only.
 - Joan Signal Red is the sole warm visual emphasis; hero type remains neutral while red communicates actions, rails, status, and promotion.
 - Homepage category and product modules use numbering, red edge rails, compact operating metadata, and hairline dividers to reinforce the trade-catalog system.
+- Every homepage module carries a retail utility signal—category route, availability/service cue, location cue, price/product cue, or compact catalog metadata.
+- Editorial and support blocks reuse the same workbench grammar: red signal rails, indexed bays, hairline dividers, compact facts, and direct operational copy.
