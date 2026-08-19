@@ -3,9 +3,10 @@
  * Joan Signal Red denotes action and selection only; neutral mineral surfaces keep products primary.
  */
 import { Button } from "@/components/ui/button";
-import { categories, products, store, type Product } from "@/lib/storeData";
+import { store, type Product } from "@/lib/storeData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
@@ -83,6 +84,7 @@ function Wordmark() {
 function Header() {
   const { language, setLanguage, t } = useLanguage();
   const { count } = useFavorites();
+  const { categories, products } = useCatalogue();
   const [location, setLocation] = useLocation();
   const [megaOpen, setMegaOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -243,6 +245,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
 function Footer() {
   const { t } = useLanguage();
+  const { categories } = useCatalogue();
   const [location] = useLocation();
   const isContactPage = location === "/contact";
   return (

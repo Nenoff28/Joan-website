@@ -1,6 +1,7 @@
 /** DESIGN REMINDER — Red Workshop Modernism: cinematic video entry, search-forward utility, material-led category discovery, and controlled Joan-red signals. */
 import { CategoryIcon, JsonLd, Layout, PageMeta, ProductCard, SectionHeading, ServiceStrip } from "@/components/Storefront";
-import { categories, products, store } from "@/lib/storeData";
+import { store } from "@/lib/storeData";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { ArrowRight, ChevronRight, ExternalLink, MapPin, PlayCircle, Search, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 
@@ -12,6 +13,7 @@ const liveCatalogueRoutes = [
 ];
 
 export default function Home() {
+  const { categories, products } = useCatalogue();
   function scrollToLiveCatalogue(event: React.MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
     const target = document.getElementById("live-catalogue");

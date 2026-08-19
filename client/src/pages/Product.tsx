@@ -2,7 +2,7 @@
 import { Breadcrumbs, JsonLd, Layout, PageMeta, ProductCard, SectionHeading } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
-import { categories, products } from "@/lib/storeData";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { Check, ChevronRight, Heart, MessageSquareText, Minus, Plus, Scale, ShieldCheck, ShoppingCart, Truck, X, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ export default function Product() {
   const { t } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [, params] = useRoute("/product/:slug");
+  const { categories, products } = useCatalogue();
   const product = products.find((item) => item.slug === params?.slug) ?? products[0];
   const category = categories.find((item) => item.slug === product.category);
   const [quantity, setQuantity] = useState(1);

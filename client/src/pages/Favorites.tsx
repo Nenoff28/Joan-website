@@ -2,13 +2,14 @@
 import { Breadcrumbs, Layout, PageMeta } from "@/components/Storefront";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { products } from "@/lib/storeData";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { ArrowRight, Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Favorites() {
   const { t } = useLanguage();
   const { count, isFavorite, removeFavorite, clearFavorites } = useFavorites();
+  const { products } = useCatalogue();
   const savedProducts = products.filter((product) => isFavorite(product.slug));
 
   return <Layout>

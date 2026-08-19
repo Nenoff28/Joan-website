@@ -33,3 +33,13 @@
 - [x] Wire save/remove actions across product cards and product detail pages.
 - [x] Add a responsive Favorites page with empty, saved-product, remove, and checkout states.
 - [x] Verify persistence and responsive behavior, then save a delivery checkpoint.
+- [x] Define the administrator roles, product/category/order data model, and workflow boundaries.
+- [x] Upgrade the static storefront to authenticated database-backed infrastructure.
+- [x] Verify the full-stack build, public storefront routes, and tRPC provider after the upgrade.
+- [x] Verify the unauthenticated and administrator access boundaries for the upgraded authentication foundation.
+- [x] Add secure administrator APIs and persistence for products, categories, inventory, and order requests.
+- [x] Build a responsive administrator dashboard with overview, catalogue, and order-management views.
+- [x] Verify permissions, CRUD flows, customer catalogue continuity, and save an admin-platform checkpoint.
+- [x] Reconfirm authenticated owner access across the live administrator views and read paths.
+- [x] Perform a reversible live product/category update through the management service and verify public catalogue continuity without creating synthetic customer orders.
+- [x] Save the administrator platform checkpoint after final authenticated and live-data verification.

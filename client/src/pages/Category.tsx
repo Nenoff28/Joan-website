@@ -1,6 +1,6 @@
 /** DESIGN REMINDER — Red Workshop Modernism: a filterable workbench for fast product discovery, with Joan-red only on active decisions. */
 import { Breadcrumbs, CategoryIcon, JsonLd, Layout, PageMeta, ProductCard } from "@/components/Storefront";
-import { categories, products } from "@/lib/storeData";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import { ChevronDown, Grid2X2, ListFilter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRoute } from "wouter";
@@ -9,6 +9,7 @@ const priceOf = (value?: string) => Number(value?.replace("€", "") ?? 0);
 
 export default function Category() {
   const [, params] = useRoute("/category/:slug");
+  const { categories, products } = useCatalogue();
   const category = categories.find((item) => item.slug === params?.slug) ?? categories[0];
   const [sort, setSort] = useState("relevance");
   const [filtersOpen, setFiltersOpen] = useState(false);

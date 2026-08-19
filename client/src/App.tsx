@@ -15,9 +15,10 @@ import Delivery from "./pages/Delivery";
 import Terms from "./pages/Terms";
 import Checkout from "./pages/Checkout";
 import Favorites from "./pages/Favorites";
-
+import Admin from "./pages/Admin";
 
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
@@ -29,6 +30,8 @@ function Router() {
       <Route path={"/terms"} component={Terms} />
       <Route path={"/checkout"} component={Checkout} />
       <Route path={"/favorites"} component={Favorites} />
+      <Route path={"/admin/:section"} component={Admin} />
+      <Route path={"/admin"} component={Admin} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
