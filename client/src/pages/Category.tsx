@@ -12,7 +12,14 @@ export default function Category() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState("Всички марки");
   const categoryProducts = useMemo(() => products.filter((product) => product.category === category.slug), [category.slug]);
-  const visibleProducts = useMemo(() => selectedBrand === "Всички марки" ? categoryProducts : categoryProducts.filter((item) => item.brand === selectedBrand), [categoryProducts, selectedBrand]);
+  const visibleProducts = useMemo(() => {
+    const filtered = selectedBrand === "Всички марки" ? categoryProducts : categoryProducts.filter((item) => item.brand === selectedBrand);
+    return [...filtered].sort((left, right) => {
+      if (sort === "price") return Number(left.price?.replace("€", "") ?? 0) - Number(right.price?.replace("€", "") ?? 0);
+      if (sort === "name") return left.name.localeCompare(right.name, "bg");
+      return 0;
+    });
+  }, [categoryProducts, selectedBrand, sort]);
   const brands = ["Всички марки", ...Array.from(new Set(categoryProducts.map((product) => product.brand).filter((brand): brand is string => Boolean(brand))))];
 
   return <Layout>

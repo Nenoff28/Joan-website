@@ -13,7 +13,7 @@ export default function Product() {
   const product = products.find((item) => item.slug === params?.slug) ?? products[0];
   const category = categories.find((item) => item.slug === product.category);
   const [quantity, setQuantity] = useState(1);
-  const related = products.filter((item) => item.slug !== product.slug).slice(0, 3);
+  const related = products.filter((item) => item.category === product.category && item.slug !== product.slug).slice(0, 3);
   return <Layout>
     <PageMeta title={product.name} description={product.description} />
     <JsonLd product={product} />

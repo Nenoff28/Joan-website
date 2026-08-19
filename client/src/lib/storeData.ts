@@ -106,57 +106,110 @@ export const categories = [
   },
 ] as const;
 
-export const products: Product[] = [
-  {
-    slug: "rtrmax-bormashina-udarna-710w-13mm-x-lion",
-    brand: "RTRMAX",
-    name: "Бормашина ударна 710W 13мм X-LION",
-    image: "/manus-storage/joan-rtrmax-drill_0666e8cc.webp",
-    imageAlt: "RTRMAX Бормашина ударна 710W 13мм X-LION",
-    price: "34.90€",
-    priceBgn: "68.26 лв",
-    oldPrice: "42.33€",
-    oldPriceBgn: "82.79 лв",
-    discount: "-18%",
-    category: "instrumenti",
-    availability: "Попитайте за наличност",
-    features: ["710W", "Патронник 13 мм", "Ударна функция"],
-    description: "Представителен продукт от текущите промоции на Joan. Пълните технически данни и актуалната наличност се потвърждават при запитване.",
-  },
-  {
-    slug: "casa-bella-boya-saten-650ml-bejeva",
-    brand: "Casa Bella",
-    name: "Боя Каса Бела сатен 650 мл бежева",
-    image: "/manus-storage/joan-casa-bella-paint_5d0aa89b.webp",
-    imageAlt: "Casa Bella Боя Каса Бела сатен 650 мл бежева",
-    category: "boi-lakove-mazilki",
-    availability: "Попитайте за наличност",
-    features: ["Сатенен финиш", "650 мл", "Бежев цвят"],
-    description: "Представителна боя Casa Bella от видимите текущи предложения на Joan. Изпратете запитване за актуална цена и наличност.",
-  },
-  {
-    slug: "baumit-beton-25kg",
-    brand: "Baumit",
-    name: "Баумит бетон 25кг",
-    image: "/manus-storage/joan-baumit-beton_20236779.webp",
-    imageAlt: "Baumit бетон 25 кг",
-    category: "stroitelstvo",
-    availability: "Попитайте за наличност",
-    features: ["25 кг", "Бетонова смес", "Строителни материали"],
-    description: "Представителен продукт Baumit от текущия Joan каталог. Подробности за приложение и наличност се потвърждават от екипа на магазина.",
-  },
-  {
-    slug: "tesy-boyler-100l-gcv1004430-b12-tsr",
-    brand: "TESY",
-    name: "Бойлер Tesy 100л GCV1004430 B12 TSR",
-    image: "/manus-storage/joan-tesy-boiler_299208a4.webp",
-    imageAlt: "TESY Бойлер 100 л GCV1004430 B12 TSR",
-    category: "za-doma",
-    availability: "Попитайте за наличност",
-    features: ["100 л", "TESY", "За дома"],
-    description: "Представителен бойлер TESY от текущия Joan каталог. За точни технически параметри и доставка, изпратете запитване.",
-  },
-];
+type ProductSeed = { name: string; brand: string; price: number; features: string[]; promo?: boolean };
+
+/** Test-only catalogue coverage: five unique browseable records for every category. */
+const testCatalogue: Record<string, ProductSeed[]> = {
+  instrumenti: [
+    { name: "Ударна бормашина 710W", brand: "R-Max", price: 34.9, features: ["710W", "Патронник 13 мм", "Ударна функция"], promo: true },
+    { name: "Акумулаторен винтоверт 18V", brand: "Workline", price: 58.5, features: ["18V", "2 батерии", "LED осветление"] },
+    { name: "Ъглошлайф 125 мм", brand: "IronCore", price: 42.75, features: ["850W", "Диск 125 мм", "Защитен кожух"] },
+    { name: "Лазерен нивелир 360°", brand: "ProMetric", price: 79.9, features: ["Зелен лъч", "360°", "Самонивелиране"] },
+    { name: "Комплект ръчни инструменти 108 части", brand: "Workline", price: 64.2, features: ["108 части", "Cr-V стомана", "Куфар"] },
+  ],
+  gradina: [
+    { name: "Електрически тример 1200W", brand: "GreenTask", price: 54.9, features: ["1200W", "Регулируема дръжка", "Корда 1.6 мм"], promo: true },
+    { name: "Градински маркуч 20 м", brand: "AquaLine", price: 22.4, features: ["20 м", "3/4 инча", "UV защита"] },
+    { name: "Комплект за поливане 5 части", brand: "AquaLine", price: 18.9, features: ["5 части", "Бързи връзки", "Регулируема струя"] },
+    { name: "Градинска ножица с байпас", brand: "GreenTask", price: 14.6, features: ["Стоманено острие", "Ергономична дръжка", "До 20 мм"] },
+    { name: "Сгъваем градински стол", brand: "OutdoorPro", price: 39.5, features: ["Стоманена рамка", "Сгъваем", "До 110 кг"] },
+  ],
+  "za-doma": [
+    { name: "Конвекторен отоплител 2000W", brand: "HomeHeat", price: 88.9, features: ["2000W", "Термостат", "Защита от прегряване"], promo: true },
+    { name: "Електрическа кана 1.7 л", brand: "Domus", price: 24.5, features: ["1.7 л", "2200W", "Автоматично изключване"] },
+    { name: "Органайзер с 24 отделения", brand: "SortBox", price: 12.8, features: ["24 отделения", "Прозрачен капак", "Сгъваема дръжка"] },
+    { name: "Прахосмукачка за сухо и мокро", brand: "CleanForce", price: 69.4, features: ["20 л", "1400W", "Мокро и сухо"] },
+    { name: "Сушилник за дрехи 18 м", brand: "Domus", price: 27.3, features: ["18 м", "Стоманена рамка", "Сгъваем"] },
+  ],
+  banya: [
+    { name: "Смесител за мивка хром", brand: "AquaForm", price: 47.6, features: ["Керамична глава", "Хром", "Гъвкави връзки"], promo: true },
+    { name: "Душ слушалка с 3 функции", brand: "AquaForm", price: 18.4, features: ["3 струи", "Антиваровик", "Универсална резба"] },
+    { name: "Шкаф за баня 60 см", brand: "BathLine", price: 129.9, features: ["60 см", "Влагоустойчив", "Soft-close"] },
+    { name: "Огледало с LED осветление", brand: "BathLine", price: 98.5, features: ["60 × 80 см", "LED", "IP44"] },
+    { name: "Сифон за мивка с клапа", brand: "PipeMate", price: 11.7, features: ["1 1/4", "Хромирана клапа", "Регулируем"] },
+  ],
+  osvetlenie: [
+    { name: "LED панел 18W кръгъл", brand: "LumenPro", price: 13.9, features: ["18W", "4000K", "Вграден драйвер"], promo: true },
+    { name: "LED крушка E27 10W", brand: "LumenPro", price: 3.8, features: ["10W", "806 lm", "3000K"] },
+    { name: "Двоен контакт със заземяване", brand: "Electra", price: 6.9, features: ["16A", "Заземяване", "Бял"] },
+    { name: "Кабел ШВПС 3 × 1.5 мм 10 м", brand: "Cablex", price: 19.6, features: ["10 м", "3 × 1.5 мм", "Медни жила"] },
+    { name: "Автоматичен предпазител C16", brand: "Electra", price: 7.4, features: ["C16", "1P", "6kA"] },
+  ],
+  "podovi-i-stenni-pokritiya": [
+    { name: "Гранитогрес 60 × 60 см", brand: "SurfaceLab", price: 18.9, features: ["60 × 60 см", "Матиран", "PEI IV"], promo: true },
+    { name: "Ламинат AC4 дъб натурал", brand: "FloorCraft", price: 16.7, features: ["AC4", "8 мм", "Клик система"] },
+    { name: "Лепило за плочки 25 кг", brand: "TileBond", price: 9.8, features: ["25 кг", "C2TE", "За вътрешно"] },
+    { name: "Фугираща смес 2 кг", brand: "TileBond", price: 6.2, features: ["2 кг", "Водоустойчива", "Сива"] },
+    { name: "PVC перваз 2.5 м", brand: "FloorCraft", price: 4.6, features: ["2.5 м", "PVC", "Кабелен канал"] },
+  ],
+  "v-i-k": [
+    { name: "PP-R тръба 20 мм 4 м", brand: "PipeMate", price: 8.9, features: ["20 мм", "4 м", "PP-R"], promo: true },
+    { name: "Месингов сферичен кран 1/2", brand: "ValvePro", price: 7.6, features: ["1/2", "Месинг", "Пълнопроходен"] },
+    { name: "Гъвкава връзка 50 см", brand: "PipeMate", price: 4.2, features: ["50 см", "1/2", "Неръждаема оплетка"] },
+    { name: "Сифон за под ф50", brand: "DrainLine", price: 12.5, features: ["Ф50", "Нисък профил", "Решетка инокс"] },
+    { name: "Фитинг коляно 90° 20 мм", brand: "PipeMate", price: 2.8, features: ["20 мм", "90°", "PP-R"] },
+  ],
+  "vrati-obkov-krepezhi": [
+    { name: "Интериорна врата дъб 80 см", brand: "DoorLine", price: 159.9, features: ["80 см", "MDF", "Каса включена"], promo: true },
+    { name: "Комплект дръжки за врата", brand: "LockCraft", price: 24.6, features: ["Алуминий", "Розетка", "Крепежи"] },
+    { name: "Панта с лагер 100 мм", brand: "LockCraft", price: 5.3, features: ["100 мм", "С лагер", "Стомана"] },
+    { name: "Дюбел с винт 8 × 60", brand: "FixPoint", price: 6.8, features: ["50 броя", "8 × 60", "Найлон"] },
+    { name: "Патрон за брава 30/30", brand: "DoorLine", price: 18.7, features: ["30/30", "3 ключа", "Месинг"] },
+  ],
+  "boi-lakove-mazilki": [
+    { name: "Интериорен латекс 5 л", brand: "ColorGrid", price: 22.9, features: ["5 л", "Мат", "Покривност 12 м²/л"], promo: true },
+    { name: "Фасадна боя 10 л", brand: "ColorGrid", price: 44.8, features: ["10 л", "Силиконова", "UV защита"] },
+    { name: "Декоративна мазилка 25 кг", brand: "PlasterPro", price: 28.6, features: ["25 кг", "Минерална", "1.5 мм"] },
+    { name: "Комплект четки 3 броя", brand: "PaintFlow", price: 9.5, features: ["3 броя", "Естествен косъм", "Дървена дръжка"] },
+    { name: "Валяк микрофибър 25 см", brand: "PaintFlow", price: 7.8, features: ["25 см", "Микрофибър", "За латекс"] },
+  ],
+  stroitelstvo: [
+    { name: "Цимент 25 кг", brand: "BuildCore", price: 6.9, features: ["25 кг", "CEM II", "За зидария"], promo: true },
+    { name: "Газобетонен блок 60 × 25 × 10", brand: "BlockPro", price: 4.5, features: ["60 × 25 × 10", "Газобетон", "Топлоизолация"] },
+    { name: "XPS изолация 5 см", brand: "ThermoGrid", price: 11.8, features: ["5 см", "XPS", "125 kPa"] },
+    { name: "Лепило за топлоизолация 25 кг", brand: "BuildCore", price: 10.6, features: ["25 кг", "За EPS/XPS", "Сиво"] },
+    { name: "Бетонова смес 25 кг", brand: "BuildCore", price: 7.7, features: ["25 кг", "Бързосвързваща", "За дребни ремонти"] },
+  ],
+  "rabotno-obleklo": [
+    { name: "Работни обувки S3", brand: "SafeStep", price: 48.9, features: ["S3", "Стоманено бомбе", "Антистатични"], promo: true },
+    { name: "Защитни ръкавици нитрил", brand: "GuardPro", price: 6.4, features: ["Нитрил", "Размер L", "EN388"] },
+    { name: "Предпазна каска", brand: "GuardPro", price: 13.5, features: ["EN397", "Регулируема", "Вентилация"] },
+    { name: "Защитни очила прозрачни", brand: "SafeStep", price: 8.2, features: ["EN166", "Антифог", "UV защита"] },
+    { name: "Работно яке с висока видимост", brand: "WorkShield", price: 36.7, features: ["Размер L", "Светлоотразително", "Водоотблъскващо"] },
+  ],
+};
+
+function createTestProduct(category: (typeof categories)[number], seed: ProductSeed, index: number): Product {
+  const oldPrice = seed.promo ? seed.price * 1.14 : undefined;
+  return {
+    slug: `${category.slug}-test-${index + 1}`,
+    brand: seed.brand,
+    name: seed.name,
+    image: category.image,
+    imageAlt: `${category.label}: ${seed.name}`,
+    price: `${seed.price.toFixed(2)}€`,
+    priceBgn: `${(seed.price * 1.95583).toFixed(2)} лв`,
+    oldPrice: oldPrice ? `${oldPrice.toFixed(2)}€` : undefined,
+    oldPriceBgn: oldPrice ? `${(oldPrice * 1.95583).toFixed(2)} лв` : undefined,
+    discount: seed.promo ? "-12%" : undefined,
+    category: category.slug,
+    availability: "Тестов каталог",
+    features: seed.features,
+    description: `Демонстрационен артикул за пълна проверка на категория ${category.label}, продукта и тестовата заявка. Реална цена и наличност се потвърждават от екипа на Жоан.`,
+  };
+}
+
+export const products: Product[] = categories.flatMap((category) => (testCatalogue[category.slug] ?? []).map((seed, index) => createTestProduct(category, seed, index)));
 
 export const store = {
   name: "ЖОАН",

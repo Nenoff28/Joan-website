@@ -16,3 +16,7 @@
 - [x] Verify links and responsive visual updates; save a delivery checkpoint.
 - [x] Retrieve the original Joan favicon and apply it to the browser tab.
 - [x] Verify the favicon reference and save the updated project version.
+- [x] Add at least five browseable test products to each Joan category.
+- [x] Verify category filters, product routes, cart/checkout handoffs, and language switching.
+- [x] Perform responsive, console, and production-build QA; fix defects found.
+- [x] Save the verified complete test catalogue checkpoint.

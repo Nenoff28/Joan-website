@@ -83,3 +83,5 @@ The Joan mark is a confident red **J** constructed from a vertical steel-like ba
 - Remaining category visuals prioritize trade-use materials, tools, hardware, surfaces, packaging, and construction context rather than showroom styling.
 - Contact and support layouts use numbered information bays, red signal rails, and direct operational labels to remain part of the same retail system.
 - The user-selected real Joan heritage logo is retained as the visible brand mark despite the modern system’s preference for the red symbol.
+- Category listings prioritize compact scan density: price, availability, brand, and technical cues lead, while imagery supports discovery rather than dominating the page.
+- Checkout adopts the same workbench grammar through indexed request stages, rule-based form bays, and a structured request summary.
