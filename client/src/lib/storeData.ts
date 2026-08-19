@@ -189,14 +189,34 @@ const testCatalogue: Record<string, ProductSeed[]> = {
   ],
 };
 
-function createTestProduct(category: (typeof categories)[number], seed: ProductSeed, index: number): Product {
+const allRealProductImages = [
+  "/manus-storage/joan-live-product-01_505f4e7c.png", "/manus-storage/joan-live-product-02_c4544878.jpg", "/manus-storage/joan-live-product-03_9de366f7.jpg", "/manus-storage/joan-live-product-04_b9cdda3f.jpg", "/manus-storage/joan-live-product-05_fa528c49.jpg",
+  "/manus-storage/joan-live-product-06_2c4818fb.jpg", "/manus-storage/joan-live-product-07_89309785.png", "/manus-storage/joan-live-product-08_2a639a00.jpg", "/manus-storage/joan-live-product-09_4804982a.jpg", "/manus-storage/joan-live-product-10_a76b9d57.jpg",
+  "/manus-storage/joan-live-product-11_8baaa47e.png", "/manus-storage/joan-live-product-12_9ab66b5f.jpg", "/manus-storage/joan-live-product-13_9916b902.jpg", "/manus-storage/joan-live-product-14_b8c03210.jpg", "/manus-storage/joan-live-product-15_f52dd44c.jpg",
+  "/manus-storage/joan-live-product-16_a264738d.jpg", "/manus-storage/joan-live-product-17_e81a56f6.jpg", "/manus-storage/joan-live-product-18_3e165e54.jpg", "/manus-storage/joan-live-product-19_4a669581.jpg", "/manus-storage/joan-live-product-20_3dd00658.jpg",
+  "/manus-storage/joan-live-product-21_cc9d556a.jpg", "/manus-storage/joan-live-product-22_5d8940d9.jpg", "/manus-storage/joan-live-product-23_1d8d0fd0.jpg", "/manus-storage/joan-live-product-24_d01a8287.jpg", "/manus-storage/joan-live-product-25_19475ad3.jpg",
+  "/manus-storage/joan-live-product-26_8db946b9.jpg", "/manus-storage/joan-live-product-27_df59a173.jpg", "/manus-storage/joan-live-product-28_38901fc5.jpg", "/manus-storage/joan-live-product-29_9b58ae8e.jpg", "/manus-storage/joan-live-product-30_cf749f9c.jpg",
+  "/manus-storage/joan-live-product-31_5c892fa1.jpg", "/manus-storage/joan-live-product-32_c989b9c7.jpg", "/manus-storage/joan-live-product-33_3dc466ee.jpg", "/manus-storage/joan-live-product-34_a5397eef.jpg", "/manus-storage/joan-live-product-35_035c07ea.jpg",
+  "/manus-storage/joan-live-product-36_28b006a9.jpg", "/manus-storage/joan-live-product-37_aabf7190.jpg", "/manus-storage/joan-live-product-38_243eecbd.jpg", "/manus-storage/joan-live-product-39_50cf756a.jpg", "/manus-storage/joan-live-product-40_6e68967a.jpg",
+  "/manus-storage/joan-live-product-41_0d9a8a5e.png", "/manus-storage/joan-live-product-42_e8f1ca77.jpg", "/manus-storage/joan-live-product-43_88fdcbeb.jpg", "/manus-storage/joan-live-product-44_b2f26140.jpg", "/manus-storage/joan-live-product-45_6cf1d556.jpg",
+  "/manus-storage/joan-live-product-46_7c6d3667.jpg", "/manus-storage/joan-live-product-47_28e31768.png", "/manus-storage/joan-live-product-48_86dd7392.png", "/manus-storage/joan-live-product-49_6cbacc2d.png", "/manus-storage/joan-live-product-50_a169a3e3.jpg",
+  "/manus-storage/joan-live-product-51_26775ce2.png", "/manus-storage/joan-live-product-52_a4f9103d.jpg", "/manus-storage/joan-live-product-53_fcd9c7ab.jpg", "/manus-storage/joan-live-product-54_545775fc.jpg", "/manus-storage/joan-live-product-55_76a21ec4.png",
+] as const;
+
+const realProductImages = [
+  9, 16, 18, 19, 23, 1, 2, 3, 35, 36, 6, 7, 8, 45, 47, 48, 49, 50, 51, 52, 37, 38, 39, 40, 41,
+  4, 5, 10, 11, 12, 26, 27, 28, 29, 30, 17, 20, 21, 22, 24, 13, 14, 42, 43, 44, 31, 32, 46, 53, 55,
+  15, 25, 33, 34, 54,
+].map((imageNumber) => allRealProductImages[imageNumber - 1]);
+
+function createTestProduct(category: (typeof categories)[number], seed: ProductSeed, index: number, imageIndex: number): Product {
   const oldPrice = seed.promo ? seed.price * 1.14 : undefined;
   return {
     slug: `${category.slug}-test-${index + 1}`,
     brand: seed.brand,
     name: seed.name,
-    image: category.image,
-    imageAlt: `${category.label}: ${seed.name}`,
+    image: realProductImages[imageIndex] ?? category.image,
+    imageAlt: `${seed.name} — представителна продуктова снимка от Жоан`,
     price: `${seed.price.toFixed(2)}€`,
     priceBgn: `${(seed.price * 1.95583).toFixed(2)} лв`,
     oldPrice: oldPrice ? `${oldPrice.toFixed(2)}€` : undefined,
@@ -209,7 +229,7 @@ function createTestProduct(category: (typeof categories)[number], seed: ProductS
   };
 }
 
-export const products: Product[] = categories.flatMap((category) => (testCatalogue[category.slug] ?? []).map((seed, index) => createTestProduct(category, seed, index)));
+export const products: Product[] = categories.flatMap((category, categoryIndex) => (testCatalogue[category.slug] ?? []).map((seed, index) => createTestProduct(category, seed, index, categoryIndex * 5 + index)));
 
 export const store = {
   name: "ЖОАН",
