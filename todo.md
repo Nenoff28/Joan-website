@@ -3,3 +3,7 @@
 - [x] Build a client-side mock checkout with clear form validation and non-payment disclosure.
 - [x] Verify mobile layouts and save a delivery checkpoint.
 - [x] Fix homepage hero CTA overlap around “Разгледайте каталога” and verify responsive spacing.
+- [x] Identify a viable live product-feed source and connect the catalogue CTA to it.
+- [x] Build the live Joan catalogue bridge using verified real-store routes.
+- [x] Add accessible smooth scrolling to the homepage catalogue CTA.
+- [x] Verify CTA scrolling, external catalogue routing, and responsive behavior; save a delivery checkpoint.

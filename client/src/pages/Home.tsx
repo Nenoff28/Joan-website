@@ -1,10 +1,23 @@
 /** DESIGN REMINDER — Red Workshop Modernism: cinematic video entry, search-forward utility, material-led category discovery, and controlled Joan-red signals. */
 import { CategoryIcon, JsonLd, Layout, PageMeta, ProductCard, SectionHeading, ServiceStrip } from "@/components/Storefront";
 import { categories, products, store } from "@/lib/storeData";
-import { ArrowRight, ChevronRight, MapPin, PlayCircle, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, ChevronRight, ExternalLink, MapPin, PlayCircle, Search, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 
+const liveCatalogueRoutes = [
+  { label: "Инструменти", detail: "Електроинструменти, ръчни инструменти и консумативи", href: "https://joan.bg/%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%B8-%D0%BC%D0%B0%D1%82%D0%B5%D1%80%D0%B8%D0%B0%D0%BB%D0%B8/instrumenti" },
+  { label: "Градина", detail: "Градинска техника, инструменти и принадлежности", href: "https://joan.bg/%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%B8-%D0%BC%D0%B0%D1%82%D0%B5%D1%80%D0%B8%D0%B0%D0%BB%D0%B8/dom-i-gradina" },
+  { label: "Строителство", detail: "Материали, строителна химия и сухи смеси", href: "https://joan.bg/%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%B8-%D0%BC%D0%B0%D1%82%D0%B5%D1%80%D0%B8%D0%B0%D0%BB%D0%B8/stroitelstvo" },
+  { label: "Промоции", detail: "Актуалните предложения в поддържания магазин", href: "https://joan.bg/special" },
+];
+
 export default function Home() {
+  function scrollToLiveCatalogue(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    const target = document.getElementById("live-catalogue");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  }
   return <Layout>
     <PageMeta title="Строителен хипермаркет" description="Жоан: строителни материали, инструменти, продукти за дома и градината в Силистра." />
     <JsonLd />
@@ -12,9 +25,12 @@ export default function Home() {
       <section className="hero-video">
         <video className="hero-video-media" autoPlay muted loop playsInline preload="metadata" aria-label="Видео от Строителен хипермаркет Жоан"><source src="/manus-storage/joan-hero_0c2a067a.mp4" type="video/mp4" /></video>
         <div className="hero-video-overlay" />
-        <div className="page-frame hero-content"><div className="hero-kicker"><span /> Строителен хипермаркет Жоан</div><h1>Всичко за ремонта,<br /><em>на едно място.</em></h1><p>Открийте материали, инструменти и решения за дома, градината и професионалната работа.</p><div className="hero-actions"><Link href="/category/instrumenti" className="button-solid">Разгледайте каталога <ArrowRight size={18} /></Link><Link href="/contact" className="button-outline-light"><MapPin size={18} /> Посетете магазина</Link></div></div><div className="hero-bottom-note"><div><PlayCircle size={18} /><span>ЖОАН В ДВИЖЕНИЕ<br /><b>Силистра · ул. Тутракан №22</b></span></div><a href="#categories">Изберете категория <ChevronRight size={17} /></a></div>
+        <div className="page-frame hero-content"><div className="hero-kicker"><span /> Строителен хипермаркет Жоан</div><h1>Всичко за ремонта,<br /><em>на едно място.</em></h1><p>Открийте материали, инструменти и решения за дома, градината и професионалната работа.</p><div className="hero-actions"><a href="#live-catalogue" className="button-solid" onClick={scrollToLiveCatalogue} aria-controls="live-catalogue">Разгледайте каталога <ArrowRight size={18} /></a><Link href="/contact" className="button-outline-light"><MapPin size={18} /> Посетете магазина</Link></div></div><div className="hero-bottom-note"><div><PlayCircle size={18} /><span>ЖОАН В ДВИЖЕНИЕ<br /><b>Силистра · ул. Тутракан №22</b></span></div><a href="#live-catalogue" onClick={scrollToLiveCatalogue}>Изберете категория <ChevronRight size={17} /></a></div>
       </section>
       <ServiceStrip />
+      <section id="live-catalogue" className="live-catalogue-bridge" aria-labelledby="live-catalogue-title">
+        <div className="page-frame"><div className="live-catalogue-heading"><div><p className="eyebrow">Актуален каталог</p><h2 id="live-catalogue-title">Разгледайте реалните артикули в Жоан.</h2><p>Изберете категория, за да отворите поддържания каталог на Joan.bg с текущи продукти, наличности и предложения.</p></div><a href="https://joan.bg" target="_blank" rel="noreferrer" className="live-store-link">Отвори Joan.bg <ExternalLink size={17} /></a></div><div className="live-catalogue-grid">{liveCatalogueRoutes.map((route, index) => <a key={route.label} href={route.href} target="_blank" rel="noreferrer" className="live-catalogue-card"><span>0{index + 1}</span><div><h3>{route.label}</h3><p>{route.detail}</p></div><ExternalLink size={19} /></a>)}</div><p className="live-catalogue-note">Тук се използват връзки към поддържания магазин на Жоан. При предоставен официален API или CSV/XML export, тази секция може да показва текущи продукти директно в сайта.</p></div>
+      </section>
       <section id="categories" className="page-frame category-section"><SectionHeading eyebrow="Започнете оттук" title="Категории за всяка задача" text="Подредете ремонта по етапи, материал или инструмент — без излишно търсене." action={<Link className="section-action" href="/category/instrumenti">Всички категории <ArrowRight size={17} /></Link>} /><div className="feature-category-grid">{categories.slice(0, 4).map((category, index) => <Link key={category.slug} href={`/category/${category.slug}`} className={`feature-category-card card-${index + 1}`}><img src={category.image} alt="" loading="lazy" /><div className="feature-card-scrim" /><div><span className="feature-icon"><CategoryIcon icon={category.icon} size={20} /></span><p>{category.label}</p><small>{category.description}</small></div><ArrowRight className="feature-arrow" size={19} /></Link>)}</div><div className="category-link-rail">{categories.slice(4).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}><CategoryIcon icon={category.icon} size={18} /> {category.label} <ChevronRight size={16} /></Link>)}</div></section>
       <section id="promotions" className="promotions-section"><div className="page-frame"><SectionHeading eyebrow="Топ промоции" title="Акценти от текущите предложения" text="Представителни продукти и цени от видимите предложения на Joan.bg. За актуална наличност — изпратете запитване." action={<Link className="section-action" href="/category/instrumenti">Виж продукти <ArrowRight size={17} /></Link>} /><div className="product-grid homepage-products">{products.map((product) => <ProductCard key={product.slug} product={product} />)}</div></div></section>
       <section className="project-bay"><div className="page-frame project-bay-grid"><div className="project-bay-copy"><p className="eyebrow">Работилница за идеи</p><h2>Планирате ремонт?</h2><p>Започнете от категорията, която отговаря на задачата ви. От строителни материали до ВиК и защитно облекло — информацията остава близо до продукта.</p><div className="project-search"><Search size={19} /><span>Търсете по продукт, категория или марка</span><Link href="/category/instrumenti" aria-label="Към продуктовото търсене"><ArrowRight size={18} /></Link></div></div><div className="project-links"><Link href="/category/stroitelstvo"><b>Строителство</b><span>Материали и химия</span><ArrowRight size={17} /></Link><Link href="/category/boi-lakove-mazilki"><b>Бои и мазилки</b><span>Подготовка и завършек</span><ArrowRight size={17} /></Link><Link href="/category/v-i-k"><b>В и К</b><span>Части и аксесоари</span><ArrowRight size={17} /></Link></div></div></section>
