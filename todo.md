@@ -122,3 +122,10 @@
 - [x] Add a dedicated “Връщане” page, route, and navigation links with clear return-request guidance and contact handoff.
 - [x] Add an accessible, responsive back-to-top control with smooth user-initiated motion and reduced-motion support.
 - [x] Verify the return page, navigation links, back-to-top interaction, desktop/mobile behavior, accessibility, TypeScript, tests, and production build before publishing.
+- [x] Replace every remaining inactive “Връщане” footer action with the dedicated return-information route.
+- [x] Improve footer text contrast on the charcoal background while preserving the Joan visual hierarchy.
+- [x] Add a clear accessible FAQ section for the return process to the “Връщане” page.
+- [x] Replace the footer’s textual Facebook link with a blue icon-only link that preserves an accessible label.
+- [x] Verify the footer actions, contrast, FAQ layout, Facebook link, desktop/mobile behavior, tests, and production build before publishing.
+- [x] Run browser-level desktop QA that follows the footer return link and confirms it opens `/returns` without the payment-security toast.
+- [x] Run browser-level desktop and mobile QA that activates the icon-only Facebook footer link and confirms it is focusable and opens the official Facebook destination.
