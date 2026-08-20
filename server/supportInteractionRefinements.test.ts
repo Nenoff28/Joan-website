@@ -6,6 +6,7 @@ const root = resolve(import.meta.dirname, "..");
 const termsSource = readFileSync(resolve(root, "client/src/pages/Terms.tsx"), "utf8");
 const contactSource = readFileSync(resolve(root, "client/src/pages/Contact.tsx"), "utf8");
 const faqSource = readFileSync(resolve(root, "client/src/pages/FAQ.tsx"), "utf8");
+const storefrontSource = readFileSync(resolve(root, "client/src/components/Storefront.tsx"), "utf8");
 const cssSource = readFileSync(resolve(root, "client/src/index.css"), "utf8");
 
 describe("support interaction refinements", () => {
@@ -29,5 +30,17 @@ describe("support interaction refinements", () => {
     expect(faqSource).toContain("Прибери отговора");
     expect(faqSource).toContain("Разгъни отговора");
     expect(cssSource).toContain(".faq-item.is-open .faq-answer");
+  });
+
+  it("uses the real catalogue fallback when header and footer open the mock checkout", () => {
+    expect(storefrontSource).toContain('href="/checkout" className="header-cart"');
+    expect(storefrontSource).toContain('<Link href="/checkout">{t("checkoutNav")}</Link>');
+    expect(storefrontSource).not.toContain("rtrmax-bormashina-udarna-710w-13mm-x-lion");
+  });
+
+  it("keeps the product-search workflow available in the mobile drawer", () => {
+    expect(storefrontSource).toContain('id="mobile-site-search"');
+    expect(storefrontSource).toContain('className="mobile-search-results"');
+    expect(cssSource).toContain(".mobile-search-wrap");
   });
 });

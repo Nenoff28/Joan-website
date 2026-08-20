@@ -146,3 +146,10 @@
 - [x] Add clear visible contact-form submission feedback with an accessible loading state and an unmistakable success confirmation.
 - [x] Improve FAQ answer disclosure interactions so each answer visibly expands and collapses with accessible state feedback and reduced-motion support.
 - [x] Verify terms mobile layout, contact-form loading/success states, FAQ expand/collapse behavior, accessibility, TypeScript, tests, and production build before publishing.
+- [x] Run a real end-to-end contact-form QA submission and confirm the loading animation, disabled controls, success confirmation, reference number, persistence, admin visibility, and cleanup.
+- [x] Execute a detailed desktop functional and visual QA pass across home, catalogue, categories, product detail, favorites, checkout disclosure, delivery, returns, FAQ, terms, contacts, and administrator routes.
+- [x] Execute a detailed 375px mobile functional and visual QA pass across navigation, search, categories, catalogue, product detail, support pages, forms, and back-to-top behavior.
+- [x] Diagnose and fix all reproducible issues found in the detailed QA pass, then revalidate affected flows.
+- [x] Document prioritized desktop and mobile enhancement recommendations for future iterations after the verified QA pass.
+- [x] Replace the stale hard-coded checkout product slug found during QA so header and footer checkout links resolve to a real current catalogue product.
+- [x] Restore product search access on mobile by adding a usable search field and result path to the mobile navigation drawer.

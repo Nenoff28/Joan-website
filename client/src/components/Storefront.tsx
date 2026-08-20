@@ -196,7 +196,7 @@ function Header() {
           <div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div>
           <button type="button" onClick={() => doAction(t("account"))}><UserRound size={21} /><span>{t("account")}</span></button>
           <Link href="/favorites" className="header-favorites" aria-label={t("favorites")}><Heart size={21} /><span>{t("favorites")}</span>{count > 0 && <i>{count}</i>}</Link>
-          <Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1" className="header-cart"><ShoppingCart size={21} /><span>{t("cart")}</span><i>1</i></Link>
+          <Link href="/checkout" className="header-cart"><ShoppingCart size={21} /><span>{t("cart")}</span><i>1</i></Link>
         </div>
         <button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label={t("allCategories")}><Menu size={24} /></button>
       </div>
@@ -237,6 +237,8 @@ function Header() {
       {mobileOpen && (
         <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label={t("allCategories")}>
           <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close"><X size={24} /></button></div></div>
+          <form className="mobile-search-wrap" onSubmit={(event) => { submitSearch(event); setMobileOpen(false); }} role="search"><label htmlFor="mobile-site-search" className="sr-only">{t("searchLabel")}</label><Search size={18} aria-hidden="true" /><input id="mobile-site-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("searchPlaceholder")} autoComplete="off" /><Button type="submit" className="search-submit">{t("search")}</Button></form>
+          {query && <div className="mobile-search-results" aria-live="polite">{searchMatches.length ? searchMatches.map((product) => <button key={product.slug} type="button" onClick={() => { setLocation(`/product/${product.slug}`); setQuery(""); setSearchFocused(false); setMobileOpen(false); }}><img src={product.image} alt="" /><span><b>{product.brand}</b>{product.name}</span><ChevronRight size={16} /></button>) : <p>{t("noMatches")}</p>}</div>}
           <div className="mobile-drawer-links">
             <Link href="/" onClick={() => setMobileOpen(false)}>{t("home")}</Link>
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
@@ -293,7 +295,7 @@ function Footer() {
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">FAQ</Link><Link href="/returns" className="footer-return-link">{t("returns")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link></div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">FAQ</Link><Link href="/returns" className="footer-return-link">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
         <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-icon_f29d2620.webp" alt="" /></a></div>
       </div>
       <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.</span></div></div>
