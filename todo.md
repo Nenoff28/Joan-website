@@ -140,4 +140,5 @@
 - [x] Build a dedicated readable terms page based on the original public Joan terms, opened only when the user chooses the terms link.
 - [x] Run end-to-end desktop/mobile QA for key public routes, catalogue, favourites, enquiry submission, FAQ, terms, return information, checkout disclosure, and navigation; fix any regressions before publishing.
 - [x] Add a contextual FAQ link from the Returns page to the dedicated FAQ route.
-- [ ] Verify a temporary QA contact enquiry appears in the authenticated `/admin/enquiries` inbox with the correct reference and details, then remove it and re-verify cleanup.
+- [x] Verify a temporary QA contact enquiry appears in the authenticated `/admin/enquiries` inbox with the correct reference and details, then remove it and re-verify cleanup.
+- [x] Connect to the user's authorized Brave browser session with the installed extension and complete the administrator-inbox visual verification there.
