@@ -105,3 +105,7 @@
 - [x] Prove complete active-page content across multiple brochure pages on desktop, mobile, and fullscreen before publishing.
 - [x] Preserve the requested monthly-brochure heading copy while removing unintended broad inline typography styles.
 - [x] Verify the brochure heading, meta text, controls, and responsive viewer typography before publishing.
+- [x] Apply the requested 55px desktop hero heading and revised single-line hero copy through scoped responsive styling.
+- [x] Update the brochure index prompt to “Разгледайте офертите” and set the brochure-title badge to 15px through scoped styling.
+- [x] Remove unintended broad inline typography styles introduced by the visual editor while preserving the requested refinements.
+- [x] Verify hero and brochure copy, desktop/mobile typography, controls, and responsive behavior before publishing.

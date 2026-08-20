@@ -63,3 +63,5 @@ Non-cropping main-sheet QA: after replacing the temporary crop treatment, deskto
 Brochure-heading refinement QA: the requested copy now reads “Разгледайте офертите от месечната брошура.” The metadata badge displays only the active brochure title at the requested 20px emphasis; controls, page numbers, side previews, and the main viewer retain their original scoped typography without broad inline overrides.
 
 Mobile heading QA: at a 375px viewport, the revised heading wraps naturally above the brochure, the 20px “Промо брошура” badge stays within the content frame, and the restored viewer controls remain compact. The central brochure page retains its full native-ratio content under the heading.
+
+Hero and brochure refinement QA: the desktop hero now presents “Всичко за ремонта на едно място” as a single 55px display line without scaling adjacent hero content. At 375px, the existing mobile heading rule preserves a legible three-line arrangement, with normal-size CTA and utility content. The brochure index prompt reads “Разгледайте офертите”, while the title badge is 15px and the viewer controls remain compact.
