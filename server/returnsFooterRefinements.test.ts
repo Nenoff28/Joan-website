@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const storefrontSource = readFileSync(resolve(process.cwd(), "client/src/components/Storefront.tsx"), "utf8");
 const returnsSource = readFileSync(resolve(process.cwd(), "client/src/pages/Returns.tsx"), "utf8");
+const faqSource = readFileSync(resolve(process.cwd(), "client/src/pages/FAQ.tsx"), "utf8");
 const cssSource = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
 
 describe("returns FAQ and footer refinements", () => {
@@ -12,12 +13,12 @@ describe("returns FAQ and footer refinements", () => {
     expect(storefrontSource).not.toContain('onClick={() => toast(t("mockSecurity"))}>{t("returns")}');
   });
 
-  it("adds a semantic expandable FAQ section to the returns page", () => {
-    expect(returnsSource).toContain('aria-labelledby="returns-faq-title"');
-    expect(returnsSource).toContain('id="returns-faq"');
-    expect(returnsSource).toContain("Често задавани въпроси");
-    expect(returnsSource).toContain("Какво е входящ номер за връщане (RMA)?");
-    expect(returnsSource).toContain("Мога ли да изпратя продукта веднага?");
+  it("keeps the FAQ content on a distinct dedicated route instead of the returns page", () => {
+    expect(returnsSource).not.toContain("Какво е входящ номер за връщане (RMA)?");
+    expect(returnsSource).toContain('href="/faq" className="returns-faq-route"');
+    expect(faqSource).toContain("Често задавани въпроси");
+    expect(faqSource).toContain("Какво е входящ номер за връщане (RMA)?");
+    expect(faqSource).toContain("Мога ли да изпратя продукта веднага?");
   });
 
   it("uses higher-contrast footer text and the supplied accessible icon-only Facebook link", () => {

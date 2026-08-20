@@ -6,7 +6,9 @@ import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   adjustProductStock,
   createAdminProduct,
+  createContactEnquiry,
   createOrderRequest,
+  getAdminContactEnquiries,
   getAdminCategories,
   getAdminBrochures,
   getAdminOrders,
@@ -22,6 +24,7 @@ import {
   saveAdminCategory,
   saveProductPromotion,
   updateAdminProduct,
+  updateContactEnquiry,
   updateOrderRequest,
   uploadAdminBrochure,
   uploadProductImage,
@@ -29,6 +32,7 @@ import {
 
 const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
+const contactEnquiryStatusSchema = z.enum(["new", "contacted", "closed"]);
 type CategoryNodeInput = { label: string; children?: CategoryNodeInput[] };
 const categoryNodeSchema: z.ZodType<CategoryNodeInput> = z.lazy(() => z.object({
   label: z.string().trim().min(1).max(160),
@@ -91,12 +95,22 @@ export const appRouter = router({
       postcode: z.string().trim().min(4).max(20),
     })).mutation(({ input }) => createOrderRequest(input)),
   }),
+  contact: router({
+    createEnquiry: publicProcedure.input(z.object({
+      fullName: z.string().trim().min(3).max(255),
+      email: z.string().trim().email().max(320),
+      phone: z.string().trim().min(7).max(64).nullable().optional(),
+      subject: z.string().trim().min(3).max(160),
+      message: z.string().trim().min(10).max(5000),
+    })).mutation(({ input }) => createContactEnquiry(input)),
+  }),
   admin: router({
     summary: adminProcedure.query(() => getAdminSummary()),
     operations: adminProcedure.query(() => getAdminOperations()),
     products: adminProcedure.query(() => getAdminProducts()),
     categories: adminProcedure.query(() => getAdminCategories()),
     orders: adminProcedure.query(() => getAdminOrders()),
+    contactEnquiries: adminProcedure.query(() => getAdminContactEnquiries()),
     brochures: adminProcedure.query(() => getAdminBrochures()),
     createProduct: adminProcedure.input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.user.id)),
     updateProduct: adminProcedure.input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.user.id)),
@@ -110,6 +124,7 @@ export const appRouter = router({
     archiveBrochure: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => archiveAdminBrochure(input.id, ctx.user.id)),
     saveCategory: adminProcedure.input(z.object({ id: z.number().int().positive().optional(), category: categoryPayloadSchema })).mutation(({ input, ctx }) => saveAdminCategory(input.id, input.category, ctx.user.id)),
     updateOrder: adminProcedure.input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateOrderRequest(input.id, input.status, input.adminNote, ctx.user.id)),
+    updateContactEnquiry: adminProcedure.input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.user.id)),
   }),
 });
 

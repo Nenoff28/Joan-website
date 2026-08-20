@@ -132,3 +132,12 @@
 - [x] Upload and use the supplied blue Facebook icon in the footer without adjacent visible text.
 - [x] Add a visible FAQ link beside “Контакти” in the primary navigation that opens the return-process FAQ section.
 - [x] Verify the supplied Facebook icon and FAQ navigation link across desktop and mobile before publishing.
+- [x] Research the original Joan terms and conditions and identify the lawful public content to reproduce in the redesigned terms experience.
+- [x] Move all return-process FAQs from the return page into a distinct standalone FAQ page and route.
+- [x] Update desktop, mobile, footer, and contextual navigation to the dedicated FAQ page.
+- [x] Add database-backed contact enquiry persistence with schema migration, server procedure, admin visibility, and form validation.
+- [x] Replace the contact-page placeholder with a working direct enquiry form and clear submitted-state feedback.
+- [x] Build a dedicated readable terms page based on the original public Joan terms, opened only when the user chooses the terms link.
+- [x] Run end-to-end desktop/mobile QA for key public routes, catalogue, favourites, enquiry submission, FAQ, terms, return information, checkout disclosure, and navigation; fix any regressions before publishing.
+- [x] Add a contextual FAQ link from the Returns page to the dedicated FAQ route.
+- [ ] Verify a temporary QA contact enquiry appears in the authenticated `/admin/enquiries` inbox with the correct reference and details, then remove it and re-verify cleanup.

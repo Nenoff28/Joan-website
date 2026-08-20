@@ -1,12 +1,13 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProducts, orderRequests, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProducts, contactEnquiries, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
+export type ContactEnquiryStatus = "new" | "contacted" | "closed";
 export type CategoryNode = { label: string; children?: CategoryNode[] };
 
 export type ProductPayload = {
@@ -276,6 +277,11 @@ export async function getAdminOrders() {
   return db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt));
 }
 
+export async function getAdminContactEnquiries() {
+  const db = await requireDb();
+  return db.select().from(contactEnquiries).orderBy(desc(contactEnquiries.createdAt));
+}
+
 export async function getAdminSummary() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
@@ -384,6 +390,12 @@ export async function updateOrderRequest(id: number, status: OrderRequestStatus,
   await logAdminActivity(adminUserId, "order.updated", "order_request", id, { status });
 }
 
+export async function updateContactEnquiry(id: number, status: ContactEnquiryStatus, adminNote: string | null, adminUserId: number) {
+  const db = await requireDb();
+  await db.update(contactEnquiries).set({ status, adminNote }).where(eq(contactEnquiries.id, id));
+  await logAdminActivity(adminUserId, "contact_enquiry.updated", "contact_enquiry", id, { status });
+}
+
 export async function createOrderRequest(input: { productSlug: string; quantity: number; fullName: string; email: string; phone: string; address: string; city: string; postcode: string }) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
@@ -396,6 +408,13 @@ export async function createOrderRequest(input: { productSlug: string; quantity:
     requestNumber, productId: product.id, productName: product.name, productSku: product.sku, productImageUrl: product.imageUrl, quantity: input.quantity, priceEur: asDecimal(price), totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, city: input.city, postcode: input.postcode, status: "new", adminNote: null,
   });
   return { requestNumber };
+}
+
+export async function createContactEnquiry(input: { fullName: string; email: string; phone?: string | null; subject: string; message: string }) {
+  const db = await requireDb();
+  const referenceNumber = `C-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 5).toUpperCase()}`;
+  await db.insert(contactEnquiries).values({ referenceNumber, fullName: input.fullName, email: input.email, phone: input.phone?.trim() || null, subject: input.subject, message: input.message, status: "new", adminNote: null });
+  return { referenceNumber };
 }
 
 export async function uploadProductImage(input: { dataUrl: string; fileName: string }, adminUserId: number) {

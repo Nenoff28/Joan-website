@@ -6,7 +6,9 @@ const service = vi.hoisted(() => ({
   activateAdminBrochure: vi.fn(),
   archiveAdminBrochure: vi.fn(),
   createAdminProduct: vi.fn(),
+  createContactEnquiry: vi.fn(),
   createOrderRequest: vi.fn(),
+  getAdminContactEnquiries: vi.fn(),
   getAdminCategories: vi.fn(),
   getAdminBrochures: vi.fn(),
   getAdminOrders: vi.fn(),
@@ -19,6 +21,7 @@ const service = vi.hoisted(() => ({
   saveAdminCategory: vi.fn(),
   saveProductPromotion: vi.fn(),
   updateAdminProduct: vi.fn(),
+  updateContactEnquiry: vi.fn(),
   updateOrderRequest: vi.fn(),
   uploadAdminBrochure: vi.fn(),
   uploadBrochurePage: vi.fn(),
@@ -88,6 +91,21 @@ describe("administrator management procedures", () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.updateOrder({ id: 9, status: "contacted", adminNote: "Customer contacted by phone." })).resolves.toBeUndefined();
     expect(service.updateOrderRequest).toHaveBeenCalledWith(9, "contacted", "Customer contacted by phone.", 17);
+  });
+
+  it("accepts a public contact enquiry only after validating the caller details and message", async () => {
+    service.createContactEnquiry.mockResolvedValueOnce({ referenceNumber: "C-20260820-TEST1" });
+    const caller = appRouter.createCaller({ ...adminContext(), user: null });
+    const input = { fullName: "Contact customer", email: "contact@example.com", phone: "+359888111222", subject: "Информация за продукт", message: "Моля, изпратете информация за наличност и срок за доставка." };
+    await expect(caller.contact.createEnquiry(input)).resolves.toEqual({ referenceNumber: "C-20260820-TEST1" });
+    expect(service.createContactEnquiry).toHaveBeenCalledWith(input);
+  });
+
+  it("passes an authenticated administrator and bounded status update to the contact-enquiries workflow", async () => {
+    service.updateContactEnquiry.mockResolvedValueOnce(undefined);
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.updateContactEnquiry({ id: 11, status: "contacted", adminNote: "Customer contacted by email." })).resolves.toBeUndefined();
+    expect(service.updateContactEnquiry).toHaveBeenCalledWith(11, "contacted", "Customer contacted by email.", 17);
   });
 
   it("passes a bounded inventory adjustment to the authenticated administrator service", async () => {

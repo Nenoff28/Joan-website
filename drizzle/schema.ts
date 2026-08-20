@@ -76,6 +76,21 @@ export const orderRequests = mysqlTable("order_requests", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("order_requests_status_created_idx").on(table.status, table.createdAt)]);
 
+/** Direct public contact enquiries submitted from the storefront contact form. */
+export const contactEnquiries = mysqlTable("contact_enquiries", {
+  id: int("id").autoincrement().primaryKey(),
+  referenceNumber: varchar("referenceNumber", { length: 32 }).notNull().unique(),
+  fullName: varchar("fullName", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 64 }),
+  subject: varchar("subject", { length: 160 }).notNull(),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["new", "contacted", "closed"]).default("new").notNull(),
+  adminNote: text("adminNote"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("contact_enquiries_status_created_idx").on(table.status, table.createdAt)]);
+
 /** Versioned brochure records reference source PDFs and pre-rendered page images held in storage. */
 export const catalogueBrochures = mysqlTable("catalogue_brochures", {
   id: int("id").autoincrement().primaryKey(),
@@ -106,4 +121,5 @@ export type InsertUser = typeof users.$inferInsert;
 export type CatalogueCategory = typeof catalogueCategories.$inferSelect;
 export type CatalogueProduct = typeof catalogueProducts.$inferSelect;
 export type OrderRequest = typeof orderRequests.$inferSelect;
+export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
 export type CatalogueBrochure = typeof catalogueBrochures.$inferSelect;

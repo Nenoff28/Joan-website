@@ -18,6 +18,7 @@ import Terms from "./pages/Terms";
 import Checkout from "./pages/Checkout";
 import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
+import FAQ from "./pages/FAQ";
 import Returns from "./pages/Returns";
 
 function ScrollToTop() {
@@ -58,6 +59,7 @@ function Router() {
         <Route path={"/contact"} component={Contact} />
         <Route path={"/delivery"} component={Delivery} />
         <Route path={"/terms"} component={Terms} />
+        <Route path={"/faq"} component={FAQ} />
         <Route path={"/checkout"} component={Checkout} />
         <Route path={"/favorites"} component={Favorites} />
         <Route path={"/returns"} component={Returns} />
