@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Bath,
   BrickWall,
-  ChevronDown,
   ChevronRight,
   Drill,
   Facebook,
@@ -174,15 +173,11 @@ function Header() {
 
       <div className="nav-shell">
         <div className="page-frame primary-nav">
-          <button type="button" className="catalogue-trigger" onClick={() => setMegaOpen(!megaOpen)} aria-expanded={megaOpen}>
-            <Menu size={20} /> {t("allCategories")} <ChevronDown size={16} />
+          <button type="button" className="catalogue-trigger" onClick={() => setMegaOpen(!megaOpen)} aria-expanded={megaOpen} aria-controls="catalogue-mega-menu" aria-label={t("allCategories")}>
+            <Menu size={22} aria-hidden="true" />
           </button>
           <nav aria-label="Основна навигация" className="desktop-links">
             <Link href="/">{t("home")}</Link>
-            <Link href="/category/instrumenti">{t("tools")}</Link>
-            <Link href="/category/gradina">{t("garden")}</Link>
-            <Link href="/category/stroitelstvo">{t("construction")}</Link>
-            <Link href="/category/boi-lakove-mazilki">{t("paints")}</Link>
             <Link href="/about">{t("about")}</Link>
             <Link href="/contact">{t("storeContacts")}</Link>
           </nav>
@@ -191,7 +186,7 @@ function Header() {
       </div>
 
       {megaOpen && (
-        <div className="mega-menu" onMouseLeave={() => setMegaOpen(false)}>
+        <div id="catalogue-mega-menu" className="mega-menu" onMouseLeave={() => setMegaOpen(false)}>
           <div className="page-frame mega-grid">
             <aside className="mega-intro">
               <span className="signal-line" />

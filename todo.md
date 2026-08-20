@@ -83,3 +83,9 @@
 - [x] Verify mobile fullscreen entry, layout stability, controls, and exit behavior for the brochure viewer.
 - [x] Complete and document post-refactor brochure accessibility QA for keyboard navigation, focus return, visible focus state, and labels.
 - [x] Verify the brochure viewer’s mobile fullscreen exit behavior and stable return to normal layout before publishing.
+- [ ] Resume the OpenCart catalogue migration only after the user provides the agreed export package and media archive.
+- [x] Replace the header category trigger with an icon-only red menu button that preserves category-menu access.
+- [x] Remove duplicate category links from the primary navigation bar.
+- [x] Rename the header links to “За нас” and “Контакти” and verify the routes remain correct.
+- [x] Verify the streamlined header navigation across desktop and mobile before publishing.
+- [x] Verify the mobile header drawer end-to-end for category access, renamed links, stable closing behavior, and no overflow.

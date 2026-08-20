@@ -43,3 +43,7 @@ Keyboard exit check: entering fullscreen through the visible control and pressin
 Focus and keyboard check: after Escape, focus returned to the fullscreen trigger. The brochure stage accepted focus and an ArrowRight key press moved the active brochure page while preserving the stage’s visible red focus outline.
 
 Mobile fullscreen exit check: the same visible fullscreen control successfully exited the 375×812 emulated fullscreen view. The document reported no remaining fullscreen element, the viewer returned to a 665.25-pixel normal-layout height, the trigger remained visible, and its “Отвори брошурата на цял екран” label was restored.
+
+Header-navigation refinement QA: desktop review shows a single red square menu trigger with three white lines, followed only by “Начало”, “За нас”, and “Контакти”. Activating the icon-only trigger exposes the existing complete category menu, including all eleven category links and the all-products link. Mobile review retains the compact menu icon with no horizontal overflow.
+
+Mobile header-drawer QA: device emulation at 375×812 opened the drawer through its menu button. It showed “За нас”, “Контакти”, and all eleven category links without horizontal overflow; the close control then removed the drawer cleanly and preserved the no-overflow state.

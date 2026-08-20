@@ -84,6 +84,10 @@ h3 { font-size: 1.05rem; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 
+/* Streamlined desktop category navigation: one icon trigger opens the existing complete category menu. */
+.primary-nav { grid-template-columns: 52px 1fr auto; }.catalogue-trigger { height: 52px; justify-content: center; padding: 0; width: 52px; }.catalogue-trigger:hover, .catalogue-trigger[aria-expanded="true"] { background: var(--red-deep); }.catalogue-trigger:active { transform: scale(.97); }.catalogue-trigger:focus-visible { outline: 3px solid var(--charcoal); outline-offset: -5px; }.desktop-links { gap: clamp(1.2rem, 2.4vw, 2.25rem); }.catalogue-trigger svg:last-child { margin-left: 0; }
+@media (max-width: 1080px) { .primary-nav { grid-template-columns: 52px 1fr; }.desktop-links { gap: 1.1rem; } }
+
 /* Visual review refinement: signal rails and workbench density make the Joan system recognizable beyond the logo. */
 h1, h2 { font-weight: 800; letter-spacing: -.065em; }
 .section-heading { border-left: 3px solid var(--red); padding-left: .85rem; }
