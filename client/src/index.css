@@ -216,3 +216,7 @@ h1, h2 { font-weight: 800; letter-spacing: -.065em; }
 .brochure-viewer-shell:fullscreen .brochure-page-frame { background: transparent; height: auto; width: 100%; }
 .brochure-viewer-shell:fullscreen .brochure-page-frame img { height: auto; object-fit: contain; width: 100%; }
 @media (max-width: 760px) { .brochure-page-frame img { height: auto; } }
+
+/* Brochure heading refinement: retain only the brochure title in the compact metadata badge and give it the requested 20px emphasis. */
+.brochure-heading-meta span { font-size: 0; }
+.brochure-heading-meta b { font-size: 1.25rem; letter-spacing: -.02em; line-height: 1.1; }

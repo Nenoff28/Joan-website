@@ -103,3 +103,5 @@
 - [x] Verify the corrected main brochure framing on desktop, mobile, and fullscreen before publishing.
 - [x] Replace the main brochure image crop treatment with a non-cropping edge-to-edge frame that preserves complete printed content.
 - [x] Prove complete active-page content across multiple brochure pages on desktop, mobile, and fullscreen before publishing.
+- [x] Preserve the requested monthly-brochure heading copy while removing unintended broad inline typography styles.
+- [x] Verify the brochure heading, meta text, controls, and responsive viewer typography before publishing.

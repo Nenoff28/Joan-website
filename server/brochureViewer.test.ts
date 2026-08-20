@@ -41,6 +41,12 @@ describe("3D brochure viewer", () => {
     expect(styleSource).not.toContain(".brochure-page-frame img { height: 542px; object-fit: cover;");
   });
 
+  it("keeps the requested monthly brochure heading without broad inline type overrides", () => {
+    expect(homeSource).toContain("Разгледайте офертите от месечната брошура.");
+    expect(homeSource).not.toContain("style={{fontSize: '20px'}}");
+    expect(styleSource).toContain(".brochure-heading-meta b { font-size: 1.25rem;");
+  });
+
   it("advances every seven seconds without presenting a pause control", () => {
     expect(homeSource).toContain("), 7000)");
     expect(homeSource).not.toContain("brochurePaused");
