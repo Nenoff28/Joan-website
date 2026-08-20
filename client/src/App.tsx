@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { useLayoutEffect } from "react";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -18,26 +19,48 @@ import Checkout from "./pages/Checkout";
 import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
 
+function ScrollToTop() {
+  const [location] = useLocation();
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    window.scrollTo(0, 0);
+    const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      root.style.scrollBehavior = previousScrollBehavior;
+    };
+  }, [location]);
+
+  return null;
+}
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/products"} component={AllProducts} />
-      <Route path={"/category/:slug"} component={Category} />
-      <Route path={"/product/:slug"} component={Product} />
-      <Route path={"/about"} component={About} />
-      <Route path={"/contact"} component={Contact} />
-      <Route path={"/delivery"} component={Delivery} />
-      <Route path={"/terms"} component={Terms} />
-      <Route path={"/checkout"} component={Checkout} />
-      <Route path={"/favorites"} component={Favorites} />
-      <Route path={"/admin/:section"} component={Admin} />
-      <Route path={"/admin"} component={Admin} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <ScrollToTop />
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/products"} component={AllProducts} />
+        <Route path={"/category/:slug"} component={Category} />
+        <Route path={"/product/:slug"} component={Product} />
+        <Route path={"/about"} component={About} />
+        <Route path={"/contact"} component={Contact} />
+        <Route path={"/delivery"} component={Delivery} />
+        <Route path={"/terms"} component={Terms} />
+        <Route path={"/checkout"} component={Checkout} />
+        <Route path={"/favorites"} component={Favorites} />
+        <Route path={"/admin/:section"} component={Admin} />
+        <Route path={"/admin"} component={Admin} />
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 

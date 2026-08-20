@@ -115,3 +115,6 @@
 - [x] Refine category and subcategory display on catalogue pages for clearer hierarchy, selection, and browsing.
 - [x] Update all relevant “Всички продукти” and catalogue navigation links to the complete catalogue route.
 - [x] Verify all-products navigation, category/subcategory interactions, filters, deep routes, desktop/mobile layout, and accessibility before publishing.
+- [x] Reset page scroll position to the top on every route transition, including catalogue and product-detail navigation.
+- [x] Verify top-of-page behavior for desktop and mobile route changes before publishing.
+- [x] Run browser-level desktop and mobile route-transition checks after scrolling down, confirming each newly opened page starts at scroll position zero.
