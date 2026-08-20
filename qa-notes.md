@@ -27,3 +27,19 @@ The exact-source product detail route exposes a two-image gallery. Selecting thu
 Selecting the “Приближи” control opens an accessible modal dialog containing the active gallery image. The close action returns to the unchanged product-detail state, confirming both opening and closing paths work without navigation.
 
 Desktop and mobile screenshot review confirmed that source-named products, filter controls, sort options, thumbnail gallery, zoom control, purchase action, and related products remain legible and reachable. The final console and network-log pass recorded no runtime exceptions or 4xx/5xx product-media requests.
+
+Brochure viewer correction QA: after a fresh preview navigation, the homepage loaded successfully. The interactive control list exposed previous-page, next-page, fullscreen, and numeric page controls, while the pause control was no longer present. Fullscreen and responsive visual checks remain in progress before publishing.
+
+Desktop brochure verification: the adjacent pages render as complete portrait sheets without an added white frame or crop. Opening the actual fullscreen control produced a bounded dark viewer with the active sheet, complete angled neighboring sheets, navigation, and an exit control all remaining visible.
+
+Automatic-rotation verification: a browser-timed 7.5-second check advanced the active brochure caption from page 02 to page 03. The pause control remained absent from the interactive control list.
+
+Mobile fullscreen verification: Chrome device emulation at 375×812 entered fullscreen successfully. The viewer shell filled the 375×812 viewport, the stage remained within the screen at 339.84×716.23 pixels, all three controls were visible, and no pause element existed. The captured view showed the active sheet and compact page navigation without clipping or horizontal overflow.
+
+The refreshed desktop preview continued to expose labelled previous, next, fullscreen, and numeric-page controls while automatic rotation advanced the displayed page during review.
+
+Keyboard exit check: entering fullscreen through the visible control and pressing Escape returned the viewer to its normal layout and restored the fullscreen control label to “Отвори брошурата на цял екран”.
+
+Focus and keyboard check: after Escape, focus returned to the fullscreen trigger. The brochure stage accepted focus and an ArrowRight key press moved the active brochure page while preserving the stage’s visible red focus outline.
+
+Mobile fullscreen exit check: the same visible fullscreen control successfully exited the 375×812 emulated fullscreen view. The document reported no remaining fullscreen element, the viewer returned to a 665.25-pixel normal-layout height, the trigger remained visible, and its “Отвори брошурата на цял екран” label was restored.

@@ -9,7 +9,6 @@ describe("3D brochure viewer", () => {
   it("keeps the page stage accessible through labelled carousel and numeric navigation controls", () => {
     expect(homeSource).toContain('aria-roledescription="carousel"');
     expect(homeSource).toContain('role="tablist"');
-    expect(homeSource).toContain('aria-pressed={brochurePaused}');
     expect(homeSource).toContain('aria-label="Предишна страница"');
     expect(homeSource).toContain('aria-label="Следваща страница"');
   });
@@ -29,9 +28,15 @@ describe("3D brochure viewer", () => {
     expect(homeSource).toContain("fullscreenTriggerRef.current?.focus()");
   });
 
-  it("uses a crop-focused side-preview treatment rather than contained page margins", () => {
-    expect(styleSource).toContain(".brochure-page-preview { height: 302px; overflow: hidden; }");
-    expect(styleSource).toContain(".brochure-page-preview img { height: 332px; object-fit: cover");
+  it("keeps adjacent page previews complete while avoiding decorative white frames", () => {
+    expect(styleSource).toContain(".brochure-page-preview { height: 266px; overflow: visible; }");
+    expect(styleSource).toContain(".brochure-page-preview img { aspect-ratio: 210 / 297; background: transparent");
     expect(styleSource).toContain(".brochure-viewer-shell:fullscreen");
+  });
+
+  it("advances every seven seconds without presenting a pause control", () => {
+    expect(homeSource).toContain("), 7000)");
+    expect(homeSource).not.toContain("brochurePaused");
+    expect(homeSource).not.toContain("brochure-play-toggle");
   });
 });

@@ -68,3 +68,18 @@
 - [x] Add fullscreen viewing controls and keyboard-safe exit behavior to the brochure viewer.
 - [x] Add mobile swipe page navigation and crop the adjacent-page previews to remove white page margins.
 - [x] Verify fullscreen, swipe, mobile, desktop, and accessibility behavior before saving the enhanced viewer checkpoint.
+- [ ] Define and collect the required OpenCart export package for catalogue migration.
+- [ ] Map OpenCart categories, products, images, stock, promotions, and SEO fields to the Joan storefront data model.
+- [ ] Build a controlled import and validation workflow for the exported OpenCart catalogue.
+- [ ] Reconcile imported catalogue data and media with the storefront and administrator workspace before publishing.
+- [ ] Confirm Zeron ERP API/export capabilities, authentication method, synchronization scope, and source-of-truth rules.
+- [ ] Map Zeron products, prices, stock, promotions, and relevant catalogue fields to the Joan storefront data model.
+- [ ] Build a secure controlled synchronization workflow with logging, retry handling, and administrator visibility.
+- [ ] Validate data accuracy and operational recovery paths before enabling the Zeron synchronization in production.
+- [x] Restore complete adjacent-page previews without visible upper white margins in the brochure viewer.
+- [x] Stabilize the brochure fullscreen layout and controls across desktop and mobile devices.
+- [x] Remove brochure pause controls and set automatic page rotation to seven seconds.
+- [x] Verify corrected brochure viewer visuals, fullscreen behavior, accessibility, and automatic rotation before publishing.
+- [x] Verify mobile fullscreen entry, layout stability, controls, and exit behavior for the brochure viewer.
+- [x] Complete and document post-refactor brochure accessibility QA for keyboard navigation, focus return, visible focus state, and labels.
+- [x] Verify the brochure viewer’s mobile fullscreen exit behavior and stable return to normal layout before publishing.
