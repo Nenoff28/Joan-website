@@ -111,3 +111,7 @@
 - [x] Verify hero and brochure copy, desktop/mobile typography, controls, and responsive behavior before publishing.
 - [x] Restore the previous large two-line hero composition while retaining only the removed comma and final period.
 - [x] Verify the restored hero composition on desktop and mobile before publishing.
+- [x] Create a dedicated all-products catalogue route that displays every available product rather than redirecting to a single category.
+- [x] Refine category and subcategory display on catalogue pages for clearer hierarchy, selection, and browsing.
+- [x] Update all relevant “Всички продукти” and catalogue navigation links to the complete catalogue route.
+- [x] Verify all-products navigation, category/subcategory interactions, filters, deep routes, desktop/mobile layout, and accessibility before publishing.

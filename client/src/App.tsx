@@ -8,6 +8,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import Home from "./pages/Home";
 import Category from "./pages/Category";
+import { AllProducts } from "./pages/Category";
 import Product from "./pages/Product";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -22,6 +23,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/products"} component={AllProducts} />
       <Route path={"/category/:slug"} component={Category} />
       <Route path={"/product/:slug"} component={Product} />
       <Route path={"/about"} component={About} />

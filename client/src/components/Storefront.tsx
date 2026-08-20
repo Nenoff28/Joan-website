@@ -133,7 +133,7 @@ function Header() {
       setSearchFocused(false);
       return;
     }
-    setLocation("/category/instrumenti");
+    setLocation("/products");
     setSearchFocused(false);
     toast(t("noMatches"));
   }
@@ -223,7 +223,7 @@ function Header() {
               <p className="eyebrow">{t("catalogue")}</p>
               <h2>{t("chooseTask")}</h2>
               <p>{t("catalogueIntro")}</p>
-              <Link href="/category/instrumenti" onClick={() => setMegaOpen(false)} className="text-link">{t("viewAllProducts")} <ArrowRight size={16} /></Link>
+              <Link href="/products" onClick={() => setMegaOpen(false)} className="text-link">{t("viewAllProducts")} <ArrowRight size={16} /></Link>
             </aside>
             <div className="mega-catalogue-workspace"><div className="mega-category-tabs" role="tablist" aria-label={t("categories")}>{categories.map((category) => {
               const Icon = categoryIcons[category.icon]; const isActive = category.slug === activeMegaCategory;
@@ -243,12 +243,13 @@ function Header() {
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
           </div>
+          <Link href="/products" onClick={() => setMobileOpen(false)} className="mobile-all-products">{t("viewAllProducts")} <ArrowRight size={17} /></Link>
           <p className="mobile-drawer-label">{t("categories")}</p>
           <div className="mobile-category-grid">{categories.map((category) => <MobileCategoryTree key={category.slug} category={category} onNavigate={() => setMobileOpen(false)} />)}</div>
           <div className="mobile-contact"><Phone size={18} /><span><b>{t("help")}</b>{store.phones[2]}</span></div>
         </div>
       )}
-      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/category") ? t("catalogue") : location.startsWith("/product") ? t("representativeProduct") : location.startsWith("/favorites") ? t("favorites") : t("customerInfo")}</span></div>}
+      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location === "/products" || location.startsWith("/category") ? t("catalogue") : location.startsWith("/product/") ? t("representativeProduct") : location.startsWith("/favorites") ? t("favorites") : t("customerInfo")}</span></div>}
     </header>
   );
 }
@@ -272,7 +273,7 @@ function Footer() {
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
         </div>
-        <div><h3>{t("categories")}</h3>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
+        <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
         <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link><button type="button" onClick={() => toast(t("mockSecurity"))}>{t("returns")}</button></div>
         <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer"><Facebook size={15} /> Facebook</a></div>
       </div>
