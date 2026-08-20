@@ -129,3 +129,6 @@
 - [x] Verify the footer actions, contrast, FAQ layout, Facebook link, desktop/mobile behavior, tests, and production build before publishing.
 - [x] Run browser-level desktop QA that follows the footer return link and confirms it opens `/returns` without the payment-security toast.
 - [x] Run browser-level desktop and mobile QA that activates the icon-only Facebook footer link and confirms it is focusable and opens the official Facebook destination.
+- [x] Upload and use the supplied blue Facebook icon in the footer without adjacent visible text.
+- [x] Add a visible FAQ link beside “Контакти” in the primary navigation that opens the return-process FAQ section.
+- [x] Verify the supplied Facebook icon and FAQ navigation link across desktop and mobile before publishing.

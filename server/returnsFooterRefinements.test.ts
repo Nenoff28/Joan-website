@@ -14,15 +14,18 @@ describe("returns FAQ and footer refinements", () => {
 
   it("adds a semantic expandable FAQ section to the returns page", () => {
     expect(returnsSource).toContain('aria-labelledby="returns-faq-title"');
+    expect(returnsSource).toContain('id="returns-faq"');
     expect(returnsSource).toContain("Често задавани въпроси");
     expect(returnsSource).toContain("Какво е входящ номер за връщане (RMA)?");
     expect(returnsSource).toContain("Мога ли да изпратя продукта веднага?");
   });
 
-  it("uses higher-contrast footer text and a blue accessible icon-only Facebook link", () => {
+  it("uses higher-contrast footer text and the supplied accessible icon-only Facebook link", () => {
     expect(storefrontSource).toContain('className="footer-facebook"');
     expect(storefrontSource).toContain('aria-label="Facebook на ЖОАН"');
-    expect(cssSource).toContain("background: #1877f2");
+    expect(storefrontSource).toContain('src="/manus-storage/joan-facebook-icon_f29d2620.webp"');
+    expect(storefrontSource).toContain('alt=""');
+    expect(cssSource).toContain(".footer-facebook img");
     expect(cssSource).toContain(".footer-bottom { color: #dbe3de; }");
   });
 });

@@ -16,7 +16,6 @@ import {
   BrickWall,
   ChevronRight,
   Drill,
-  Facebook,
   HardHat,
   Heart,
   House,
@@ -211,6 +210,7 @@ function Header() {
             <Link href="/">{t("home")}</Link>
             <Link href="/about">{t("about")}</Link>
             <Link href="/contact">{t("storeContacts")}</Link>
+            <Link href="/returns#returns-faq" className="faq-nav-link" aria-label="Често задавани въпроси за връщане">FAQ</Link>
           </nav>
           <Link href="/category/instrumenti" className="promo-nav-link"><span>{t("promo")}</span> {t("viewOffers")}</Link>
         </div>
@@ -242,6 +242,7 @@ function Header() {
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
             <Link href="/delivery" onClick={() => setMobileOpen(false)}>{t("delivery")}</Link>
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
+            <Link href="/returns#returns-faq" onClick={() => setMobileOpen(false)} aria-label="Често задавани въпроси за връщане">FAQ</Link>
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
           </div>
           <Link href="/products" onClick={() => setMobileOpen(false)} className="mobile-all-products">{t("viewAllProducts")} <ArrowRight size={17} /></Link>
@@ -293,7 +294,7 @@ function Footer() {
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
         <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/returns" className="footer-return-link">{t("returns")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link></div>
-        <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><Facebook size={17} aria-hidden="true" /></a></div>
+        <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-icon_f29d2620.webp" alt="" /></a></div>
       </div>
       <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.</span></div></div>
     </footer>

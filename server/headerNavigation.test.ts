@@ -18,6 +18,7 @@ describe("streamlined storefront header navigation", () => {
     expect(desktopNav).toContain('href="/"');
     expect(desktopNav).toContain('href="/about"');
     expect(desktopNav).toContain('href="/contact"');
+    expect(desktopNav).toContain('href="/returns#returns-faq"');
     expect(desktopNav).not.toContain('href="/category/instrumenti"');
     expect(desktopNav).not.toContain('href="/category/gradina"');
     expect(desktopNav).not.toContain('href="/category/stroitelstvo"');
@@ -27,5 +28,11 @@ describe("streamlined storefront header navigation", () => {
   it("uses the requested Bulgarian labels for the informational header routes", () => {
     expect(languageSource).toContain('about: "За нас"');
     expect(languageSource).toContain('storeContacts: "Контакти"');
+  });
+
+  it("exposes the return FAQs through desktop and mobile navigation", () => {
+    expect(headerSource).toContain('className="faq-nav-link"');
+    expect(headerSource).toContain('aria-label="Често задавани въпроси за връщане"');
+    expect(headerSource).toContain('<Link href="/returns#returns-faq" onClick={() => setMobileOpen(false)}');
   });
 });

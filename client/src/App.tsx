@@ -29,9 +29,14 @@ function ScrollToTop() {
     root.style.scrollBehavior = "auto";
     window.scrollTo(0, 0);
     const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
+    const faqAnchorFrame = window.requestAnimationFrame(() => {
+      const anchorId = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+      if (anchorId) document.getElementById(anchorId)?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
 
     return () => {
       window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(faqAnchorFrame);
       root.style.scrollBehavior = previousScrollBehavior;
     };
   }, [location]);
