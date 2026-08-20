@@ -109,3 +109,5 @@
 - [x] Update the brochure index prompt to “Разгледайте офертите” and set the brochure-title badge to 15px through scoped styling.
 - [x] Remove unintended broad inline typography styles introduced by the visual editor while preserving the requested refinements.
 - [x] Verify hero and brochure copy, desktop/mobile typography, controls, and responsive behavior before publishing.
+- [x] Restore the previous large two-line hero composition while retaining only the removed comma and final period.
+- [x] Verify the restored hero composition on desktop and mobile before publishing.

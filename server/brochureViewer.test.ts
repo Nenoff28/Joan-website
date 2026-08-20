@@ -48,7 +48,8 @@ describe("3D brochure viewer", () => {
     expect(homeSource).toContain("Всичко за ремонта на едно място");
     expect(homeSource).not.toContain("style={{fontSize: '55px'}}");
     expect(styleSource).toContain(".brochure-heading-meta b { font-size: .9375rem;");
-    expect(styleSource).toContain(".hero-content h1 { font-size: clamp(3rem, 5.25vw, 55px);");
+    expect(styleSource).toContain('.hero-content h1::before { content: "Всичко за ремонта"; }');
+    expect(styleSource).toContain('.hero-content h1::after { color: #f2c9c8; content: "на едно място"; }');
   });
 
   it("advances every seven seconds without presenting a pause control", () => {

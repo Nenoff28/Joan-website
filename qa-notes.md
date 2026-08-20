@@ -65,3 +65,5 @@ Brochure-heading refinement QA: the requested copy now reads “Разгледа
 Mobile heading QA: at a 375px viewport, the revised heading wraps naturally above the brochure, the 20px “Промо брошура” badge stays within the content frame, and the restored viewer controls remain compact. The central brochure page retains its full native-ratio content under the heading.
 
 Hero and brochure refinement QA: the desktop hero now presents “Всичко за ремонта на едно място” as a single 55px display line without scaling adjacent hero content. At 375px, the existing mobile heading rule preserves a legible three-line arrangement, with normal-size CTA and utility content. The brochure index prompt reads “Разгледайте офертите”, while the title badge is 15px and the viewer controls remain compact.
+
+Hero restoration QA: the desktop hero has been returned to the prior large two-line composition, with “Всичко за ремонта” above the softly tinted “на едно място”. The comma and final period remain removed from the accessible heading copy. At 375px, the restored composition wraps naturally with the CTA and lower hero note remaining visible and unobstructed.

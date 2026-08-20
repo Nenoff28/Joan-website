@@ -220,4 +220,8 @@ h1, h2 { font-weight: 800; letter-spacing: -.065em; }
 /* Brochure heading refinement: retain only the brochure title in the compact metadata badge and give it the requested 20px emphasis. */
 .brochure-heading-meta span { font-size: 0; }
 .brochure-heading-meta b { font-size: .9375rem; letter-spacing: -.02em; line-height: 1.1; }
-.hero-content h1 { font-size: clamp(3rem, 5.25vw, 55px); max-width: 1000px; }
+.hero-content h1 { font-size: 0; line-height: 1.08; max-width: 780px; }
+.hero-content h1::before, .hero-content h1::after { display: block; font-family: "Manrope", Arial, sans-serif; font-size: clamp(3.3rem, 6.1vw, 6.3rem); letter-spacing: -.045em; line-height: 1.08; }
+.hero-content h1::before { content: "Всичко за ремонта"; }
+.hero-content h1::after { color: #f2c9c8; content: "на едно място"; }
+@media (max-width: 760px) { .hero-content h1::before, .hero-content h1::after { font-size: clamp(2.9rem, 14vw, 4rem); } }
