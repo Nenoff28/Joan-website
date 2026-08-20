@@ -1,3 +1,5 @@
+import { categoryTreeFor } from "./categoryHierarchy";
+
 export type Product = {
   slug: string;
   brand?: string;
@@ -16,7 +18,7 @@ export type Product = {
   description: string;
 };
 
-export const categories = [
+const baseCategories = [
   {
     slug: "instrumenti",
     label: "Инструменти",
@@ -106,6 +108,11 @@ export const categories = [
     subcategories: ["Работни обувки", "Ръкавици", "Защита на главата", "Работно облекло"],
   },
 ] as const;
+
+export const categories = baseCategories.map((category) => ({
+  ...category,
+  subcategories: categoryTreeFor(category.slug, [...category.subcategories]),
+}));
 
 type ProductSeed = { name: string; brand: string; price: number; features: string[]; promo?: boolean };
 

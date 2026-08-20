@@ -29,6 +29,11 @@ import {
 
 const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
+type CategoryNodeInput = { label: string; children?: CategoryNodeInput[] };
+const categoryNodeSchema: z.ZodType<CategoryNodeInput> = z.lazy(() => z.object({
+  label: z.string().trim().min(1).max(160),
+  children: z.array(categoryNodeSchema).max(24).optional(),
+}));
 
 const productPayloadSchema = z.object({
   categoryId: z.number().int().positive(),
@@ -57,7 +62,7 @@ const categoryPayloadSchema = z.object({
   description: z.string().trim().min(10),
   imageUrl: z.string().trim().min(1),
   icon: z.string().trim().min(2).max(64),
-  subcategories: z.array(z.string().trim().min(1).max(160)).max(24),
+  subcategories: z.array(categoryNodeSchema).max(24),
   sortOrder: z.number().int().min(0).max(999),
   isActive: z.boolean(),
 });

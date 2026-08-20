@@ -66,6 +66,23 @@ describe("administrator management procedures", () => {
     expect(service.createAdminProduct).toHaveBeenCalledWith(productInput, 17);
   });
 
+  it("accepts and forwards a nested public category tree to the protected category workflow", async () => {
+    service.saveAdminCategory.mockResolvedValueOnce(72);
+    const category = {
+      slug: "instrumenti",
+      name: "Инструменти",
+      description: "Професионални и хоби инструменти за всяка задача.",
+      imageUrl: "/manus-storage/categories/tools.jpg",
+      icon: "drill",
+      subcategories: [{ label: "Електроинструменти", children: [{ label: "Бормашини" }] }, { label: "Ръчни инструменти", children: [{ label: "Бъркалки" }] }],
+      sortOrder: 0,
+      isActive: true,
+    };
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.saveCategory({ id: 72, category })).resolves.toBe(72);
+    expect(service.saveAdminCategory).toHaveBeenCalledWith(72, category, 17);
+  });
+
   it("passes a validated order status and internal note to the protected workflow", async () => {
     service.updateOrderRequest.mockResolvedValueOnce(undefined);
     const caller = appRouter.createCaller(adminContext());

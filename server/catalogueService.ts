@@ -7,6 +7,7 @@ import { storagePut } from "./storage";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
+export type CategoryNode = { label: string; children?: CategoryNode[] };
 
 export type ProductPayload = {
   categoryId: number;
@@ -35,7 +36,7 @@ export type CategoryPayload = {
   description: string;
   imageUrl: string;
   icon: string;
-  subcategories: string[];
+  subcategories: CategoryNode[];
   sortOrder: number;
   isActive: boolean;
 };
@@ -63,6 +64,26 @@ function parseJsonArray(value: string) {
   try {
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeCategoryNodes(value: unknown, depth = 0): CategoryNode[] {
+  if (!Array.isArray(value) || depth > 2) return [];
+  return value.flatMap((entry) => {
+    if (typeof entry === "string" && entry.trim()) return [{ label: entry.trim() }];
+    if (!entry || typeof entry !== "object") return [];
+    const candidate = entry as { label?: unknown; children?: unknown };
+    if (typeof candidate.label !== "string" || !candidate.label.trim()) return [];
+    const children = normalizeCategoryNodes(candidate.children, depth + 1);
+    return [{ label: candidate.label.trim(), ...(children.length ? { children } : {}) }];
+  });
+}
+
+function parseCategoryTree(value: string): CategoryNode[] {
+  try {
+    return normalizeCategoryNodes(JSON.parse(value));
   } catch {
     return [];
   }
@@ -107,7 +128,15 @@ function ensureBrochureSeeded() {
 async function seedCatalogue() {
   const db = await requireDb();
   const [existing] = await db.select({ total: count() }).from(catalogueCategories);
-  if ((existing?.total ?? 0) > 0) return;
+  if ((existing?.total ?? 0) > 0) {
+    const currentCategories = await db.select().from(catalogueCategories);
+    for (const category of seedCategories) {
+      const current = currentCategories.find((item) => item.slug === category.slug);
+      if (!current || parseCategoryTree(current.subcategoriesJson).length > 0) continue;
+      await db.update(catalogueCategories).set({ subcategoriesJson: JSON.stringify(category.subcategories) }).where(eq(catalogueCategories.id, current.id));
+    }
+    return;
+  }
 
   const categoryIdBySlug = new Map<string, number>();
   for (let index = 0; index < seedCategories.length; index += 1) {
@@ -170,7 +199,7 @@ function publicCategory(category: typeof catalogueCategories.$inferSelect) {
     description: category.description,
     image: category.imageUrl,
     icon: category.icon,
-    subcategories: parseJsonArray(category.subcategoriesJson),
+    subcategories: parseCategoryTree(category.subcategoriesJson),
   };
 }
 

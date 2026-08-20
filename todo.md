@@ -89,3 +89,13 @@
 - [x] Rename the header links to “За нас” and “Контакти” and verify the routes remain correct.
 - [x] Verify the streamlined header navigation across desktop and mobile before publishing.
 - [x] Verify the mobile header drawer end-to-end for category access, renamed links, stable closing behavior, and no overflow.
+- [ ] Keep OpenCart migration and Zeron ERP integration work suspended until the user explicitly resumes either initiative.
+- [x] Research and document the public Joan.bg category and subcategory hierarchy without importing product records.
+- [x] Extend the catalogue category model and administrator workflow to support nested subcategories and ordering.
+- [x] Build accessible responsive multi-level category navigation using the approved Joan hierarchy.
+- [x] Add category and subcategory routes with clear empty states for categories that do not yet contain imported products.
+- [x] Verify public hierarchy accuracy, routes, administrator controls, desktop/mobile behavior, and accessibility before publishing.
+- [ ] Verify the nested category editor with an authenticated administrator session, including a saved branch and public hierarchy update.
+- [ ] Re-run final category-hierarchy QA after authenticated administrator verification before publishing.
+- [ ] Resume the authenticated administrator-editor check when the browser session from the user’s signed-in computer is connected.
+- [ ] Await the user’s own live administrator-editor verification of nested category editing and public-menu updates.

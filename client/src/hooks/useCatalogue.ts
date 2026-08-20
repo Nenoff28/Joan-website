@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { categories as fallbackCategories, products as fallbackProducts, type Product } from "@/lib/storeData";
+import { categoryTreeFor, type CategoryNode } from "@/lib/categoryHierarchy";
 
 export type CatalogueIconName = "drill" | "trees" | "house" | "bath" | "lamp" | "panels-top-left" | "waves" | "lock-keyhole" | "paint-roller" | "brick-wall" | "hard-hat";
 
@@ -10,7 +11,7 @@ export type CatalogueCategory = {
   description: string;
   image: string;
   icon: CatalogueIconName;
-  subcategories: string[];
+  subcategories: CategoryNode[];
 };
 
 export type ManagedProduct = Product & {
@@ -21,7 +22,7 @@ export type ManagedProduct = Product & {
   isActive?: boolean;
 };
 
-const staticCategories = fallbackCategories.map((category) => ({ ...category, subcategories: [...category.subcategories] })) as CatalogueCategory[];
+const staticCategories = fallbackCategories.map((category) => ({ ...category, subcategories: categoryTreeFor(category.slug, category.subcategories) })) as CatalogueCategory[];
 const staticProducts = fallbackProducts as ManagedProduct[];
 
 export function useCatalogue() {
@@ -29,6 +30,7 @@ export function useCatalogue() {
   const categories: CatalogueCategory[] = query.data?.categories.map((category) => ({
     ...category,
     icon: category.icon as CatalogueIconName,
+    subcategories: categoryTreeFor(category.slug, category.subcategories),
   })) ?? staticCategories;
   const products: ManagedProduct[] = query.data?.products ?? staticProducts;
   return { categories, products, isLoading: query.isLoading, isDatabaseCatalogue: Boolean(query.data), error: query.error };

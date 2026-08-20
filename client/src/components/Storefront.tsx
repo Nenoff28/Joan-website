@@ -7,6 +7,7 @@ import { store, type Product } from "@/lib/storeData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCatalogue } from "@/hooks/useCatalogue";
+import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
@@ -80,12 +81,41 @@ function Wordmark() {
   );
 }
 
+function categoryPath(slug: string, labels: string[] = []) {
+  const search = labels.length ? `?path=${encodeURIComponent(labels.join(" > "))}` : "";
+  return `/category/${slug}${search}`;
+}
+
+function MegaCategoryTree({ category, onNavigate }: { category: CatalogueCategory; onNavigate: () => void }) {
+  const Icon = categoryIcons[category.icon];
+  return <section className="mega-category-tree">
+    <Link href={categoryPath(category.slug)} onClick={onNavigate} className="mega-category-heading"><Icon size={18} /><span>{category.label}</span><ChevronRight size={15} /></Link>
+    <div className="mega-category-groups">{category.subcategories.map((group) => <div className="mega-category-group" key={group.label}>
+      <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate}>{group.label}</Link>
+      {group.children?.length ? <div className="mega-category-leaves">{group.children.map((child) => <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate}>{child.label}</Link>)}</div> : null}
+    </div>)}</div>
+  </section>;
+}
+
+function MobileCategoryTree({ category, onNavigate }: { category: CatalogueCategory; onNavigate: () => void }) {
+  const Icon = categoryIcons[category.icon];
+  return <details className="mobile-category-tree">
+    <summary><Icon size={18} /><span>{category.label}</span><ChevronRight size={16} /></summary>
+    <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className="mobile-category-all">Всички в {category.label}</Link>
+      {category.subcategories.map((group) => <details key={group.label} className="mobile-category-branch"><summary>{group.label}<ChevronRight size={15} /></summary>
+        <div>{group.children?.length ? group.children.map((child) => <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate}>{child.label}</Link>) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate}>Отвори {group.label}</Link>}</div>
+      </details>)}
+    </div>
+  </details>;
+}
+
 function Header() {
   const { language, setLanguage, t } = useLanguage();
   const { count } = useFavorites();
   const { categories, products } = useCatalogue();
   const [location, setLocation] = useLocation();
   const [megaOpen, setMegaOpen] = useState(false);
+  const [activeMegaCategory, setActiveMegaCategory] = useState("instrumenti");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -195,16 +225,10 @@ function Header() {
               <p>{t("catalogueIntro")}</p>
               <Link href="/category/instrumenti" onClick={() => setMegaOpen(false)} className="text-link">{t("viewAllProducts")} <ArrowRight size={16} /></Link>
             </aside>
-            <div className="mega-categories">
-              {categories.map((category) => {
-                const Icon = categoryIcons[category.icon];
-                return <Link key={category.slug} href={`/category/${category.slug}`} onClick={() => setMegaOpen(false)} className="mega-category">
-                  <Icon size={19} />
-                  <span>{category.label}</span>
-                  <ChevronRight size={16} />
-                </Link>;
-              })}
-            </div>
+            <div className="mega-catalogue-workspace"><div className="mega-category-tabs" role="tablist" aria-label={t("categories")}>{categories.map((category) => {
+              const Icon = categoryIcons[category.icon]; const isActive = category.slug === activeMegaCategory;
+              return <button key={category.slug} type="button" role="tab" aria-selected={isActive} aria-controls="active-mega-category" className={isActive ? "is-active" : ""} onClick={() => setActiveMegaCategory(category.slug)}><Icon size={15} /><span>{category.label}</span></button>;
+            })}</div><div id="active-mega-category" role="tabpanel" className="mega-categories">{(() => { const category = categories.find((item) => item.slug === activeMegaCategory) ?? categories[0]; return category ? <MegaCategoryTree category={category} onNavigate={() => setMegaOpen(false)} /> : null; })()}</div></div>
           </div>
         </div>
       )}
@@ -220,12 +244,7 @@ function Header() {
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
           </div>
           <p className="mobile-drawer-label">{t("categories")}</p>
-          <div className="mobile-category-grid">
-            {categories.map((category) => {
-              const Icon = categoryIcons[category.icon];
-              return <Link key={category.slug} href={`/category/${category.slug}`} onClick={() => setMobileOpen(false)}><Icon size={18} /> {category.label}</Link>;
-            })}
-          </div>
+          <div className="mobile-category-grid">{categories.map((category) => <MobileCategoryTree key={category.slug} category={category} onNavigate={() => setMobileOpen(false)} />)}</div>
           <div className="mobile-contact"><Phone size={18} /><span><b>{t("help")}</b>{store.phones[2]}</span></div>
         </div>
       )}
