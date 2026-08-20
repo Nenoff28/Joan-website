@@ -99,3 +99,7 @@
 - [ ] Re-run final category-hierarchy QA after authenticated administrator verification before publishing.
 - [ ] Resume the authenticated administrator-editor check when the browser session from the user’s signed-in computer is connected.
 - [ ] Await the user’s own live administrator-editor verification of nested category editing and public-menu updates.
+- [x] Remove the visible left and right white margins from the active main brochure page without distorting the printed page content.
+- [x] Verify the corrected main brochure framing on desktop, mobile, and fullscreen before publishing.
+- [x] Replace the main brochure image crop treatment with a non-cropping edge-to-edge frame that preserves complete printed content.
+- [x] Prove complete active-page content across multiple brochure pages on desktop, mobile, and fullscreen before publishing.

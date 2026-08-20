@@ -34,6 +34,13 @@ describe("3D brochure viewer", () => {
     expect(styleSource).toContain(".brochure-viewer-shell:fullscreen");
   });
 
+  it("uses the native brochure-page ratio without cropping central printed content", () => {
+    expect(styleSource).toContain(".brochure-page-frame { aspect-ratio: 1011 / 1418; background: transparent; }");
+    expect(styleSource).toContain(".brochure-page-frame img { height: auto; object-fit: contain; width: 100%; }");
+    expect(styleSource).toContain(".brochure-viewer-shell:fullscreen .brochure-page-frame img { height: auto; object-fit: contain; width: 100%; }");
+    expect(styleSource).not.toContain(".brochure-page-frame img { height: 542px; object-fit: cover;");
+  });
+
   it("advances every seven seconds without presenting a pause control", () => {
     expect(homeSource).toContain("), 7000)");
     expect(homeSource).not.toContain("brochurePaused");
