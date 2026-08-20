@@ -19,7 +19,7 @@ describe("customer-support pages", () => {
   it("submits contact enquiries through the validated tRPC workflow and provides a reference-number success state", () => {
     expect(contactSource).toContain("trpc.contact.createEnquiry.useMutation");
     expect(contactSource).toContain("referenceNumber");
-    expect(contactSource).toContain("Запитването е прието с номер");
+    expect(contactSource).toContain("Запитването е изпратено успешно.");
     expect(contactSource).not.toContain("Формата е готова за интеграция");
   });
 

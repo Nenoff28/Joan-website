@@ -142,3 +142,7 @@
 - [x] Add a contextual FAQ link from the Returns page to the dedicated FAQ route.
 - [x] Verify a temporary QA contact enquiry appears in the authenticated `/admin/enquiries` inbox with the correct reference and details, then remove it and re-verify cleanup.
 - [x] Connect to the user's authorized Brave browser session with the installed extension and complete the administrator-inbox visual verification there.
+- [x] Inspect and optimize the “Общи условия” page for a 375px mobile viewport, including readability, spacing, and overflow.
+- [x] Add clear visible contact-form submission feedback with an accessible loading state and an unmistakable success confirmation.
+- [x] Improve FAQ answer disclosure interactions so each answer visibly expands and collapses with accessible state feedback and reduced-motion support.
+- [x] Verify terms mobile layout, contact-form loading/success states, FAQ expand/collapse behavior, accessibility, TypeScript, tests, and production build before publishing.
