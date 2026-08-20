@@ -11,6 +11,7 @@ import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
+  ArrowUp,
   Bath,
   BrickWall,
   ChevronRight,
@@ -255,7 +256,24 @@ function Header() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-[#f7f7f4] text-[#1e262c]"><Header />{children}<Footer /></div>;
+  return <div className="min-h-screen bg-[#f7f7f4] text-[#1e262c]"><Header />{children}<Footer /><BackToTop /></div>;
+}
+
+function BackToTop() {
+  const { language } = useLanguage();
+  const [visible, setVisible] = useState(false);
+  const label = language === "en" ? "Back to top" : "Към началото";
+
+  useEffect(() => {
+    const updateVisibility = () => setVisible(window.scrollY > 420);
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    return () => window.removeEventListener("scroll", updateVisibility);
+  }, []);
+
+  if (!visible) return null;
+
+  return <button type="button" className="back-to-top" aria-label={label} title={label} onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}><ArrowUp size={18} /><span>{label}</span></button>;
 }
 
 function Footer() {
@@ -274,7 +292,7 @@ function Footer() {
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link><button type="button" onClick={() => toast(t("mockSecurity"))}>{t("returns")}</button></div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout?product=rtrmax-bormashina-udarna-710w-13mm-x-lion&qty=1">{t("checkoutNav")}</Link></div>
         <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer"><Facebook size={15} /> Facebook</a></div>
       </div>
       <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.</span></div></div>

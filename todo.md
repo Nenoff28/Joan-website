@@ -118,3 +118,7 @@
 - [x] Reset page scroll position to the top on every route transition, including catalogue and product-detail navigation.
 - [x] Verify top-of-page behavior for desktop and mobile route changes before publishing.
 - [x] Run browser-level desktop and mobile route-transition checks after scrolling down, confirming each newly opened page starts at scroll position zero.
+- [x] Research the original Joan.bg public return information and translate verified requirements into an appropriate redesigned return page.
+- [x] Add a dedicated “Връщане” page, route, and navigation links with clear return-request guidance and contact handoff.
+- [x] Add an accessible, responsive back-to-top control with smooth user-initiated motion and reduced-motion support.
+- [x] Verify the return page, navigation links, back-to-top interaction, desktop/mobile behavior, accessibility, TypeScript, tests, and production build before publishing.

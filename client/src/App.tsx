@@ -18,6 +18,7 @@ import Terms from "./pages/Terms";
 import Checkout from "./pages/Checkout";
 import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
+import Returns from "./pages/Returns";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -54,6 +55,7 @@ function Router() {
         <Route path={"/terms"} component={Terms} />
         <Route path={"/checkout"} component={Checkout} />
         <Route path={"/favorites"} component={Favorites} />
+        <Route path={"/returns"} component={Returns} />
         <Route path={"/admin/:section"} component={Admin} />
         <Route path={"/admin"} component={Admin} />
         <Route path={"/404"} component={NotFound} />
