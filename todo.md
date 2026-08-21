@@ -195,3 +195,5 @@
 - [x] Verify replacement TikTok icon rendering, hover effect, mobile footer layout, tests, and production build before publishing.
 - [x] Set Facebook, Instagram, and TikTok footer controls to one balanced medium visual size.
 - [x] Verify equal social-icon sizing and spacing on desktop and mobile, with tests and production build before publishing.
+- [x] Increase the Instagram and TikTok visual marks within their shared footer controls to match Facebook perceptually.
+- [x] Verify the adjusted social icon balance across desktop/mobile footer layouts, tests, and production build before publishing.
