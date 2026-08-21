@@ -208,3 +208,5 @@
 - [x] Verify TikTok visual parity, responsive footer layout, tests, and production build before publishing.
 - [x] Reduce all three visually matched footer social icons by one small consistent step.
 - [x] Verify smaller social icons retain visual parity across footer layouts, tests, and production build before publishing.
+- [x] Reduce all three footer social icons by one further consistent small step.
+- [x] Verify the further reduced social icons retain alignment across footer layouts, tests, and production build before publishing.
