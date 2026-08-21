@@ -2,13 +2,16 @@
 import { Breadcrumbs, Layout, PageMeta } from "@/components/Storefront";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCart } from "@/contexts/CartContext";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { ArrowRight, Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { Link } from "wouter";
+import { toast } from "sonner";
 
 export default function Favorites() {
   const { t } = useLanguage();
   const { count, isFavorite, removeFavorite, clearFavorites } = useFavorites();
+  const { addItem } = useCart();
   const { products } = useCatalogue();
   const savedProducts = products.filter((product) => isFavorite(product.slug));
 
@@ -59,7 +62,7 @@ export default function Favorites() {
                     <div className="favorite-product-price">{product.price ? <><b>{product.price}</b><small>{product.priceBgn}</small></> : <b className="ask-price">{t("enquiry")}</b>}</div>
                     <div className="favorite-product-actions">
                       <Link href={`/product/${product.slug}`} className="favorite-view">{t("viewProduct")} <ArrowRight size={15} /></Link>
-                      {product.price && <Link href={`/checkout?product=${product.slug}&qty=1`} className="favorite-buy" aria-label={`${t("checkout")}: ${product.name}`}><ShoppingCart size={17} /></Link>}
+                      {product.price && <button type="button" className="favorite-buy" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={17} /></button>}
                       <button type="button" className="favorite-remove" onClick={() => removeFavorite(product.slug)} aria-label={`${t("removeFromFavorites")}: ${product.name}`}><Trash2 size={17} /></button>
                     </div>
                   </div>

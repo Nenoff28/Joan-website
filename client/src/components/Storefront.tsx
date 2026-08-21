@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { store, type Product } from "@/lib/storeData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { Link, useLocation } from "wouter";
@@ -25,12 +26,15 @@ import {
   MapPin,
   Menu,
   MessageCircle,
+  Minus,
   PackageCheck,
   PanelsTopLeft,
   PaintRoller,
   Phone,
+  Plus,
   Search,
   ShoppingCart,
+  Trash2,
   Trees,
   Truck,
   UserRound,
@@ -119,6 +123,14 @@ function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity } = useCart();
+  const cartRows = cartItems.flatMap((line) => {
+    const product = products.find((item) => item.slug === line.slug);
+    return product ? [{ product, quantity: line.quantity }] : [];
+  });
+  const cartTotal = cartRows.reduce((total, row) => total + (Number(row.product.price?.replace("€", "")) || 0) * row.quantity, 0);
+  const cartCopy = language === "bg" ? { heading: "Вашата количка", empty: "Количката е празна.", browse: "Разгледайте продуктите", remove: "Премахни", review: "Преглед на цялата количка", count: "артикула", total: "Общо" } : { heading: "Your cart", empty: "Your cart is empty.", browse: "Browse products", remove: "Remove", review: "Review full cart", count: "items", total: "Total" };
   const searchMatches = useMemo(
     () =>
       products.filter((product) => `${product.brand} ${product.name}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4),
@@ -146,7 +158,7 @@ function Header() {
     <header className="site-header">
       <div className="utility-rail">
         <div className="page-frame utility-inner">
-          <p><Truck size={14} /> {language === "bg" ? "Експресна доставка след потвърждение от оператор" : "Express delivery after operator confirmation"}</p>
+          <p><Truck size={14} /> {language === "bg" ? "Експресна доставка" : "Express delivery"}</p>
           <div className="utility-actions">
             <Link href="/delivery">{t("delivery")}</Link>
             <Link href="/contact">{t("contacts")}</Link>
@@ -196,9 +208,9 @@ function Header() {
           <div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div>
           <button type="button" onClick={() => doAction(t("account"))}><UserRound size={21} /><span>{t("account")}</span></button>
           <Link href="/favorites" className="header-favorites" aria-label={t("favorites")}><Heart size={21} /><span>{t("favorites")}</span>{count > 0 && <i>{count}</i>}</Link>
-          <Link href="/checkout" className="header-cart"><ShoppingCart size={21} /><span>{t("cart")}</span><i>1</i></Link>
+          <div className="header-cart-wrap"><button type="button" className="header-cart" onClick={() => setCartOpen((open) => !open)} aria-expanded={cartOpen} aria-controls="header-mini-cart"><ShoppingCart size={21} /><span>{t("cart")}</span>{cartCount > 0 && <i>{cartCount}</i>}</button>{cartOpen && <MiniCart id="header-mini-cart" rows={cartRows} total={cartTotal} copy={cartCopy} onClose={() => setCartOpen(false)} onIncrement={(slug) => addItem(slug)} onDecrement={(slug, quantity) => setQuantity(slug, quantity - 1)} onRemove={removeItem} />}</div>
         </div>
-        <button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label={t("allCategories")}><Menu size={24} /></button>
+        <button type="button" className="mobile-cart-toggle" onClick={() => setMobileOpen(true)} aria-label={`${t("cart")}: ${cartCount}`}><ShoppingCart size={22} />{cartCount > 0 && <i>{cartCount}</i>}</button><button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label={t("allCategories")}><Menu size={24} /></button>
       </div>
 
       <div className="nav-shell">
@@ -239,6 +251,7 @@ function Header() {
           <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close"><X size={24} /></button></div></div>
           <form className="mobile-search-wrap" onSubmit={(event) => { submitSearch(event); setMobileOpen(false); }} role="search"><label htmlFor="mobile-site-search" className="sr-only">{t("searchLabel")}</label><Search size={18} aria-hidden="true" /><input id="mobile-site-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("searchPlaceholder")} autoComplete="off" /><Button type="submit" className="search-submit">{t("search")}</Button></form>
           {query && <div className="mobile-search-results" aria-live="polite">{searchMatches.length ? searchMatches.map((product) => <button key={product.slug} type="button" onClick={() => { setLocation(`/product/${product.slug}`); setQuery(""); setSearchFocused(false); setMobileOpen(false); }}><img src={product.image} alt="" /><span><b>{product.brand}</b>{product.name}</span><ChevronRight size={16} /></button>) : <p>{t("noMatches")}</p>}</div>}
+          <MiniCart id="mobile-mini-cart" rows={cartRows} total={cartTotal} copy={cartCopy} onClose={() => setMobileOpen(false)} onIncrement={(slug) => addItem(slug)} onDecrement={(slug, quantity) => setQuantity(slug, quantity - 1)} onRemove={removeItem} />
           <div className="mobile-drawer-links">
             <Link href="/" onClick={() => setMobileOpen(false)}>{t("home")}</Link>
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
@@ -260,6 +273,11 @@ function Header() {
 
 export function Layout({ children }: { children: ReactNode }) {
   return <div className="min-h-screen bg-[#f7f7f4] text-[#1e262c]"><Header />{children}<Footer /><BackToTop /></div>;
+}
+
+type MiniCartProps = { id: string; rows: { product: Product; quantity: number }[]; total: number; copy: { heading: string; empty: string; browse: string; remove: string; review: string; count: string; total: string }; onClose: () => void; onIncrement: (slug: string) => void; onDecrement: (slug: string, quantity: number) => void; onRemove: (slug: string) => void };
+function MiniCart({ id, rows, total, copy, onClose, onIncrement, onDecrement, onRemove }: MiniCartProps) {
+  return <section id={id} className="mini-cart" aria-label={copy.heading}><div className="mini-cart-heading"><div><p className="eyebrow">{copy.heading}</p><h2>{rows.reduce((sum, row) => sum + row.quantity, 0)} {copy.count}</h2></div><button type="button" onClick={onClose} aria-label="Затвори количката"><X size={17} /></button></div>{rows.length ? <><div className="mini-cart-items">{rows.map(({ product, quantity }) => <article key={product.slug} className="mini-cart-item"><img src={product.image} alt="" /><div><p className="product-brand">{product.brand}</p><b>{product.name}</b><span>{product.price ?? "Запитване"}</span><div className="mini-cart-quantity"><button type="button" onClick={() => onDecrement(product.slug, quantity)} aria-label={`Намали количеството на ${product.name}`}><Minus size={14} /></button><output aria-label={`Количество ${product.name}`}>{quantity}</output><button type="button" onClick={() => onIncrement(product.slug)} aria-label={`Увеличи количеството на ${product.name}`}><Plus size={14} /></button><button type="button" className="mini-cart-remove" onClick={() => onRemove(product.slug)} aria-label={`${copy.remove}: ${product.name}`}><Trash2 size={14} /></button></div></div></article>)}</div><div className="mini-cart-total"><span>{copy.total}</span><strong>{total ? `${total.toFixed(2)}€` : "Запитване"}</strong></div><Link href="/checkout" className="mini-cart-checkout" onClick={onClose}>{copy.review}<ArrowRight size={16} /></Link></> : <div className="mini-cart-empty"><ShoppingCart size={22} /><p>{copy.empty}</p><Link href="/products" onClick={onClose}>{copy.browse} <ArrowRight size={15} /></Link></div>}</section>;
 }
 
 function BackToTop() {
@@ -315,6 +333,7 @@ export function SectionHeading({ eyebrow, title, text, action }: { eyebrow?: str
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const { t } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { addItem } = useCart();
   const [, setLocation] = useLocation();
   const favorite = isFavorite(product.slug);
   function handleFavorite() {
@@ -336,7 +355,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           <div className="product-price">
             {product.price ? <><span className="old-price">{product.oldPrice} <small>{product.oldPriceBgn}</small></span><b>{product.price}</b><small>{product.priceBgn}</small></> : <b className="ask-price">{t("enquiry")}</b>}
           </div>
-          {product.price ? <Link href={`/checkout?product=${product.slug}&qty=1`} className="cart-square" aria-label={`${t("checkout")}: ${product.name}`}><ShoppingCart size={19} /></Link> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
+          {product.price ? <button type="button" className="cart-square" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={19} /></button> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
         </div>
         <div className="availability"><span />{t("checkAvailability")}</div>
       </div>

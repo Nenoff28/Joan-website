@@ -7,6 +7,8 @@ const termsSource = readFileSync(resolve(root, "client/src/pages/Terms.tsx"), "u
 const contactSource = readFileSync(resolve(root, "client/src/pages/Contact.tsx"), "utf8");
 const faqSource = readFileSync(resolve(root, "client/src/pages/FAQ.tsx"), "utf8");
 const storefrontSource = readFileSync(resolve(root, "client/src/components/Storefront.tsx"), "utf8");
+const checkoutSource = readFileSync(resolve(root, "client/src/pages/Checkout.tsx"), "utf8");
+const cartContextSource = readFileSync(resolve(root, "client/src/contexts/CartContext.tsx"), "utf8");
 const cssSource = readFileSync(resolve(root, "client/src/index.css"), "utf8");
 
 describe("support interaction refinements", () => {
@@ -32,8 +34,8 @@ describe("support interaction refinements", () => {
     expect(cssSource).toContain(".faq-item.is-open .faq-answer");
   });
 
-  it("uses the real catalogue fallback when header and footer open the mock checkout", () => {
-    expect(storefrontSource).toContain('href="/checkout" className="header-cart"');
+  it("keeps an explicit checkout route without retaining the stale catalogue slug", () => {
+    expect(storefrontSource).toContain('href="/checkout" className="mini-cart-checkout"');
     expect(storefrontSource).toContain('<Link href="/checkout">{t("checkoutNav")}</Link>');
     expect(storefrontSource).not.toContain("rtrmax-bormashina-udarna-710w-13mm-x-lion");
   });
@@ -42,5 +44,27 @@ describe("support interaction refinements", () => {
     expect(storefrontSource).toContain('id="mobile-site-search"');
     expect(storefrontSource).toContain('className="mobile-search-results"');
     expect(cssSource).toContain(".mobile-search-wrap");
+  });
+
+  it("provides persistent cart state and accessible mini-cart quantity and removal controls", () => {
+    expect(cartContextSource).toContain('const CART_STORAGE_KEY = "joan-cart"');
+    expect(cartContextSource).toContain("addItem");
+    expect(cartContextSource).toContain("setQuantity");
+    expect(storefrontSource).toContain('id="header-mini-cart"');
+    expect(storefrontSource).toContain('className="mini-cart-quantity"');
+    expect(storefrontSource).toContain("onRemove={removeItem}");
+    expect(cssSource).toContain(".mini-cart-checkout");
+  });
+
+  it("renders every persisted cart line in checkout with its own editable quantity", () => {
+    expect(checkoutSource).toContain("const checkoutRows = useMemo");
+    expect(checkoutSource).toContain('className="checkout-cart-controls"');
+    expect(checkoutSource).toContain("Promise.all(checkoutRows.map");
+    expect(checkoutSource).toContain('checkoutRows.length === 0');
+  });
+
+  it("uses the concise delivery label in the header", () => {
+    expect(storefrontSource).toContain('"Експресна доставка" : "Express delivery"');
+    expect(storefrontSource).not.toContain("Експресна доставка след потвърждение от оператор");
   });
 });

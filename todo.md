@@ -153,3 +153,7 @@
 - [x] Document prioritized desktop and mobile enhancement recommendations for future iterations after the verified QA pass.
 - [x] Replace the stale hard-coded checkout product slug found during QA so header and footer checkout links resolve to a real current catalogue product.
 - [x] Restore product search access on mobile by adding a usable search field and result path to the mobile navigation drawer.
+- [x] Shorten the header delivery message to “Експресна доставка”.
+- [x] Replace the header cart link with an accessible interactive mini-cart preview.
+- [x] Add mini-cart quantity increment, decrement, item removal, total, empty-state, and checkout navigation behavior.
+- [x] Verify mini-cart interactions and responsive desktop/mobile header presentation before publishing.
