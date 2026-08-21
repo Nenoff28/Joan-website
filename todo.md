@@ -204,3 +204,5 @@
 - [x] Produce genuine alpha-transparent Facebook and Instagram footer assets with no white outside area.
 - [x] Replace the current Facebook and Instagram footer files with verified transparent variants.
 - [x] Verify the dark footer shows through around both icons on desktop/mobile, with tests and production build before publishing.
+- [x] Increase only the TikTok footer mark until it matches Facebook and Instagram perceptually.
+- [x] Verify TikTok visual parity, responsive footer layout, tests, and production build before publishing.

@@ -40,6 +40,7 @@ describe("returns FAQ and footer refinements", () => {
     expect(cssSource).toContain('prefers-reduced-motion: reduce');
     expect(cssSource).toContain('--footer-social-control: 32px');
     expect(cssSource).toContain('transform: scale(1.22)');
+    expect(cssSource).toContain('footer-social-placeholder:last-child img { transform: scale(1.48)');
     expect(cssSource).toContain(".footer-facebook img");
     expect(cssSource).toContain(".footer-bottom { color: #dbe3de; }");
   });
