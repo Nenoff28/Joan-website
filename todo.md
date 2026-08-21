@@ -206,3 +206,5 @@
 - [x] Verify the dark footer shows through around both icons on desktop/mobile, with tests and production build before publishing.
 - [x] Increase only the TikTok footer mark until it matches Facebook and Instagram perceptually.
 - [x] Verify TikTok visual parity, responsive footer layout, tests, and production build before publishing.
+- [x] Reduce all three visually matched footer social icons by one small consistent step.
+- [x] Verify smaller social icons retain visual parity across footer layouts, tests, and production build before publishing.
