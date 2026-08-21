@@ -94,10 +94,10 @@ function MegaCategoryTree({ category, onNavigate }: { category: CatalogueCategor
   const Icon = categoryIcons[category.icon];
   return <section className="mega-category-tree">
     <Link href={categoryPath(category.slug)} onClick={onNavigate} className="mega-category-heading"><Icon size={18} /><span>{category.label}</span><ChevronRight size={15} /></Link>
-    <div className="mega-category-groups">{category.subcategories.map((group) => <div className="mega-category-group" key={group.label}>
-      <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate}>{group.label}</Link>
-      {group.children?.length ? <div className="mega-category-leaves">{group.children.map((child) => <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate}>{child.label}</Link>)}</div> : null}
-    </div>)}</div>
+    <div className="mega-category-groups">{category.subcategories.map((group) => <details className="mega-category-group" key={group.label}>
+      <summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
+      <div className="mega-category-leaves">{group.children?.length ? group.children.map((child) => <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate}>{child.label}</Link>) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate}>Отвори {group.label}</Link>}</div>
+    </details>)}</div>
   </section>;
 }
 
@@ -106,7 +106,7 @@ function MobileCategoryTree({ category, onNavigate }: { category: CatalogueCateg
   return <details className="mobile-category-tree">
     <summary><Icon size={18} /><span>{category.label}</span><ChevronRight size={16} /></summary>
     <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className="mobile-category-all">Всички в {category.label}</Link>
-      {category.subcategories.map((group) => <details key={group.label} className="mobile-category-branch"><summary>{group.label}<ChevronRight size={15} /></summary>
+      {category.subcategories.map((group) => <details key={group.label} className="mobile-category-branch"><summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
         <div>{group.children?.length ? group.children.map((child) => <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate}>{child.label}</Link>) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate}>Отвори {group.label}</Link>}</div>
       </details>)}
     </div>

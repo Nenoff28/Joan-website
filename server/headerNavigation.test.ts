@@ -30,6 +30,14 @@ describe("streamlined storefront header navigation", () => {
     expect(languageSource).toContain('storeContacts: "Контакти"');
   });
 
+  it("uses the concise catalogue label and plus-controlled nested category disclosures", () => {
+    expect(languageSource).toContain('catalogue: "Каталог"');
+    expect(languageSource).not.toContain('catalogue: "Каталог Жоан"');
+    expect(headerSource).toContain('className="mega-category-group"');
+    expect(headerSource).toContain('<Plus size={15} aria-hidden="true" />');
+    expect(headerSource).toContain('className="mobile-category-branch"');
+  });
+
   it("exposes the return FAQs through desktop and mobile navigation", () => {
     expect(headerSource).toContain('className="faq-nav-link"');
     expect(headerSource).toContain('aria-label="Често задавани въпроси"');

@@ -158,7 +158,7 @@
 - [x] Add mini-cart quantity increment, decrement, item removal, total, empty-state, and checkout navigation behavior.
 - [x] Verify mini-cart interactions and responsive desktop/mobile header presentation before publishing.
 
-- [ ] Remove the extra “Жоан” label from the catalogue navigation heading.
-- [ ] Convert expandable desktop category subgroups into plus-controlled dropdowns that reveal their child subcategories.
-- [ ] Make the plus-controlled dropdown behavior consistent across all categories, including Баня, and preserve mobile disclosure accessibility.
-- [ ] Verify nested dropdown interaction, keyboard states, mobile layout, TypeScript, tests, and production build before publishing.
+- [x] Remove the extra “Жоан” label from the catalogue navigation heading.
+- [x] Convert expandable desktop category subgroups into plus-controlled dropdowns that reveal their child subcategories.
+- [x] Make the plus-controlled dropdown behavior consistent across all categories, including Баня, and preserve mobile disclosure accessibility.
+- [x] Verify nested dropdown interaction, keyboard states, mobile layout, TypeScript, tests, and production build before publishing.
