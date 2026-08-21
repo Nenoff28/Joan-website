@@ -210,3 +210,5 @@
 - [x] Verify smaller social icons retain visual parity across footer layouts, tests, and production build before publishing.
 - [x] Reduce all three footer social icons by one further consistent small step.
 - [x] Verify the further reduced social icons retain alignment across footer layouts, tests, and production build before publishing.
+- [x] Reduce all three aligned footer social icons by one additional uniform small step.
+- [x] Verify the additional reduction preserves social icon alignment across footer layouts, tests, and production build before publishing.

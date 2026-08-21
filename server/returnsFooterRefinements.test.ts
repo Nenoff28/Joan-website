@@ -38,7 +38,7 @@ describe("returns FAQ and footer refinements", () => {
     expect(cssSource).toContain('.footer-facebook, .footer-social-placeholder');
     expect(cssSource).toContain('scale(1.1)');
     expect(cssSource).toContain('prefers-reduced-motion: reduce');
-    expect(cssSource).toContain('--footer-social-control: 28px');
+    expect(cssSource).toContain('--footer-social-control: 26px');
     expect(cssSource).toContain('transform: scale(1.22)');
     expect(cssSource).toContain('footer-social-placeholder:last-child img { transform: scale(1.48)');
     expect(cssSource).toContain(".footer-facebook img");
