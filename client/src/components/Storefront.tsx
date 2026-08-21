@@ -20,7 +20,6 @@ import {
   HardHat,
   Heart,
   House,
-  Instagram,
   LampDesk,
   LockKeyhole,
   Mail,
@@ -28,7 +27,6 @@ import {
   Menu,
   MessageCircle,
   Minus,
-  Music2,
   PackageCheck,
   PanelsTopLeft,
   PaintRoller,
@@ -320,13 +318,10 @@ function Footer() {
         <div className="footer-brand">
           <Wordmark />
           <p>{t("catalogueIntro")}</p>
-          <div className="footer-contact-list" aria-label={t("contacts")}>
-            <p className="footer-contact-heading">{t("contacts")}</p>
-            <a className="footer-contact-line footer-contact-action" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><span className="footer-contact-icon"><Phone size={16} /></span><span><b>{store.phones[2]}</b><small>Обадете се на екипа на ЖОАН</small></span></a>
-            <a className="footer-contact-line footer-contact-action" href={`mailto:${store.email}`}><span className="footer-contact-icon"><Mail size={16} /></span><span><b>{store.email}</b><small>Пишете ни по email</small></span></a>
-            <a className="footer-contact-line footer-contact-action footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer"><span className="footer-contact-icon"><MapPin size={16} /></span><span><b>{store.address}</b><small>Отворете в Google Maps</small></span></a>
-          </div>
-          <div className="footer-social-row" aria-label="Социални мрежи"><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-icon_f29d2620.webp" alt="" /></a><span className="footer-social-placeholder" role="img" aria-label="Instagram на ЖОАН — профилът предстои" title="Instagram — скоро"><Instagram size={16} aria-hidden="true" /></span><span className="footer-social-placeholder" role="img" aria-label="TikTok на ЖОАН — профилът предстои" title="TikTok — скоро"><Music2 size={16} aria-hidden="true" /></span></div>
+          <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
+          <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
+          <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer"><MapPin size={16} /> {store.address}</a>
+          <div className="footer-social-row" aria-label="Социални мрежи"><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-icon_f29d2620.webp" alt="" /></a><span className="footer-social-placeholder" role="img" aria-label="Instagram на ЖОАН — профилът предстои" title="Instagram — скоро"><img src="/manus-storage/joan-instagram-icon_a699b6a8.avif" alt="" /></span><span className="footer-social-placeholder" role="img" aria-label="TikTok на ЖОАН — профилът предстои" title="TikTok — скоро"><img src="/manus-storage/joan-tiktok-icon_99d4f9be.webp" alt="" /></span></div>
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
         <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">ЧЗВ</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>

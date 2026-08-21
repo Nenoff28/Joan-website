@@ -181,3 +181,8 @@
 - [x] Match the Facebook footer icon footprint to the phone and email contact icons.
 - [x] Add accessible Instagram and TikTok future-profile placeholders without inactive external links.
 - [x] Verify social-control layout, labels, mobile presentation, tests, and production build before publishing.
+- [x] Prepare and publish the user-supplied Instagram and TikTok icon files as web-safe static assets.
+- [x] Replace temporary Instagram and TikTok footer symbols with the supplied branded images while preserving future-profile labels.
+- [x] Verify supplied social-icon rendering, compact sizing, responsive layout, tests, and production build before publishing.
+- [x] Restore phone, email, and map address to the prior simple inline footer contact presentation.
+- [x] Verify the restored contact presentation, map link, social-row separation, responsive layout, tests, and production build before publishing.
