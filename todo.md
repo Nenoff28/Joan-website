@@ -186,3 +186,7 @@
 - [x] Verify supplied social-icon rendering, compact sizing, responsive layout, tests, and production build before publishing.
 - [x] Restore phone, email, and map address to the prior simple inline footer contact presentation.
 - [x] Verify the restored contact presentation, map link, social-row separation, responsive layout, tests, and production build before publishing.
+- [x] Create transparent-background versions of the supplied Instagram and TikTok icons.
+- [x] Add a subtle hover enlargement effect to footer social icons while respecting reduced-motion preferences.
+- [x] Review and refine mobile social/contact spacing after the transparent icon update.
+- [x] Verify transparent assets, hover behavior, mobile layout, tests, and production build before publishing.
