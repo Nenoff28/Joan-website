@@ -201,3 +201,6 @@
 - [x] Correct the Instagram icon to a normal, brighter gradient treatment.
 - [x] Match Facebook, Instagram, and TikTok visually within the footer social row.
 - [x] Verify updated social icon colors, proportions, mobile spacing, tests, and production build before publishing.
+- [x] Produce genuine alpha-transparent Facebook and Instagram footer assets with no white outside area.
+- [x] Replace the current Facebook and Instagram footer files with verified transparent variants.
+- [x] Verify the dark footer shows through around both icons on desktop/mobile, with tests and production build before publishing.
