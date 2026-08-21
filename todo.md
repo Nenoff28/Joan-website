@@ -175,3 +175,9 @@
 - [x] Remove the redundant store footer column after relocating its useful contact items.
 - [x] Prevent the back-to-top control from obscuring the footer’s online-catalogue notice on desktop and mobile.
 - [x] Verify footer links, map destination, responsive spacing, accessibility, tests, and production build before publishing.
+- [x] Improve the footer left contact block hierarchy and spacing for mobile scanning.
+- [x] Make the phone, email, and map address controls comfortably tappable on mobile.
+- [x] Verify contact block contrast, focus states, narrow-screen layout, tests, and production build before publishing.
+- [x] Match the Facebook footer icon footprint to the phone and email contact icons.
+- [x] Add accessible Instagram and TikTok future-profile placeholders without inactive external links.
+- [x] Verify social-control layout, labels, mobile presentation, tests, and production build before publishing.
