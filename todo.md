@@ -162,3 +162,6 @@
 - [x] Convert expandable desktop category subgroups into plus-controlled dropdowns that reveal their child subcategories.
 - [x] Make the plus-controlled dropdown behavior consistent across all categories, including Баня, and preserve mobile disclosure accessibility.
 - [x] Verify nested dropdown interaction, keyboard states, mobile layout, TypeScript, tests, and production build before publishing.
+- [x] Add smooth accessible open/close motion to the plus-controlled category disclosures.
+- [x] Highlight the current category and subcategory in desktop and mobile navigation from the active route and hierarchy path.
+- [x] Verify disclosure motion, active route indicators, keyboard semantics, desktop/mobile layouts, tests, and production build before publishing.

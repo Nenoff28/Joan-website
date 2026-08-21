@@ -33,9 +33,16 @@ describe("streamlined storefront header navigation", () => {
   it("uses the concise catalogue label and plus-controlled nested category disclosures", () => {
     expect(languageSource).toContain('catalogue: "Каталог"');
     expect(languageSource).not.toContain('catalogue: "Каталог Жоан"');
-    expect(headerSource).toContain('className="mega-category-group"');
+    expect(headerSource).toContain('mega-category-group ${groupActive ? "is-active" : ""}');
     expect(headerSource).toContain('<Plus size={15} aria-hidden="true" />');
-    expect(headerSource).toContain('className="mobile-category-branch"');
+    expect(headerSource).toContain('mobile-category-branch ${groupActive ? "is-active" : ""}');
+  });
+
+  it("derives active category and subcategory states from the current route", () => {
+    expect(headerSource).toContain("function activeCategoryPath(location: string, slug: string)");
+    expect(headerSource).toContain('className={`mega-category-heading ${activePath ? "is-active" : ""}`}');
+    expect(headerSource).toContain('className={`mobile-category-tree ${activePath ? "is-current" : ""}`}');
+    expect(headerSource).toContain("aria-current={childActive ? \"page\" : undefined}");
   });
 
   it("exposes the return FAQs through desktop and mobile navigation", () => {
