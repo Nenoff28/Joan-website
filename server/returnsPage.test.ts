@@ -10,7 +10,7 @@ const cssSource = readFileSync(resolve(process.cwd(), "client/src/index.css"), "
 describe("returns information and back-to-top interaction", () => {
   it("provides a dedicated public returns route and footer link", () => {
     expect(appSource).toContain('path={"/returns"} component={Returns}');
-    expect(storefrontSource).toContain('<Link href="/returns" className="footer-return-link">{t("returns")}</Link>');
+    expect(storefrontSource).toContain('<Link href="/returns">{t("returns")}</Link>');
     expect(returnsSource).toContain('title="Връщане на продукти"');
   });
 

@@ -312,21 +312,19 @@ function BackToTop() {
 function Footer() {
   const { t } = useLanguage();
   const { categories } = useCatalogue();
-  const [location] = useLocation();
-  const isContactPage = location === "/contact";
   return (
     <footer className="site-footer">
-      {!isContactPage && <div className="footer-cta"><div className="page-frame footer-cta-inner"><div><span className="eyebrow">{t("help")}</span><h2>{t("contacts")}</h2></div><Link href="/contact" className="button-ghost-light">{t("contacts")} <ArrowRight size={18} /></Link></div></div>}
       <div className="page-frame footer-main">
         <div className="footer-brand">
           <Wordmark />
           <p>{t("catalogueIntro")}</p>
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
+          <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer"><MapPin size={16} /> {store.address}</a>
+          <a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-icon_f29d2620.webp" alt="" /></a>
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">FAQ</Link><Link href="/returns" className="footer-return-link">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
-        <div><h3>{t("business")}</h3><p className="footer-address"><MapPin size={16} /> {store.address}</p><Link href="/about">{t("about")}</Link>{!isContactPage && <Link href="/contact">{t("contacts")}</Link>}<a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-icon_f29d2620.webp" alt="" /></a></div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">ЧЗВ</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
       </div>
       <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.</span></div></div>
     </footer>

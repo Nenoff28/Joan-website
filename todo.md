@@ -169,3 +169,9 @@
 - [x] Remove the special red FAQ styling so the ЧЗВ link matches the other header navigation links.
 - [x] Remove the “ПРОМО / Виж предложенията” header navigation link.
 - [x] Verify the streamlined header across desktop/mobile, regression tests, and production build before publishing.
+- [x] Remove the redundant “Нужна е помощ? / Контакти” footer call-to-action block.
+- [x] Normalize the ЧЗВ and Връщане footer links, including removal of the red return marker.
+- [x] Move the map-linked address and smaller Facebook icon into the left contact block below phone and email.
+- [x] Remove the redundant store footer column after relocating its useful contact items.
+- [x] Prevent the back-to-top control from obscuring the footer’s online-catalogue notice on desktop and mobile.
+- [x] Verify footer links, map destination, responsive spacing, accessibility, tests, and production build before publishing.
