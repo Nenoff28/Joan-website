@@ -190,3 +190,6 @@
 - [x] Add a subtle hover enlargement effect to footer social icons while respecting reduced-motion preferences.
 - [x] Review and refine mobile social/contact spacing after the transparent icon update.
 - [x] Verify transparent assets, hover behavior, mobile layout, tests, and production build before publishing.
+- [x] Create a transparent version of the newly supplied TikTok icon.
+- [x] Replace the footer TikTok asset with the supplied replacement icon.
+- [x] Verify replacement TikTok icon rendering, hover effect, mobile footer layout, tests, and production build before publishing.
