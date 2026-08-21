@@ -212,3 +212,7 @@
 - [x] Verify the further reduced social icons retain alignment across footer layouts, tests, and production build before publishing.
 - [x] Reduce all three aligned footer social icons by one additional uniform small step.
 - [x] Verify the additional reduction preserves social icon alignment across footer layouts, tests, and production build before publishing.
+- [x] Inspect footer social icon size and spacing at a 375px mobile viewport.
+- [x] Apply and verify a targeted mobile footer social-icon correction only if the reviewed layout requires it.
+- [x] Reduce all three footer social icons by approximately 10% from their current matched size.
+- [x] Verify the reduced icons preserve mobile spacing, alignment, tests, and production build before publishing.
