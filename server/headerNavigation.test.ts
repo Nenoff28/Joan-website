@@ -45,9 +45,11 @@ describe("streamlined storefront header navigation", () => {
     expect(headerSource).toContain("aria-current={childActive ? \"page\" : undefined}");
   });
 
-  it("exposes the return FAQs through desktop and mobile navigation", () => {
-    expect(headerSource).toContain('className="faq-nav-link"');
+  it("exposes ЧЗВ through neutral desktop and mobile navigation without a promotion shortcut", () => {
+    expect(headerSource).toContain('aria-label="Често задавани въпроси">ЧЗВ</Link>');
+    expect(headerSource).not.toContain('className="faq-nav-link"');
     expect(headerSource).toContain('aria-label="Често задавани въпроси"');
     expect(headerSource).toContain('<Link href="/faq" onClick={() => setMobileOpen(false)}');
+    expect(headerSource).not.toContain('className="promo-nav-link"');
   });
 });

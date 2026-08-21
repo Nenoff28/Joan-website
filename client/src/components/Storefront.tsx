@@ -235,9 +235,8 @@ function Header() {
             <Link href="/">{t("home")}</Link>
             <Link href="/about">{t("about")}</Link>
             <Link href="/contact">{t("storeContacts")}</Link>
-            <Link href="/faq" className="faq-nav-link" aria-label="Често задавани въпроси">FAQ</Link>
+            <Link href="/faq" aria-label="Често задавани въпроси">ЧЗВ</Link>
           </nav>
-          <Link href="/category/instrumenti" className="promo-nav-link"><span>{t("promo")}</span> {t("viewOffers")}</Link>
         </div>
       </div>
 
@@ -270,7 +269,7 @@ function Header() {
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
             <Link href="/delivery" onClick={() => setMobileOpen(false)}>{t("delivery")}</Link>
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
-            <Link href="/faq" onClick={() => setMobileOpen(false)} aria-label="Често задавани въпроси">FAQ</Link>
+            <Link href="/faq" onClick={() => setMobileOpen(false)} aria-label="Често задавани въпроси">ЧЗВ</Link>
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
           </div>
           <Link href="/products" onClick={() => setMobileOpen(false)} className="mobile-all-products">{t("viewAllProducts")} <ArrowRight size={17} /></Link>

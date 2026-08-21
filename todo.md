@@ -165,3 +165,7 @@
 - [x] Add smooth accessible open/close motion to the plus-controlled category disclosures.
 - [x] Highlight the current category and subcategory in desktop and mobile navigation from the active route and hierarchy path.
 - [x] Verify disclosure motion, active route indicators, keyboard semantics, desktop/mobile layouts, tests, and production build before publishing.
+- [x] Rename the header FAQ label to “ЧЗВ” on desktop and mobile navigation.
+- [x] Remove the special red FAQ styling so the ЧЗВ link matches the other header navigation links.
+- [x] Remove the “ПРОМО / Виж предложенията” header navigation link.
+- [x] Verify the streamlined header across desktop/mobile, regression tests, and production build before publishing.
