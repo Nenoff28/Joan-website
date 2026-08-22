@@ -283,3 +283,9 @@
 
 - [x] Remove the remaining “Категории” quick-links tab from selected-subcategory result pages.
 - [x] Verify the selected-subcategory results layout remains direct and usable on desktop and mobile after the quick-links removal.
+
+- [x] Rename the brand filter to “Производител”, keep it collapsed by default, and add in-filter manufacturer search.
+- [x] Remove the visible “ITEM” marker from every public product card.
+- [x] Remove the visible “CAT-FILTER” marker from catalogue controls.
+- [x] Remove the right-side “Категории” quick-links panel from catalogue product results.
+- [x] Verify the streamlined filter, product cards, and catalogue layout on desktop and mobile.

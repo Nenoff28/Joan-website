@@ -7,6 +7,7 @@ const headerSource = readFileSync(resolve(process.cwd(), "client/src/components/
 const categorySource = readFileSync(resolve(process.cwd(), "client/src/pages/Category.tsx"), "utf8");
 const appSource = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
 const homeSource = readFileSync(resolve(process.cwd(), "client/src/pages/Home.tsx"), "utf8");
+const catalogueStyles = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
 
 describe("public Joan category hierarchy", () => {
   it("keeps the full public top-level taxonomy and the requested Tool examples", () => {
@@ -45,8 +46,20 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("selected-path-filter");
   });
 
-  it("hides the redundant category quick-links panel for selected subcategory paths", () => {
-    expect(categorySource).toContain("{!selectedPathLabel && (showAll ? <CategoryQuickLinks");
+  it("removes the redundant category quick-links panel from catalogue product results", () => {
+    expect(categorySource).not.toContain("CategoryQuickLinks");
+    expect(categorySource).toContain('className="catalogue-workbench"');
+  });
+
+  it("keeps the manufacturer chooser collapsed by default and searchable", () => {
+    expect(categorySource).toContain("const [manufacturerQuery, setManufacturerQuery]");
+    expect(categorySource).toContain('<details className="manufacturer-filter">');
+    expect(categorySource).toContain("Производител");
+    expect(categorySource).toContain('placeholder="Търсене на производител"');
+  });
+
+  it("suppresses the ITEM and CAT-FILTER implementation markers in public catalogue views", () => {
+    expect(catalogueStyles).toContain(".category-content-row::before, .catalogue-workbench .product-card::before { content: none; }");
   });
 
   it("uses exact imported category trees instead of stale static labels when legacy metadata is available", () => {
