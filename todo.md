@@ -280,3 +280,6 @@
 - [x] Verify the hero-embedded selected path remains concise and readable on desktop and mobile while products remain immediately accessible.
 - [x] Remove the “Подбрани продукти / Продукти в … / Продуктите са филтрирани…” listing heading from selected-subcategory pages.
 - [x] Verify selected-subcategory pages move directly from the hero into useful catalogue controls and product results on desktop and mobile.
+
+- [x] Remove the remaining “Категории” quick-links tab from selected-subcategory result pages.
+- [x] Verify the selected-subcategory results layout remains direct and usable on desktop and mobile after the quick-links removal.

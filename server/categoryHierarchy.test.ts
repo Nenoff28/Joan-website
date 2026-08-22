@@ -45,6 +45,10 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("selected-path-filter");
   });
 
+  it("hides the redundant category quick-links panel for selected subcategory paths", () => {
+    expect(categorySource).toContain("{!selectedPathLabel && (showAll ? <CategoryQuickLinks");
+  });
+
   it("uses exact imported category trees instead of stale static labels when legacy metadata is available", () => {
     const importedTree = [{ label: "Точна група", children: [{ label: "Точен подтип" }] }];
     expect(categoryTreeFor("instrumenti", importedTree)).toEqual(importedTree);
