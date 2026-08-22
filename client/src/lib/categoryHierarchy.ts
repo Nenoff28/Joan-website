@@ -3,6 +3,35 @@ export type CategoryNode = {
   children?: CategoryNode[];
 };
 
+const cyrillicToLatin: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sht", ъ: "a", ь: "y", ю: "yu", я: "ya",
+};
+
+export function latinPathToken(label: string) {
+  return Array.from(label.toLocaleLowerCase("bg-BG").normalize("NFD"))
+    .map((character) => cyrillicToLatin[character] ?? character)
+    .join("")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "category";
+}
+
+export function categoryPathTokens(labels: string[]) {
+  return labels.map(latinPathToken);
+}
+
+export function categoryLabelsFromTokens(nodes: CategoryNode[], tokens: string[]) {
+  let level = nodes;
+  const labels: string[] = [];
+  for (const token of tokens) {
+    const node = level.find((candidate) => candidate.label === token || latinPathToken(candidate.label) === token);
+    if (!node) return [];
+    labels.push(node.label);
+    level = node.children ?? [];
+  }
+  return labels;
+}
+
 const branch = (label: string, children: string[] = []): CategoryNode => ({ label, children: children.length ? children.map((child) => branch(child)) : undefined });
 const group = (label: string, children: string[] = []): CategoryNode => branch(label, children);
 

@@ -39,6 +39,17 @@ function positiveMoney(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed.toFixed(2) : null;
 }
 
+function availabilityFromOpenCart(row) {
+  const quantity = Math.max(0, Number(cell(row.quantity, 16) || 0));
+  if (!truthy(row.status)) return "out_of_stock";
+  if (quantity > 0) return "in_stock";
+  const legacyStockStatus = cell(row.stock_status, 96).toLocaleLowerCase("bg");
+  if (legacyStockStatus.includes("не е наличен") || legacyStockStatus.includes("изчерпан")) return "out_of_stock";
+  if (legacyStockStatus.includes("по заявка") || legacyStockStatus.includes("2-3 дена")) return "on_request";
+  if (legacyStockStatus.includes("на склад")) return "in_stock";
+  return "on_request";
+}
+
 function isCurrentPriceWindow(start, end) {
   const today = new Date().toISOString().slice(0, 10);
   const normalizedStart = cell(start, 16);
@@ -293,7 +304,7 @@ async function main() {
       const priceEur = specialPrice ?? normalPrice;
       const oldPriceEur = specialPrice ? normalPrice : null;
       const quantity = Math.max(0, Number(cell(row.quantity, 16) || 0));
-      const availability = quantity > 0 ? "in_stock" : (truthy(row.status) ? "on_request" : "out_of_stock");
+       const availability = availabilityFromOpenCart(row);
       const features = [cell(row.model, 160) && `Модел: ${cell(row.model, 160)}`, cell(row.product_attribute, 1000), cell(row.product_option, 1000)].filter(Boolean).slice(0, 12);
       const gallery = [...new Set([sourceImage(row.image), ...urls(row.additional_images)])];
       const active = truthy(row.status);

@@ -24,8 +24,9 @@ function readFavorites() {
 }
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favoriteSlugs, setFavoriteSlugs] = useState<Set<string>>(readFavorites);
+  const [favoriteSlugs, setFavoriteSlugs] = useState<Set<string>>(new Set());
 
+  useEffect(() => { setFavoriteSlugs(readFavorites()); }, []);
   useEffect(() => {
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favoriteSlugs)));
   }, [favoriteSlugs]);

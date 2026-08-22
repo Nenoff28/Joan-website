@@ -289,3 +289,11 @@
 - [x] Remove the visible “CAT-FILTER” marker from catalogue controls.
 - [x] Remove the right-side “Категории” quick-links panel from catalogue product results.
 - [x] Verify the streamlined filter, product cards, and catalogue layout on desktop and mobile.
+
+- [x] Audit the reported `legacy-2432-record` availability against the approved OpenCart source and identify the exact migration discrepancy.
+- [x] Reconcile all public product availability states against the authoritative imported OpenCart stock/status data and correct only verified mismatches.
+- [x] Add regression coverage so availability labels always reflect the persisted public stock state.
+- [x] Audit every public product and category slug, canonical URL, title, description, and structured-data field for SEO gaps and non-Latin URL text.
+- [x] Implement permanent Latin-only public product/category slugs with compatibility handling for existing legacy URLs.
+- [x] Improve page metadata, canonical URLs, robots directives, sitemap, and structured data across public catalogue and product routes.
+- [x] Verify availability, Latin-only URLs, redirects, SEO tags, sitemap output, desktop/mobile routes, tests, and production build before publishing.

@@ -9,6 +9,7 @@ import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
 import { useCatalogue, useCataloguePage, useCatalogueProducts } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
+import { categoryPathTokens } from "@/lib/categoryHierarchy";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
@@ -92,7 +93,7 @@ function Wordmark() {
 }
 
 function categoryPath(slug: string, labels: string[] = []) {
-  const search = labels.length ? `?path=${encodeURIComponent(labels.join(" > "))}` : "";
+  const search = labels.length ? `?path=${categoryPathTokens(labels).join("~")}` : "";
   return `/category/${slug}${search}`;
 }
 
@@ -101,16 +102,16 @@ function activeCategoryPath(location: string, slug: string) {
   if (pathname !== `/category/${slug}`) return null;
   const search = locationSearch ?? (typeof window !== "undefined" ? window.location.search.replace(/^\?/, "") : "");
   const path = new URLSearchParams(search).get("path");
-  return path ? path.split(" > ") : [];
+  return path ? path.split("~").filter(Boolean) : [];
 }
 
 function MegaCategoryTree({ category, onNavigate, activePath }: { category: CatalogueCategory; onNavigate: () => void; activePath: string[] | null }) {
   const Icon = categoryIcons[category.icon];
   return <section className="mega-category-tree">
     <Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mega-category-heading ${activePath ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}><Icon size={18} /><span>{category.label}</span><ChevronRight size={15} /></Link>
-    <div className="mega-category-groups">{category.subcategories.map((group) => { const groupActive = activePath?.[0] === group.label; return <details className={`mega-category-group ${groupActive ? "is-active" : ""}`} key={group.label} open={groupActive}>
+    <div className="mega-category-groups">{category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details className={`mega-category-group ${groupActive ? "is-active" : ""}`} key={group.label} open={groupActive}>
       <summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
-      <div className="mega-category-disclosure"><div className="mega-category-leaves">{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === child.label; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
+      <div className="mega-category-disclosure"><div className="mega-category-leaves">{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
     </details>; })}</div>
   </section>;
 }
@@ -120,8 +121,8 @@ function MobileCategoryTree({ category, onNavigate, activePath }: { category: Ca
   return <details className={`mobile-category-tree ${activePath ? "is-current" : ""}`} open={Boolean(activePath)}>
     <summary><Icon size={18} /><span>{category.label}</span><ChevronRight size={16} /></summary>
     <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mobile-category-all ${activePath && activePath.length === 0 ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}>Всички в {category.label}</Link>
-      {category.subcategories.map((group) => { const groupActive = activePath?.[0] === group.label; return <details key={group.label} className={`mobile-category-branch ${groupActive ? "is-active" : ""}`} open={groupActive}><summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
-        <div className="mobile-category-disclosure"><div>{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === child.label; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
+      {category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details key={group.label} className={`mobile-category-branch ${groupActive ? "is-active" : ""}`} open={groupActive}><summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
+        <div className="mobile-category-disclosure"><div>{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
       </details>; })}
     </div>
   </details>;
@@ -348,6 +349,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
   const { addItem } = useCart();
   const [, setLocation] = useLocation();
   const favorite = isFavorite(product.slug);
+  const isOutOfStock = product.availabilityCode === "out_of_stock";
   function handleFavorite() {
     toggleFavorite(product.slug);
     toast(favorite ? t("removedFromFavorites") : t("addedToFavorites"));
@@ -367,9 +369,9 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           <div className="product-price">
             {product.price ? <><span className="old-price">{product.oldPrice}</span><b>{product.price}</b></> : <b className="ask-price">{t("enquiry")}</b>}
           </div>
-          {product.price ? <button type="button" className="cart-square" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={19} /></button> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
+          {product.price && !isOutOfStock ? <button type="button" className="cart-square" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={19} /></button> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
         </div>
-        <div className="availability"><span />{t("checkAvailability")}</div>
+        <div className={`availability availability-${product.availabilityCode ?? "on_request"}`}><span />{product.availability || t("checkAvailability")}</div>
       </div>
     </article>
   );
@@ -395,7 +397,7 @@ export function JsonLd({ product }: { product?: Product }) {
     brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
     image: product.image,
     description: product.description,
-    offers: product.price ? { "@type": "Offer", priceCurrency: "EUR", price: product.price.replace("€", ""), availability: "https://schema.org/LimitedAvailability" } : undefined,
+    offers: product.price ? { "@type": "Offer", priceCurrency: "EUR", price: product.price.replace("€", ""), availability: product.availabilityCode === "out_of_stock" ? "https://schema.org/OutOfStock" : product.availabilityCode === "in_stock" ? "https://schema.org/InStock" : "https://schema.org/LimitedAvailability" } : undefined,
   } : {
     "@context": "https://schema.org",
     "@type": "HardwareStore",

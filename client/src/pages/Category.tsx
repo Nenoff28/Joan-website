@@ -2,11 +2,12 @@
 import { Breadcrumbs, CategoryIcon, JsonLd, Layout, PageMeta, ProductCard } from "@/components/Storefront";
 import { useCatalogue, useCataloguePage } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
+import { categoryLabelsFromTokens, categoryPathTokens } from "@/lib/categoryHierarchy";
 import { ArrowRight, ChevronDown, Grid2X2, ListFilter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useRoute, useSearch } from "wouter";
 
-const pathLink = (slug: string, labels: string[] = []) => `/category/${slug}${labels.length ? `?path=${encodeURIComponent(labels.join(" > "))}` : ""}`;
+const pathLink = (slug: string, labels: string[] = []) => `/category/${slug}${labels.length ? `?path=${categoryPathTokens(labels).join("~")}` : ""}`;
 
 function CategoryHierarchy({ category, selectedPath, onSelect }: { category: CatalogueCategory; selectedPath: string; onSelect: (path: string[]) => void }) {
   return (
@@ -37,7 +38,8 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const search = useSearch();
   const { categories } = useCatalogue();
   const category = categories.find((item) => item.slug === params?.slug) ?? categories[0];
-  const selectedPath = useMemo(() => showAll ? [] : new URLSearchParams(search).get("path")?.split(" > ").filter(Boolean) ?? [], [search, showAll]);
+  const selectedPathTokens = useMemo(() => showAll ? [] : new URLSearchParams(search).get("path")?.split("~").filter(Boolean) ?? [], [search, showAll]);
+  const selectedPath = useMemo(() => showAll ? [] : categoryLabelsFromTokens(category?.subcategories ?? [], selectedPathTokens), [category?.subcategories, selectedPathTokens, showAll]);
   const selectedPathLabel = selectedPath.join(" › ");
   const [sort, setSort] = useState("relevance");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -52,13 +54,18 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const resetFilters = () => { setSelectedBrand("Всички марки"); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); };
 
   useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(1); }, [category?.slug, selectedPathLabel, showAll]);
+  useEffect(() => {
+    if (showAll || !category || selectedPath.length === 0) return;
+    const canonicalPath = categoryPathTokens(selectedPath).join("~");
+    if (selectedPathTokens.join("~") !== canonicalPath) setLocation(pathLink(category.slug, selectedPath), { replace: true });
+  }, [category, selectedPath, selectedPathTokens, setLocation, showAll]);
 
   const pageSize = 48;
   const catalogueInput = useMemo(() => ({
     page,
     pageSize,
     categorySlug: showAll ? undefined : category?.slug,
-    path: selectedPathLabel ? selectedPathLabel.split(" › ") : undefined,
+    path: selectedPathTokens.length ? selectedPathTokens : undefined,
     query: query || undefined,
     brand: selectedBrand === "Всички марки" ? undefined : selectedBrand,
     availability: [inStock ? "in_stock" : null, enquiry ? "on_request" : null].filter((value): value is "in_stock" | "on_request" => Boolean(value)),
@@ -81,7 +88,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
 
   return (
     <Layout>
-      <PageMeta title={showAll ? title : category?.metaTitle || title} description={showAll ? description : category?.metaDescription || description} canonicalUrl={showAll ? undefined : category?.canonicalUrl} metaRobots={showAll ? undefined : category?.metaRobots} />
+      <PageMeta title={title} description={description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}${showAll ? "/products" : `/category/${category.slug}`}`} metaRobots="index,follow" />
       <JsonLd />
       <main>
         <div className="page-frame category-shell">

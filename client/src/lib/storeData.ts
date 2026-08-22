@@ -12,6 +12,8 @@ export type Product = {
   discount?: string;
   category: string;
   availability: string;
+  availabilityCode?: "in_stock" | "on_request" | "out_of_stock";
+  stockQuantity?: number;
   features: string[];
   description: string;
 };

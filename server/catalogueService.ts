@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, ne, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts, contactEnquiries, orderRequests, users } from "../drizzle/schema";
@@ -264,6 +264,9 @@ const legacyCategoryRootsByPublicSlug: Record<string, number[]> = {
   instrumenti: [91], gradina: [93], banya: [95], "podovi-i-stenni-pokritiya": [90], "v-i-k": [97], osvetlenie: [163], "boi-lakove-mazilki": [92], "vrati-obkov-krepezhi": [199], "za-doma": [204], stroitelstvo: [178, 85], "rabotno-obleklo": [61],
 };
 
+const cyrillicToLatin: Record<string, string> = { а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sht", ъ: "a", ь: "y", ю: "yu", я: "ya" };
+const latinPathToken = (value: string) => Array.from(value.toLocaleLowerCase("bg-BG").normalize("NFD")).map((character) => cyrillicToLatin[character] ?? character).join("").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "category";
+
 type LegacyCategoryTreeRow = Pick<typeof catalogueCategories.$inferSelect, "legacyCategoryId" | "legacyParentCategoryId" | "name" | "sortOrder">;
 
 function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: number[], depth = 2): Array<{ label: string; children?: Array<{ label: string; children?: Array<{ label: string }> }> }> {
@@ -284,7 +287,8 @@ async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]
   let parentLegacyIds = roots;
   let matchedInternalIds: number[] = [];
   for (const label of path) {
-    const rows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId }).from(catalogueCategories).where(and(inArray(catalogueCategories.legacyParentCategoryId, parentLegacyIds), eq(catalogueCategories.name, label)));
+    const candidates = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, name: catalogueCategories.name }).from(catalogueCategories).where(inArray(catalogueCategories.legacyParentCategoryId, parentLegacyIds));
+    const rows = candidates.filter((row) => row.name === label || latinPathToken(row.name) === label);
     if (!rows.length) return [];
     matchedInternalIds = rows.map((row) => row.id);
     parentLegacyIds = rows.flatMap((row) => row.legacyCategoryId == null ? [] : [row.legacyCategoryId]);
@@ -363,6 +367,16 @@ export async function getPublicProductsBySlugs(slugs: string[]) {
   const db = await requireDb();
   const rows = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(inArray(catalogueProducts.slug, slugs), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)));
   return rows.map((row) => publicProduct(row.product, row.category));
+}
+
+export async function getPublicSitemapEntries() {
+  await ensureCatalogueSeeded();
+  const db = await requireDb();
+  const [categories, products] = await Promise.all([
+    db.select({ slug: catalogueCategories.slug, updatedAt: catalogueCategories.updatedAt }).from(catalogueCategories).where(eq(catalogueCategories.isActive, true)),
+    db.select({ slug: catalogueProducts.slug, updatedAt: catalogueProducts.updatedAt }).from(catalogueProducts).where(eq(catalogueProducts.isActive, true)),
+  ]);
+  return { categories, products };
 }
 
 export async function getAdminCategories() {
@@ -471,9 +485,10 @@ export async function adjustProductStock(id: number, delta: number, adminUserId:
   const [product] = await db.select().from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1);
   if (!product) throw new Error("Product was not found");
   const stockQuantity = Math.max(0, Math.min(999999, product.stockQuantity + delta));
-  await db.update(catalogueProducts).set({ stockQuantity }).where(eq(catalogueProducts.id, id));
-  await logAdminActivity(adminUserId, "inventory.adjusted", "product", id, { delta, stockQuantity, slug: product.slug, name: product.name });
-  return { id, stockQuantity };
+  const availability: ProductAvailability = stockQuantity > 0 ? "in_stock" : product.availability === "in_stock" ? "on_request" : product.availability;
+  await db.update(catalogueProducts).set({ stockQuantity, availability }).where(eq(catalogueProducts.id, id));
+  await logAdminActivity(adminUserId, "inventory.adjusted", "product", id, { delta, stockQuantity, availability, slug: product.slug, name: product.name });
+  return { id, stockQuantity, availability };
 }
 
 export async function saveProductPromotion(input: { id: number; priceEur: number | null; oldPriceEur: number | null; discountLabel: string | null }, adminUserId: number) {
@@ -513,7 +528,7 @@ export async function updateContactEnquiry(id: number, status: ContactEnquirySta
 export async function createOrderRequest(input: { productSlug: string; quantity: number; fullName: string; email: string; phone: string; address: string; city: string; postcode: string }) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const [product] = await db.select().from(catalogueProducts).where(and(eq(catalogueProducts.slug, input.productSlug), eq(catalogueProducts.isActive, true))).limit(1);
+  const [product] = await db.select().from(catalogueProducts).where(and(eq(catalogueProducts.slug, input.productSlug), eq(catalogueProducts.isActive, true), ne(catalogueProducts.availability, "out_of_stock"))).limit(1);
   if (!product) throw new Error("Product is unavailable");
   const price = product.priceEur ? Number(product.priceEur) : null;
   const total = price === null ? null : price * input.quantity;

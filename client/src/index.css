@@ -327,3 +327,6 @@ h1, h2 { font-weight: 800; letter-spacing: -.065em; }
 
 .catalogue-pagination { align-items: center; display: flex; gap: .85rem; justify-content: center; margin: 2rem 0 .5rem; }.catalogue-pagination button { background: var(--charcoal); border: 1px solid var(--charcoal); color: #fff; font-weight: 800; padding: .7rem 1rem; transition: transform 160ms var(--ease-out), background 160ms var(--ease-out); }.catalogue-pagination button:disabled { background: #e8e9e5; border-color: #e8e9e5; color: #89908d; cursor: not-allowed; }.catalogue-pagination button:not(:disabled):active { transform: scale(.97); }.catalogue-pagination span { color: var(--slate); font-size: .9rem; }.catalogue-pagination span b { color: var(--charcoal); }
 @media (max-width: 520px) { .catalogue-pagination { align-items: stretch; flex-wrap: wrap; }.catalogue-pagination span { flex-basis: 100%; order: -1; text-align: center; }.catalogue-pagination button { flex: 1; } }
+.detail-status-in_stock { color: var(--green); }
+.detail-status-on_request { color: var(--warn); }
+.detail-status-out_of_stock { color: var(--red); }

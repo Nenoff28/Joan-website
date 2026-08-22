@@ -17,7 +17,11 @@ type LanguageContextValue = { language: Language; setLanguage: (language: Langua
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => (localStorage.getItem("joan-language") === "en" ? "en" : "bg"));
+  const [language, setLanguageState] = useState<Language>("bg");
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem("joan-language");
+    if (savedLanguage === "en") setLanguageState("en");
+  }, []);
   useEffect(() => { document.documentElement.lang = language; localStorage.setItem("joan-language", language); }, [language]);
   const value = useMemo(() => ({ language, setLanguage: setLanguageState, t: (key: CopyKey) => copy[language][key] }), [language]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

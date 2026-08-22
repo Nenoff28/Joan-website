@@ -27,8 +27,9 @@ function readCart(): CartLine[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartLine[]>(readCart);
+  const [items, setItems] = useState<CartLine[]>([]);
 
+  useEffect(() => { setItems(readCart()); }, []);
   useEffect(() => { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items)); }, [items]);
 
   const addItem = useCallback((slug: string, quantity = 1) => {
