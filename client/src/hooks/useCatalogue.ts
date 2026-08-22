@@ -12,6 +12,10 @@ export type CatalogueCategory = {
   image: string;
   icon: CatalogueIconName;
   subcategories: CategoryNode[];
+  metaTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+  metaRobots?: string;
 };
 
 export type ManagedProduct = Product & {
@@ -20,6 +24,10 @@ export type ManagedProduct = Product & {
   availabilityCode?: "in_stock" | "on_request" | "out_of_stock";
   stockQuantity?: number;
   isActive?: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+  metaRobots?: string;
 };
 
 const staticCategories = fallbackCategories.map((category) => ({ ...category, subcategories: categoryTreeFor(category.slug, category.subcategories) })) as CatalogueCategory[];

@@ -114,12 +114,22 @@ export const legacyCustomerOrderLines = mysqlTable("legacy_customer_order_lines"
 /** Catalogue taxonomies are managed independently from products. */
 export const catalogueCategories = mysqlTable("catalogue_categories", {
   id: int("id").autoincrement().primaryKey(),
+  legacyCategoryId: int("legacyCategoryId").unique(),
+  legacyParentCategoryId: int("legacyParentCategoryId"),
   slug: varchar("slug", { length: 128 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
   imageUrl: text("imageUrl").notNull(),
   icon: varchar("icon", { length: 64 }).notNull(),
   subcategoriesJson: text("subcategoriesJson").notNull(),
+  legacySeoKeywordBg: varchar("legacySeoKeywordBg", { length: 255 }),
+  legacySeoKeywordEn: varchar("legacySeoKeywordEn", { length: 255 }),
+  legacyMetaTitleBg: varchar("legacyMetaTitleBg", { length: 500 }),
+  legacyMetaTitleEn: varchar("legacyMetaTitleEn", { length: 500 }),
+  legacyMetaDescriptionBg: text("legacyMetaDescriptionBg"),
+  legacyMetaDescriptionEn: text("legacyMetaDescriptionEn"),
+  legacyCanonicalUrl: text("legacyCanonicalUrl"),
+  legacyMetaRobots: varchar("legacyMetaRobots", { length: 255 }),
   sortOrder: int("sortOrder").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -129,6 +139,8 @@ export const catalogueCategories = mysqlTable("catalogue_categories", {
 /** Public product records, with media URLs held in storage and metadata held in the database. */
 export const catalogueProducts = mysqlTable("catalogue_products", {
   id: int("id").autoincrement().primaryKey(),
+  legacyProductId: int("legacyProductId").unique(),
+  legacyManufacturerId: int("legacyManufacturerId"),
   categoryId: int("categoryId").notNull().references(() => catalogueCategories.id),
   slug: varchar("slug", { length: 160 }).notNull().unique(),
   sku: varchar("sku", { length: 96 }),
@@ -146,10 +158,43 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   availability: mysqlEnum("availability", ["in_stock", "on_request", "out_of_stock"]).default("on_request").notNull(),
   stockQuantity: int("stockQuantity").default(0).notNull(),
   featuresJson: text("featuresJson").notNull(),
+  legacySeoKeywordBg: varchar("legacySeoKeywordBg", { length: 255 }),
+  legacySeoKeywordEn: varchar("legacySeoKeywordEn", { length: 255 }),
+  legacyMetaTitleBg: varchar("legacyMetaTitleBg", { length: 500 }),
+  legacyMetaTitleEn: varchar("legacyMetaTitleEn", { length: 500 }),
+  legacyMetaDescriptionBg: text("legacyMetaDescriptionBg"),
+  legacyMetaDescriptionEn: text("legacyMetaDescriptionEn"),
+  legacyCanonicalUrl: text("legacyCanonicalUrl"),
+  legacyMetaRobots: varchar("legacyMetaRobots", { length: 255 }),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("products_category_active_idx").on(table.categoryId, table.isActive)]);
+
+/** Imported OpenCart manufacturer records retain their original identity and public metadata. */
+export const catalogueManufacturers = mysqlTable("catalogue_manufacturers", {
+  id: int("id").autoincrement().primaryKey(),
+  legacyManufacturerId: int("legacyManufacturerId").notNull().unique(),
+  slug: varchar("slug", { length: 160 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameEn: varchar("nameEn", { length: 255 }),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  importedAt: timestamp("importedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** Preserve legacy category membership beyond the primary category used by current storefront cards. */
+export const catalogueProductCategoryLinks = mysqlTable("catalogue_product_category_links", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull().references(() => catalogueProducts.id),
+  categoryId: int("categoryId").notNull().references(() => catalogueCategories.id),
+  position: int("position").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("catalogue_product_category_links_product_idx").on(table.productId), index("catalogue_product_category_links_category_idx").on(table.categoryId)]);
 
 /** Non-payment order requests created by the public checkout flow. */
 export const orderRequests = mysqlTable("order_requests", {
@@ -224,6 +269,8 @@ export type LegacyCustomerOrder = typeof legacyCustomerOrders.$inferSelect;
 export type LegacyCustomerOrderLine = typeof legacyCustomerOrderLines.$inferSelect;
 export type CatalogueCategory = typeof catalogueCategories.$inferSelect;
 export type CatalogueProduct = typeof catalogueProducts.$inferSelect;
+export type CatalogueManufacturer = typeof catalogueManufacturers.$inferSelect;
+export type CatalogueProductCategoryLink = typeof catalogueProductCategoryLinks.$inferSelect;
 export type OrderRequest = typeof orderRequests.$inferSelect;
 export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
 export type CatalogueBrochure = typeof catalogueBrochures.$inferSelect;

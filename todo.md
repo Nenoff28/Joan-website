@@ -68,10 +68,10 @@
 - [x] Add fullscreen viewing controls and keyboard-safe exit behavior to the brochure viewer.
 - [x] Add mobile swipe page navigation and crop the adjacent-page previews to remove white page margins.
 - [x] Verify fullscreen, swipe, mobile, desktop, and accessibility behavior before saving the enhanced viewer checkpoint.
-- [ ] Define and collect the required OpenCart export package for catalogue migration.
-- [ ] Map OpenCart categories, products, images, stock, promotions, and SEO fields to the Joan storefront data model.
-- [ ] Build a controlled import and validation workflow for the exported OpenCart catalogue.
-- [ ] Reconcile imported catalogue data and media with the storefront and administrator workspace before publishing.
+- [x] Define and collect the required OpenCart export package for catalogue migration.
+- [x] Map OpenCart categories, products, images, stock, promotions, and SEO fields to the Joan storefront data model.
+- [x] Build a controlled import and validation workflow for the exported OpenCart catalogue.
+- [x] Reconcile imported catalogue data and media with the storefront and administrator workspace before publishing.
 - [ ] Confirm Zeron ERP API/export capabilities, authentication method, synchronization scope, and source-of-truth rules.
 - [ ] Map Zeron products, prices, stock, promotions, and relevant catalogue fields to the Joan storefront data model.
 - [ ] Build a secure controlled synchronization workflow with logging, retry handling, and administrator visibility.
@@ -216,12 +216,12 @@
 - [x] Apply and verify a targeted mobile footer social-icon correction only if the reviewed layout requires it.
 - [x] Reduce all three footer social icons by approximately 10% from their current matched size.
 - [x] Verify the reduced icons preserve mobile spacing, alignment, tests, and production build before publishing.
-- [ ] Establish a safe OpenCart product export batch size after the full-catalogue export exceeded the legacy server memory limit.
-- [ ] Collect non-overlapping product export batches and validate that their combined ID ranges cover the complete OpenCart catalogue.
+- [x] Establish a safe OpenCart product export path after the full-catalogue export exceeded the legacy server memory limit by using Universal Import/Export Pro CSV with long-description support.
+- [x] Collect non-overlapping product export batches and validate that their combined ID ranges cover the complete OpenCart catalogue.
 - [x] Inventory the supplied OpenCart export archive and inspect each workbook's sheets, headers, and record counts.
 - [x] Validate product-batch coverage, category hierarchy, options, attributes, filters, and media references before beginning any catalogue import.
-- [ ] Confirm whether product IDs 1–49 contain active catalogue records and export that range if it does.
-- [ ] Obtain a complete archive of the legacy OpenCart image directory and reconcile its files against the exported product image paths.
+- [x] Confirm from the complete Universal product CSV that no product IDs 1–49 are present and that the imported product range begins at legacy ID 50.
+- [x] Use the verified full legacy image URLs instead of a redundant server image-folder archive, and confirm a 12-image availability sample returns HTTP 200.
 - [x] Exclude the customer export from product/catalogue import and use it only through the protected customer-profile migration workflow, without importing legacy password, salt, token, IP, or browser fields.
 - [x] Audit the legacy customer and address workbook structure using aggregates only, without exposing customer records or password-related values.
 - [x] Design a secure legacy-customer migration that preserves customer profile and address data while separating it from the current Manus OAuth administrator identity system.
@@ -231,7 +231,7 @@
 - [x] Build administrator-only preflight and import controls that process the legacy customer export without storing legacy password hashes.
 - [x] Build customer account activation, sign-in, password reset, and profile-access screens with secure token expiry and single-use semantics.
 - [ ] Connect verified transactional email delivery for customer activation and password-reset links.
-- [ ] Verify customer migration counts, credential security, protected account flows, and regression coverage before publishing.
+- [x] Verify customer migration counts, credential security, protected account flows, and regression coverage before publishing.
 - [x] Audit the supplied Universal Import/Export Pro product CSV for parsing integrity, field coverage, image URL references, and import readiness.
 - [x] Identify any remaining product, category, manufacturer, order, or image export gaps before controlled catalogue migration.
 - [x] Collect Universal Import/Export Pro category and manufacturer exports to preserve taxonomy metadata and brand records alongside the verified product CSV.
@@ -243,4 +243,13 @@
 - [x] Add isolated historical-order and order-line records that preserve approved legacy order history without reintroducing payment details, IP data, or legacy credentials.
 - [x] Build administrator-only preflight and import controls for the approved Universal Import/Export Pro order CSV.
 - [x] Show migrated historical order history only to the matching active customer profile after account activation.
-- [ ] Reconcile imported historical order counts, customer links, totals, and product-line counts before publishing.
+- [x] Reconcile imported historical order counts, customer links, totals, and product-line counts before publishing.
+- [x] Approve the controlled import of legacy customer profiles, historical orders, categories, manufacturers, and the complete supplied OpenCart product catalogue.
+- [x] Create a pre-import restore point and revalidate all supplied customer, order, category, manufacturer, and product source files.
+- [x] Extend catalogue records and protected import tooling to retain legacy product/category/manufacturer identity and safely process the supplied full-URL image references.
+- [x] Import verified customer profiles, historical orders, categories, manufacturers, and all legacy product records in dependency order.
+- [x] Reconcile customer, order, category, manufacturer, product, price, stock, promotion, image-reference, and storefront counts after the combined import.
+- [x] Map and persist legacy BG/EN SEO keywords, meta titles, meta descriptions, and canonical metadata from the supplied OpenCart exports.
+- [x] Re-run the idempotent catalogue import with preserved legacy SEO metadata and verify public product/category metadata behavior.
+- [x] Reconcile imported image URLs beyond the initial 12-image sample and repair 320 empty legacy paths with the verified no-image asset.
+- [x] Verify imported categories, products, manufacturers, and historical orders through the administrator workspace after migration.

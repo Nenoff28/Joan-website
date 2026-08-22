@@ -58,7 +58,7 @@ const categoryIcons = {
   "hard-hat": HardHat,
 };
 
-function usePageTitle(title: string, description: string) {
+function usePageTitle(title: string, description: string, canonicalUrl?: string, metaRobots?: string) {
   useEffect(() => {
     document.title = `${title} | ЖОАН`;
     let descriptionTag = document.querySelector('meta[name="description"]');
@@ -68,11 +68,17 @@ function usePageTitle(title: string, description: string) {
       document.head.appendChild(descriptionTag);
     }
     descriptionTag.setAttribute("content", description);
-  }, [title, description]);
+    let canonicalTag = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonicalTag) { canonicalTag = document.createElement("link"); canonicalTag.setAttribute("rel", "canonical"); document.head.appendChild(canonicalTag); }
+    canonicalTag.setAttribute("href", canonicalUrl || window.location.href);
+    let robotsTag = document.querySelector('meta[name="robots"]');
+    if (!robotsTag) { robotsTag = document.createElement("meta"); robotsTag.setAttribute("name", "robots"); document.head.appendChild(robotsTag); }
+    robotsTag.setAttribute("content", metaRobots || "index,follow");
+  }, [title, description, canonicalUrl, metaRobots]);
 }
 
-export function PageMeta({ title, description }: { title: string; description: string }) {
-  usePageTitle(title, description);
+export function PageMeta({ title, description, canonicalUrl, metaRobots }: { title: string; description: string; canonicalUrl?: string; metaRobots?: string }) {
+  usePageTitle(title, description, canonicalUrl, metaRobots);
   return null;
 }
 

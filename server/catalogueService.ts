@@ -201,6 +201,10 @@ function publicCategory(category: typeof catalogueCategories.$inferSelect) {
     image: category.imageUrl,
     icon: category.icon,
     subcategories: parseCategoryTree(category.subcategoriesJson),
+    metaTitle: category.legacyMetaTitleBg ?? undefined,
+    metaDescription: category.legacyMetaDescriptionBg ?? undefined,
+    canonicalUrl: category.legacyCanonicalUrl ?? undefined,
+    metaRobots: category.legacyMetaRobots ?? undefined,
   };
 }
 
@@ -226,6 +230,10 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     features: parseJsonArray(product.featuresJson),
     description: product.description,
     isActive: product.isActive,
+    metaTitle: product.legacyMetaTitleBg ?? undefined,
+    metaDescription: product.legacyMetaDescriptionBg ?? undefined,
+    canonicalUrl: product.legacyCanonicalUrl ?? undefined,
+    metaRobots: product.legacyMetaRobots ?? undefined,
   };
 }
 

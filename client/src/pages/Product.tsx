@@ -27,7 +27,7 @@ export default function Product() {
   useEffect(() => { setSelectedImage(0); setIsZoomed(false); }, [product.slug]);
 
   return <Layout>
-    <PageMeta title={product.name} description={product.description} />
+    <PageMeta title={product.metaTitle || product.name} description={product.metaDescription || product.description} canonicalUrl={product.canonicalUrl} metaRobots={product.metaRobots} />
     <JsonLd product={product} />
     <main className="product-page">
       <div className="page-frame">
