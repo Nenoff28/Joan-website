@@ -366,7 +366,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         {!compact && <p className="product-features">{product.features.slice(0, 2).join(" · ")}</p>}
         <div className="product-buy-row">
           <div className="product-price">
-            {product.price ? <><span className="old-price">{product.oldPrice} <small>{product.oldPriceBgn}</small></span><b>{product.price}</b><small>{product.priceBgn}</small></> : <b className="ask-price">{t("enquiry")}</b>}
+            {product.price ? <><span className="old-price">{product.oldPrice}</span><b>{product.price}</b></> : <b className="ask-price">{t("enquiry")}</b>}
           </div>
           {product.price ? <button type="button" className="cart-square" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={19} /></button> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
         </div>

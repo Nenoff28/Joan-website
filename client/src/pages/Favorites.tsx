@@ -59,7 +59,7 @@ export default function Favorites() {
                   <Link href={`/product/${product.slug}`} className="favorite-product-title">{product.name}</Link>
                   <p className="favorite-product-features">{product.features.slice(0, 2).join(" · ")}</p>
                   <div className="favorite-product-bottom">
-                    <div className="favorite-product-price">{product.price ? <><b>{product.price}</b><small>{product.priceBgn}</small></> : <b className="ask-price">{t("enquiry")}</b>}</div>
+                    <div className="favorite-product-price">{product.price ? <b>{product.price}</b> : <b className="ask-price">{t("enquiry")}</b>}</div>
                     <div className="favorite-product-actions">
                       <Link href={`/product/${product.slug}`} className="favorite-view">{t("viewProduct")} <ArrowRight size={15} /></Link>
                       {product.price && <button type="button" className="favorite-buy" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={17} /></button>}

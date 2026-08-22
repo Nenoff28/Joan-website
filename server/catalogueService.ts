@@ -21,9 +21,7 @@ export type ProductPayload = {
   gallery: string[];
   imageAlt: string;
   priceEur?: number | null;
-  priceBgn?: number | null;
   oldPriceEur?: number | null;
-  oldPriceBgn?: number | null;
   discountLabel?: string | null;
   availability: ProductAvailability;
   stockQuantity: number;
@@ -94,10 +92,6 @@ function formatPrice(value: string | null) {
   return value === null ? undefined : `${Number(value).toFixed(2)}€`;
 }
 
-function formatBgn(value: string | null) {
-  return value === null ? undefined : `${Number(value).toFixed(2)} лв`;
-}
-
 function asDecimal(value?: number | null) {
   return value === undefined || value === null ? null : value.toFixed(2);
 }
@@ -160,8 +154,6 @@ async function seedCatalogue() {
     if (!categoryId) continue;
     const priceEur = parsePrice(product.price);
     const oldPriceEur = parsePrice(product.oldPrice);
-    const priceBgn = product.priceBgn ? Number(product.priceBgn.replace(/[^[0-9.,]/g, "").replace(",", ".")) : null;
-    const oldPriceBgn = product.oldPriceBgn ? Number(product.oldPriceBgn.replace(/[^[0-9.,]/g, "").replace(",", ".")) : null;
     await db.insert(catalogueProducts).values({
       categoryId,
       slug: product.slug,
@@ -173,9 +165,7 @@ async function seedCatalogue() {
       galleryJson: JSON.stringify(product.gallery),
       imageAlt: product.imageAlt,
       priceEur: asDecimal(priceEur),
-      priceBgn: asDecimal(priceBgn),
       oldPriceEur: asDecimal(oldPriceEur),
-      oldPriceBgn: asDecimal(oldPriceBgn),
       discountLabel: product.discount ?? null,
       availability: product.availability === "На склад" ? "in_stock" : "on_request",
       stockQuantity: product.availability === "На склад" ? 1 : 0,
@@ -219,9 +209,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     gallery: parseJsonArray(product.galleryJson),
     imageAlt: product.imageAlt,
     price: formatPrice(product.priceEur),
-    priceBgn: formatBgn(product.priceBgn),
     oldPrice: formatPrice(product.oldPriceEur),
-    oldPriceBgn: formatBgn(product.oldPriceBgn),
     discount: product.discountLabel ?? undefined,
     category: category.slug,
     availability: availabilityLabels[product.availability],
@@ -345,7 +333,7 @@ export async function logAdminActivity(adminUserId: number, action: string, enti
 export async function createAdminProduct(payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
   const result = await db.insert(catalogueProducts).values({
-    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), priceBgn: asDecimal(payload.priceBgn), oldPriceEur: asDecimal(payload.oldPriceEur), oldPriceBgn: asDecimal(payload.oldPriceBgn), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
+    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
   });
   const id = Number(result[0].insertId);
   await logAdminActivity(adminUserId, "product.created", "product", id, { slug: payload.slug, name: payload.name });
@@ -355,7 +343,7 @@ export async function createAdminProduct(payload: ProductPayload, adminUserId: n
 export async function updateAdminProduct(id: number, payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
   await db.update(catalogueProducts).set({
-    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), priceBgn: asDecimal(payload.priceBgn), oldPriceEur: asDecimal(payload.oldPriceEur), oldPriceBgn: asDecimal(payload.oldPriceBgn), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
+    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
   }).where(eq(catalogueProducts.id, id));
   await logAdminActivity(adminUserId, "product.updated", "product", id, { slug: payload.slug, name: payload.name });
 }
@@ -370,11 +358,11 @@ export async function adjustProductStock(id: number, delta: number, adminUserId:
   return { id, stockQuantity };
 }
 
-export async function saveProductPromotion(input: { id: number; priceEur: number | null; priceBgn: number | null; oldPriceEur: number | null; oldPriceBgn: number | null; discountLabel: string | null }, adminUserId: number) {
+export async function saveProductPromotion(input: { id: number; priceEur: number | null; oldPriceEur: number | null; discountLabel: string | null }, adminUserId: number) {
   const db = await requireDb();
   const [product] = await db.select().from(catalogueProducts).where(eq(catalogueProducts.id, input.id)).limit(1);
   if (!product) throw new Error("Product was not found");
-  await db.update(catalogueProducts).set({ priceEur: asDecimal(input.priceEur), priceBgn: asDecimal(input.priceBgn), oldPriceEur: asDecimal(input.oldPriceEur), oldPriceBgn: asDecimal(input.oldPriceBgn), discountLabel: input.discountLabel?.trim() || null }).where(eq(catalogueProducts.id, input.id));
+  await db.update(catalogueProducts).set({ priceEur: asDecimal(input.priceEur), oldPriceEur: asDecimal(input.oldPriceEur), discountLabel: input.discountLabel?.trim() || null }).where(eq(catalogueProducts.id, input.id));
   await logAdminActivity(adminUserId, "promotion.updated", "product", input.id, { slug: product.slug, name: product.name, discountLabel: input.discountLabel ?? null });
 }
 

@@ -51,9 +51,7 @@ const productInput = {
   gallery: ["/manus-storage/example.jpg"],
   imageAlt: "Validation product image",
   priceEur: 12.5,
-  priceBgn: 24.45,
   oldPriceEur: null,
-  oldPriceBgn: null,
   discountLabel: null,
   availability: "in_stock" as const,
   stockQuantity: 3,
@@ -118,8 +116,8 @@ describe("administrator management procedures", () => {
   it("passes completed price details and a promotion label to the protected promotion workflow", async () => {
     service.saveProductPromotion.mockResolvedValueOnce(undefined);
     const caller = appRouter.createCaller(adminContext());
-    await expect(caller.admin.savePromotion({ id: 9, priceEur: 10, priceBgn: 19.56, oldPriceEur: 12, oldPriceBgn: 23.47, discountLabel: "-17%" })).resolves.toBeUndefined();
-    expect(service.saveProductPromotion).toHaveBeenCalledWith({ id: 9, priceEur: 10, priceBgn: 19.56, oldPriceEur: 12, oldPriceBgn: 23.47, discountLabel: "-17%" }, 17);
+    await expect(caller.admin.savePromotion({ id: 9, priceEur: 10, oldPriceEur: 12, discountLabel: "-17%" })).resolves.toBeUndefined();
+    expect(service.saveProductPromotion).toHaveBeenCalledWith({ id: 9, priceEur: 10, oldPriceEur: 12, discountLabel: "-17%" }, 17);
   });
 
   it("accepts a public delivery request only after validating its contact and product fields", async () => {

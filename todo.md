@@ -231,6 +231,7 @@
 - [x] Build administrator-only preflight and import controls that process the legacy customer export without storing legacy password hashes.
 - [x] Build customer account activation, sign-in, password reset, and profile-access screens with secure token expiry and single-use semantics.
 - [ ] Connect verified transactional email delivery for customer activation and password-reset links.
+- [ ] Defer customer-account activation email configuration until after the catalogue image and price work is complete.
 - [x] Verify customer migration counts, credential security, protected account flows, and regression coverage before publishing.
 - [x] Audit the supplied Universal Import/Export Pro product CSV for parsing integrity, field coverage, image URL references, and import readiness.
 - [x] Identify any remaining product, category, manufacturer, order, or image export gaps before controlled catalogue migration.
@@ -253,3 +254,8 @@
 - [x] Re-run the idempotent catalogue import with preserved legacy SEO metadata and verify public product/category metadata behavior.
 - [x] Reconcile imported image URLs beyond the initial 12-image sample and repair 320 empty legacy paths with the verified no-image asset.
 - [x] Verify imported categories, products, manufacturers, and historical orders through the administrator workspace after migration.
+- [x] Audit the supplied OpenCart product price fields against the imported EUR and BGN values before correcting any live prices.
+- [x] Transfer every valid legacy product image URL into managed storage and replace legacy `joan.bg` image references in primary images and galleries.
+- [x] Correct product and promotion prices using the verified legacy source field that represents EUR.
+- [x] Remove BGN price storage and presentation from storefront, checkout, cart, administration, and import tooling, leaving a EUR-only catalogue.
+- [x] Reconcile image-transfer coverage and EUR-only price accuracy before publishing the product-first update.

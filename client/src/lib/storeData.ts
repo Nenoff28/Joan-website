@@ -8,9 +8,7 @@ export type Product = {
   gallery: string[];
   imageAlt: string;
   price?: string;
-  priceBgn?: string;
   oldPrice?: string;
-  oldPriceBgn?: string;
   discount?: string;
   category: string;
   availability: string;
@@ -235,9 +233,7 @@ function createTestProduct(category: (typeof categories)[number], seed: ProductS
     gallery: [image, category.image],
     imageAlt: `${name} — продуктова снимка от Жоан`,
     price: `${seed.price.toFixed(2)}€`,
-    priceBgn: `${(seed.price * 1.95583).toFixed(2)} лв`,
     oldPrice: oldPrice ? `${oldPrice.toFixed(2)}€` : undefined,
-    oldPriceBgn: oldPrice ? `${(oldPrice * 1.95583).toFixed(2)} лв` : undefined,
     discount: seed.promo ? "-12%" : undefined,
     category: category.slug,
     availability: index % 2 === 0 ? "На склад" : "По запитване",
