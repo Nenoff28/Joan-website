@@ -36,7 +36,8 @@ describe("public Joan category hierarchy", () => {
   it("provides a complete catalogue route instead of mapping all products to Tools", () => {
     expect(appSource).toContain('path={"/products"} component={AllProducts}');
     expect(categorySource).toContain("export function AllProducts() { return <CataloguePage showAll />; }");
-    expect(categorySource).toContain("const baseProducts = useMemo(() => showAll ? products");
+    expect(categorySource).toContain("const cataloguePage = useCataloguePage({ page, pageSize");
+    expect(categorySource).toContain("categorySlug: showAll ? undefined : category?.slug");
     expect(headerSource).toContain('href="/products"');
     expect(homeSource).toContain('href="/products">Всички продукти');
     expect(headerSource).toContain('location === "/products" || location.startsWith("/category")');

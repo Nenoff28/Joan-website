@@ -16,6 +16,10 @@ import {
   getAdminSummary,
   getAdminOperations,
   getPublicCatalogue,
+  getPublicCatalogueMetadata,
+  getPublicCataloguePage,
+  getPublicProductBySlug,
+  getPublicProductsBySlugs,
   getPublicBrochure,
   activateAdminBrochure,
   archiveAdminBrochure,
@@ -43,6 +47,19 @@ import { importLegacyOrders, previewLegacyOrders } from "./legacyOrders";
 const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
 const contactEnquiryStatusSchema = z.enum(["new", "contacted", "closed"]);
+const catalogueSortSchema = z.enum(["relevance", "price-asc", "price-desc", "name-asc", "name-desc"]);
+const publicCataloguePageSchema = z.object({
+  page: z.number().int().min(1).max(10_000),
+  pageSize: z.number().int().min(1).max(48),
+  categorySlug: z.string().trim().min(3).max(128).regex(/^[a-z0-9-]+$/).optional(),
+  path: z.array(z.string().trim().min(1).max(160)).max(4).optional(),
+  query: z.string().trim().min(1).max(160).optional(),
+  brand: z.string().trim().min(1).max(160).optional(),
+  availability: z.array(availabilitySchema).max(3).optional(),
+  minPrice: z.number().nonnegative().max(1_000_000).optional(),
+  maxPrice: z.number().nonnegative().max(1_000_000).optional(),
+  sort: catalogueSortSchema.optional(),
+});
 type CategoryNodeInput = { label: string; children?: CategoryNodeInput[] };
 const categoryNodeSchema: z.ZodType<CategoryNodeInput> = z.lazy(() => z.object({
   label: z.string().trim().min(1).max(160),
@@ -91,6 +108,10 @@ export const appRouter = router({
   }),
   catalogue: router({
     list: publicProcedure.query(() => getPublicCatalogue()),
+    metadata: publicProcedure.query(() => getPublicCatalogueMetadata()),
+    page: publicProcedure.input(publicCataloguePageSchema).query(({ input }) => getPublicCataloguePage(input)),
+    product: publicProcedure.input(z.object({ slug: z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/) })).query(({ input }) => getPublicProductBySlug(input.slug)),
+    productsBySlugs: publicProcedure.input(z.object({ slugs: z.array(z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/)).min(1).max(99) })).query(({ input }) => getPublicProductsBySlugs(input.slugs)),
     brochure: publicProcedure.query(() => getPublicBrochure()),
     createOrderRequest: publicProcedure.input(z.object({
       productSlug: z.string().trim().min(3).max(160),

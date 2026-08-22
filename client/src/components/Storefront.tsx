@@ -7,7 +7,7 @@ import { store, type Product } from "@/lib/storeData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
-import { useCatalogue } from "@/hooks/useCatalogue";
+import { useCatalogue, useCataloguePage, useCatalogueProducts } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { Link, useLocation } from "wouter";
 import {
@@ -130,7 +130,7 @@ function MobileCategoryTree({ category, onNavigate, activePath }: { category: Ca
 function Header() {
   const { language, setLanguage, t } = useLanguage();
   const { count } = useFavorites();
-  const { categories, products } = useCatalogue();
+  const { categories } = useCatalogue();
   const [location, setLocation] = useLocation();
   const [megaOpen, setMegaOpen] = useState(false);
   const [activeMegaCategory, setActiveMegaCategory] = useState("instrumenti");
@@ -139,8 +139,10 @@ function Header() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity } = useCart();
+  const { products: cartProducts } = useCatalogueProducts(cartItems.map((item) => item.slug));
+  const searchResults = useCataloguePage({ page: 1, pageSize: 4, query: query.trim() || undefined, sort: "relevance" });
   const cartRows = cartItems.flatMap((line) => {
-    const product = products.find((item) => item.slug === line.slug);
+    const product = cartProducts.find((item) => item.slug === line.slug);
     return product ? [{ product, quantity: line.quantity }] : [];
   });
   const cartTotal = cartRows.reduce((total, row) => total + (Number(row.product.price?.replace("€", "")) || 0) * row.quantity, 0);
@@ -150,11 +152,7 @@ function Header() {
     const categoryForRoute = categories.find((category) => activeCategoryPath(location, category.slug));
     if (categoryForRoute) setActiveMegaCategory(categoryForRoute.slug);
   }, [categories, location]);
-  const searchMatches = useMemo(
-    () =>
-      products.filter((product) => `${product.brand} ${product.name}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4),
-    [query],
-  );
+  const searchMatches = query.trim() ? searchResults.products : [];
 
   function submitSearch(event: FormEvent) {
     event.preventDefault();

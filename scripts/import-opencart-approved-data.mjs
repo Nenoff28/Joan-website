@@ -34,6 +34,41 @@ function decimal(value, fallback = "0.00", scale = 2) {
   return Number.isFinite(parsed) ? parsed.toFixed(scale) : fallback;
 }
 
+function positiveMoney(value) {
+  const parsed = Number(cell(value, 64).replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed.toFixed(2) : null;
+}
+
+function isCurrentPriceWindow(start, end) {
+  const today = new Date().toISOString().slice(0, 10);
+  const normalizedStart = cell(start, 16);
+  const normalizedEnd = cell(end, 16);
+  return (!normalizedStart || normalizedStart <= today) && (!normalizedEnd || normalizedEnd >= today);
+}
+
+function cleanProductDescription(value, fallback) {
+  const raw = cell(value, 65535);
+  if (!raw) return fallback;
+  const decoded = raw
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCodePoint(Number(code)))
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(?:p|div|h[1-6]|li|tr)>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "• ")
+    .replace(/<[^>]+>/g, " ");
+  return decoded
+    .split("\n")
+    .map((line) => line.replace(/[\t\r ]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 65535) || fallback;
+}
+
 function date(value) {
   const raw = cell(value, 64);
   if (!raw || raw === "0000-00-00 00:00:00") return null;
@@ -99,13 +134,18 @@ function firstProductCategory(value) {
 }
 
 const topCategoryMap = new Map([
-  ["Инструменти", "instrumenti"], ["Градина", "gradina"], ["За Дома", "za-doma"], ["Баня", "banya"], ["Осветление и Ел. материали", "osvetlenie"], ["Осветление и ел.материали", "osvetlenie"], ["Подови и Стенни покрития", "podovi-i-stenni-pokritiya"], ["В и К", "v-i-k"], ["ВиК", "v-i-k"], ["Врати, Обков, Крепежи", "vrati-obkov-krepezhi"], ["Бои, Лакове, Мазилки", "boi-lakove-mazilki"], ["Строителство", "stroitelstvo"], ["Работно облекло", "rabotno-obleklo"],
+  ["Инструменти", "instrumenti"], ["Градина", "gradina"], ["За Дома", "za-doma"], ["Коледна украса", "za-doma"], ["Баня", "banya"], ["Осветление и Ел. материали", "osvetlenie"], ["Осветление и ел.материали", "osvetlenie"], ["Осветление", "osvetlenie"], ["Подови и Стенни покрития", "podovi-i-stenni-pokritiya"], ["Плоскости", "podovi-i-stenni-pokritiya"], ["В и К", "v-i-k"], ["ВиК", "v-i-k"], ["Врати, Обков, Крепежи", "vrati-obkov-krepezhi"], ["Врати, Обков, Крепежни елемент", "vrati-obkov-krepezhi"], ["Бои, Лакове, Мазилки", "boi-lakove-mazilki"], ["Строителство", "stroitelstvo"], ["Метали", "stroitelstvo"], ["Работно облекло", "rabotno-obleklo"],
 ]);
 
-function staticCategorySlug(rawPath) {
-  const parts = rawPath.split(">").map((part) => part.trim()).filter(Boolean);
-  const candidate = parts[0] === "Строителни Материали" ? parts[1] : parts[0];
-  return topCategoryMap.get(candidate) ?? "stroitelstvo";
+function staticCategorySlug(rawPaths) {
+  const candidates = Array.isArray(rawPaths) ? rawPaths : [rawPaths];
+  for (const rawPath of candidates) {
+    const parts = cell(rawPath, 2048).split(">").map((part) => part.trim()).filter(Boolean);
+    const candidate = parts[0] === "Строителни Материали" ? parts[1] : parts[0];
+    const mapped = candidate ? topCategoryMap.get(candidate) : undefined;
+    if (mapped) return mapped;
+  }
+  return "stroitelstvo";
 }
 
 function toCategoryTree(row, childrenByParent) {
@@ -237,15 +277,19 @@ async function main() {
       const legacyProductId = positiveInt(row.product_id);
       if (!legacyProductId) throw new Error("The product export contains an invalid product ID.");
       const rawCategoryPaths = Array.isArray(productCategoryPaths[String(legacyProductId)]) ? productCategoryPaths[String(legacyProductId)] : cell(row.product_category, 65535).split("|").map((item) => item.trim()).filter(Boolean);
-      const staticSlug = staticCategorySlug(rawCategoryPaths[0] ?? "");
+      const staticSlug = staticCategorySlug(rawCategoryPaths);
       const primaryCategoryId = staticCategoryId.get(staticSlug) ?? staticCategoryId.get("stroitelstvo");
       if (!primaryCategoryId) throw new Error("A required public top-level category is missing.");
       if (!rawCategoryPaths.length) uncategorizedProducts += 1;
       const legacyManufacturerId = positiveInt(row.manufacturer_id);
       const productName = cell(row.name_bg, 500) || cell(row.name_en, 500) || cell(row.model, 500) || `Артикул ${legacyProductId}`;
       const normalPrice = decimal(row.price);
-      const groupSpecialPrice = cell(row.special_price_for_group_1) ? decimal(row.special_price_for_group_1) : null;
-      const specialPrice = groupSpecialPrice ?? (cell(row.price_special) ? decimal(row.price_special) : null);
+      const normalPriceValue = Number(normalPrice);
+      const currentGroupSpecial = positiveMoney(row.special_price_for_group_1);
+      const directSpecial = positiveMoney(row.price_special);
+      const groupSpecialPrice = currentGroupSpecial && currentGroupSpecial < normalPriceValue && isCurrentPriceWindow(row.special_price_for_group_1_start, row.special_price_for_group_1_end) ? currentGroupSpecial : null;
+      const directSpecialPrice = directSpecial && directSpecial < normalPriceValue ? directSpecial : null;
+      const specialPrice = groupSpecialPrice ?? directSpecialPrice;
       const priceEur = specialPrice ?? normalPrice;
       const oldPriceEur = specialPrice ? normalPrice : null;
       const quantity = Math.max(0, Number(cell(row.quantity, 16) || 0));
@@ -253,7 +297,7 @@ async function main() {
       const features = [cell(row.model, 160) && `Модел: ${cell(row.model, 160)}`, cell(row.product_attribute, 1000), cell(row.product_option, 1000)].filter(Boolean).slice(0, 12);
       const gallery = [...new Set([sourceImage(row.image), ...urls(row.additional_images)])];
       const active = truthy(row.status);
-      preparedProducts.push([legacyProductId, legacyManufacturerId, primaryCategoryId, slug(productName, `legacy-${legacyProductId}`), cell(row.sku, 96) || cell(row.model, 96) || null, manufacturerNameByLegacyId.get(legacyManufacturerId) ?? (cell(row.manufacturer, 160) || null), productName, cell(row.description_bg, 65535) || cell(row.description_en, 65535) || productName, gallery[0], JSON.stringify(gallery), cell(row.image_alt_bg, 1000) || cell(row.image_alt_en, 1000) || productName, priceEur, oldPriceEur, specialPrice ? "Промоция" : null, availability, quantity, JSON.stringify(features), cell(row.seo_keyword_bg, 255) || null, cell(row.seo_keyword_en, 255) || null, cell(row.meta_title_bg, 500) || null, cell(row.meta_title_en, 500) || null, cell(row.meta_description_bg, 65535) || null, cell(row.meta_description_en, 65535) || null, cell(row.seo_canonical, 4096) || null, cell(row.meta_robots, 255) || null, active]);
+      preparedProducts.push([legacyProductId, legacyManufacturerId, primaryCategoryId, slug(productName, `legacy-${legacyProductId}`), cell(row.sku, 96) || cell(row.model, 96) || null, manufacturerNameByLegacyId.get(legacyManufacturerId) ?? (cell(row.manufacturer, 160) || null), productName, cleanProductDescription(cell(row.description_bg, 65535) || cell(row.description_en, 65535), productName), gallery[0], JSON.stringify(gallery), cell(row.image_alt_bg, 1000) || cell(row.image_alt_en, 1000) || productName, priceEur, oldPriceEur, specialPrice ? "Промоция" : null, availability, quantity, JSON.stringify(features), cell(row.seo_keyword_bg, 255) || null, cell(row.seo_keyword_en, 255) || null, cell(row.meta_title_bg, 500) || null, cell(row.meta_title_en, 500) || null, cell(row.meta_description_bg, 65535) || null, cell(row.meta_description_en, 65535) || null, cell(row.seo_canonical, 4096) || null, cell(row.meta_robots, 255) || null, active]);
       categoryPathsByLegacyProductId.set(legacyProductId, rawCategoryPaths);
     }
     const productSql = "INSERT INTO catalogue_products (legacyProductId,legacyManufacturerId,categoryId,slug,sku,brand,name,description,imageUrl,galleryJson,imageAlt,priceEur,oldPriceEur,discountLabel,availability,stockQuantity,featuresJson,legacySeoKeywordBg,legacySeoKeywordEn,legacyMetaTitleBg,legacyMetaTitleEn,legacyMetaDescriptionBg,legacyMetaDescriptionEn,legacyCanonicalUrl,legacyMetaRobots,isActive) VALUES ? ON DUPLICATE KEY UPDATE legacyManufacturerId=VALUES(legacyManufacturerId),categoryId=VALUES(categoryId),sku=VALUES(sku),brand=VALUES(brand),name=VALUES(name),description=VALUES(description),imageUrl=IF(catalogue_products.imageUrl LIKE '/manus-storage/%', catalogue_products.imageUrl, VALUES(imageUrl)),galleryJson=IF(catalogue_products.imageUrl LIKE '/manus-storage/%', catalogue_products.galleryJson, VALUES(galleryJson)),imageAlt=VALUES(imageAlt),priceEur=VALUES(priceEur),oldPriceEur=VALUES(oldPriceEur),discountLabel=VALUES(discountLabel),availability=VALUES(availability),stockQuantity=VALUES(stockQuantity),featuresJson=VALUES(featuresJson),legacySeoKeywordBg=VALUES(legacySeoKeywordBg),legacySeoKeywordEn=VALUES(legacySeoKeywordEn),legacyMetaTitleBg=VALUES(legacyMetaTitleBg),legacyMetaTitleEn=VALUES(legacyMetaTitleEn),legacyMetaDescriptionBg=VALUES(legacyMetaDescriptionBg),legacyMetaDescriptionEn=VALUES(legacyMetaDescriptionEn),legacyCanonicalUrl=VALUES(legacyCanonicalUrl),legacyMetaRobots=VALUES(legacyMetaRobots),isActive=VALUES(isActive)";

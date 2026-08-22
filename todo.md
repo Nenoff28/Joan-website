@@ -259,3 +259,10 @@
 - [x] Correct product and promotion prices using the verified legacy source field that represents EUR.
 - [x] Remove BGN price storage and presentation from storefront, checkout, cart, administration, and import tooling, leaving a EUR-only catalogue.
 - [x] Reconcile image-transfer coverage and EUR-only price accuracy before publishing the product-first update.
+- [x] Audit every imported product’s current and promotional EUR pricing against the approved OpenCart product export and identify all mismatches.
+- [x] Reconcile product prices and promotion states from the approved legacy source fields without inventing or retaining incorrect promotions.
+- [x] Convert imported HTML product descriptions into clean customer-readable text while preserving meaningful content.
+- [x] Reconcile the complete legacy category and subcategory hierarchy so category routes contain their correctly linked imported products.
+- [x] Replace full-catalogue client payload loading with efficient server-side catalogue pagination, filtering, and sorting.
+- [x] Add and run regression tests plus desktop/mobile verification for pricing, promotions, descriptions, category navigation, and catalogue performance.
+- [x] Verify every imported product’s visible EUR price and promotion state product-by-product against the live legacy Joan.bg catalogue, recording source URLs and exceptions before applying corrections.

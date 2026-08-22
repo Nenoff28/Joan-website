@@ -3,6 +3,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 
 type FavoritesContextValue = {
   count: number;
+  favoriteSlugs: string[];
   isFavorite: (slug: string) => boolean;
   toggleFavorite: (slug: string) => void;
   removeFavorite: (slug: string) => void;
@@ -51,11 +52,12 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({
     count: favoriteSlugs.size,
+    favoriteSlugs: Array.from(favoriteSlugs),
     isFavorite,
     toggleFavorite,
     removeFavorite,
     clearFavorites,
-  }), [favoriteSlugs.size, isFavorite, toggleFavorite, removeFavorite, clearFavorites]);
+  }), [favoriteSlugs, isFavorite, toggleFavorite, removeFavorite, clearFavorites]);
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

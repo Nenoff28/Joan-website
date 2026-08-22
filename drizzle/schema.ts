@@ -167,7 +167,7 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [index("products_category_active_idx").on(table.categoryId, table.isActive)]);
+}, (table) => [index("products_category_active_idx").on(table.categoryId, table.isActive), index("products_active_updated_idx").on(table.isActive, table.updatedAt)]);
 
 /** Imported OpenCart manufacturer records retain their original identity and public metadata. */
 export const catalogueManufacturers = mysqlTable("catalogue_manufacturers", {

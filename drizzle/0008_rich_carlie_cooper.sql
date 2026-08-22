@@ -1,0 +1,1 @@
+CREATE INDEX `products_active_updated_idx` ON `catalogue_products` (`isActive`,`updatedAt`);

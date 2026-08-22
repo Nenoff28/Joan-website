@@ -16,6 +16,10 @@ const service = vi.hoisted(() => ({
   getAdminSummary: vi.fn(),
   getAdminOperations: vi.fn(),
   getPublicCatalogue: vi.fn(),
+  getPublicCatalogueMetadata: vi.fn(),
+  getPublicCataloguePage: vi.fn(),
+  getPublicProductBySlug: vi.fn(),
+  getPublicProductsBySlugs: vi.fn(),
   getPublicBrochure: vi.fn(),
   replaceAdminBrochure: vi.fn(),
   saveAdminCategory: vi.fn(),
@@ -124,6 +128,15 @@ describe("administrator management procedures", () => {
     service.createOrderRequest.mockResolvedValueOnce({ requestNumber: "J-20260819-TEST1" });
     const caller = appRouter.createCaller({ ...adminContext(), user: null });
     await expect(caller.catalogue.createOrderRequest({ productSlug: "instrumenti-test-1", quantity: 1, fullName: "Catalogue customer", email: "customer@example.com", phone: "+359888111222", address: "Example address 22", city: "Silistra", postcode: "7500" })).resolves.toEqual({ requestNumber: "J-20260819-TEST1" });
+  });
+
+  it("forwards only bounded page, filter, and sort inputs to the public server-side catalogue workflow", async () => {
+    const result = { products: [], total: 18, page: 1, pageSize: 48, brands: ["Premium"] };
+    const input = { page: 1, pageSize: 48, categorySlug: "instrumenti", path: ["Електроинструменти", "Бормашини"], query: "ударна", availability: ["in_stock" as const], minPrice: 1, maxPrice: 200, sort: "price-asc" as const };
+    service.getPublicCataloguePage.mockResolvedValueOnce(result);
+    const caller = appRouter.createCaller({ ...adminContext(), user: null });
+    await expect(caller.catalogue.page(input)).resolves.toEqual(result);
+    expect(service.getPublicCataloguePage).toHaveBeenCalledWith(input);
   });
 
   it("passes a validated brochure PDF and its rendered pages to the authenticated administrator service", async () => {

@@ -3,16 +3,16 @@ import { Breadcrumbs, Layout, PageMeta } from "@/components/Storefront";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { useCatalogue } from "@/hooks/useCatalogue";
+import { useCatalogueProducts } from "@/hooks/useCatalogue";
 import { ArrowRight, Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
 export default function Favorites() {
   const { t } = useLanguage();
-  const { count, isFavorite, removeFavorite, clearFavorites } = useFavorites();
+  const { count, favoriteSlugs, isFavorite, removeFavorite, clearFavorites } = useFavorites();
   const { addItem } = useCart();
-  const { products } = useCatalogue();
+  const { products } = useCatalogueProducts(favoriteSlugs);
   const savedProducts = products.filter((product) => isFavorite(product.slug));
 
   return <Layout>

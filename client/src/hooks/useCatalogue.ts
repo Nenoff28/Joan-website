@@ -33,13 +33,40 @@ export type ManagedProduct = Product & {
 const staticCategories = fallbackCategories.map((category) => ({ ...category, subcategories: categoryTreeFor(category.slug, category.subcategories) })) as CatalogueCategory[];
 const staticProducts = fallbackProducts as ManagedProduct[];
 
+function publicCategories(data: { categories: Array<Omit<CatalogueCategory, "icon" | "subcategories"> & { icon: string; subcategories: CategoryNode[] }> } | undefined) {
+  return data?.categories.map((category) => ({ ...category, icon: category.icon as CatalogueIconName, subcategories: categoryTreeFor(category.slug, category.subcategories) })) ?? staticCategories;
+}
+
+export type CataloguePageInput = {
+  page: number;
+  pageSize: number;
+  categorySlug?: string;
+  path?: string[];
+  query?: string;
+  brand?: string;
+  availability?: Array<"in_stock" | "on_request" | "out_of_stock">;
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
+};
+
 export function useCatalogue() {
-  const query = trpc.catalogue.list.useQuery(undefined, { staleTime: 60_000, retry: 1 });
-  const categories: CatalogueCategory[] = query.data?.categories.map((category) => ({
-    ...category,
-    icon: category.icon as CatalogueIconName,
-    subcategories: categoryTreeFor(category.slug, category.subcategories),
-  })) ?? staticCategories;
-  const products: ManagedProduct[] = query.data?.products ?? staticProducts;
-  return { categories, products, isLoading: query.isLoading, isDatabaseCatalogue: Boolean(query.data), error: query.error };
+  const query = trpc.catalogue.metadata.useQuery(undefined, { staleTime: 300_000, retry: 1 });
+  return { categories: publicCategories(query.data), products: staticProducts, isLoading: query.isLoading, isDatabaseCatalogue: Boolean(query.data), error: query.error };
+}
+
+export function useCataloguePage(input: CataloguePageInput) {
+  const query = trpc.catalogue.page.useQuery(input, { staleTime: 60_000, retry: 1, placeholderData: (previous) => previous });
+  return { ...query, products: (query.data?.products ?? []) as ManagedProduct[], total: query.data?.total ?? 0, brands: query.data?.brands ?? [], page: query.data?.page ?? input.page, pageSize: query.data?.pageSize ?? input.pageSize };
+}
+
+export function useCatalogueProduct(slug: string | undefined) {
+  const query = trpc.catalogue.product.useQuery({ slug: slug ?? "missing-product" }, { enabled: Boolean(slug), staleTime: 60_000, retry: 1 });
+  return { ...query, product: query.data?.product as ManagedProduct | undefined, related: (query.data?.related ?? []) as ManagedProduct[] };
+}
+
+export function useCatalogueProducts(slugs: string[]) {
+  const stableSlugs = Array.from(new Set(slugs)).sort();
+  const query = trpc.catalogue.productsBySlugs.useQuery({ slugs: stableSlugs.length ? stableSlugs : ["missing-product"] }, { enabled: stableSlugs.length > 0, staleTime: 60_000, retry: 1 });
+  return { ...query, products: (query.data ?? []) as ManagedProduct[] };
 }

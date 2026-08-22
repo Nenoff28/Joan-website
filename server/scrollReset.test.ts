@@ -9,7 +9,7 @@ describe("global route scroll reset", () => {
     expect(appSource).toContain('import { Route, Switch, useLocation } from "wouter"');
     expect(appSource).toContain("function ScrollToTop()");
     expect(appSource).toContain("const [location] = useLocation()");
-    expect(appSource).toContain('import { useLayoutEffect } from "react"');
+    expect(appSource).toContain('useLayoutEffect } from "react"');
     expect(appSource).toContain('root.style.scrollBehavior = "auto"');
     expect(appSource).toContain("window.scrollTo(0, 0)");
     expect(appSource).toContain("window.requestAnimationFrame(() => window.scrollTo(0, 0))");

@@ -1,27 +1,28 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
-import { useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { CartProvider } from "./contexts/CartContext";
-import Home from "./pages/Home";
-import Category from "./pages/Category";
-import { AllProducts } from "./pages/Category";
-import Product from "./pages/Product";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Delivery from "./pages/Delivery";
-import Terms from "./pages/Terms";
-import Checkout from "./pages/Checkout";
-import Favorites from "./pages/Favorites";
-import Admin from "./pages/Admin";
-import FAQ from "./pages/FAQ";
-import Returns from "./pages/Returns";
-import CustomerAccount, { CustomerActivation } from "./pages/CustomerAccount";
+const Home = lazy(() => import("./pages/Home"));
+const Category = lazy(() => import("./pages/Category"));
+const AllProducts = lazy(() => import("./pages/Category").then((module) => ({ default: module.AllProducts })));
+const Product = lazy(() => import("./pages/Product"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Delivery = lazy(() => import("./pages/Delivery"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const Admin = lazy(() => import("./pages/Admin"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Returns = lazy(() => import("./pages/Returns"));
+const CustomerAccount = lazy(() => import("./pages/CustomerAccount"));
+const CustomerActivation = lazy(() => import("./pages/CustomerAccount").then((module) => ({ default: module.CustomerActivation })));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -52,7 +53,7 @@ function Router() {
   return (
     <>
       <ScrollToTop />
-      <Switch>
+      <Suspense fallback={<main className="page-frame"><p className="py-12 text-sm text-slate-600">Зареждане…</p></main>}><Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/products"} component={AllProducts} />
         <Route path={"/category/:slug"} component={Category} />
@@ -72,7 +73,7 @@ function Router() {
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
-      </Switch>
+      </Switch></Suspense>
     </>
   );
 }

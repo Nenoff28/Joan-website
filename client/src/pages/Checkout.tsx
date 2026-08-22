@@ -2,7 +2,7 @@
 import { Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { useCatalogue } from "@/hooks/useCatalogue";
+import { useCatalogueProducts, type ManagedProduct } from "@/hooks/useCatalogue";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, CheckCircle2, ChevronLeft, ClipboardCheck, LockKeyhole, Minus, PackageCheck, Plus, ShieldAlert, Trash2 } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 type FormValues = { fullName: string; email: string; phone: string; address: string; city: string; postcode: string; consent: boolean };
 type FormErrors = Partial<Record<keyof FormValues, string>>;
 
-function getCheckoutProduct(products: ReturnType<typeof useCatalogue>["products"]) {
+function getCheckoutProduct(products: ManagedProduct[]) {
   const query = new URLSearchParams(window.location.search);
   const product = products.find((item) => item.slug === query.get("product")) ?? products[0];
   const requestedQuantity = Number(query.get("qty"));
@@ -21,8 +21,10 @@ function getCheckoutProduct(products: ReturnType<typeof useCatalogue>["products"
 
 export default function Checkout() {
   const { language, t } = useLanguage();
-  const { products } = useCatalogue();
   const { items, setQuantity, removeItem, clearCart } = useCart();
+  const requestedSlug = new URLSearchParams(window.location.search).get("product") ?? undefined;
+  const lookupSlugs = useMemo(() => Array.from(new Set([...items.map((item) => item.slug), ...(requestedSlug ? [requestedSlug] : [])])), [items, requestedSlug]);
+  const { products } = useCatalogueProducts(lookupSlugs);
   const { product, quantity } = useMemo(() => getCheckoutProduct(products), [products]);
   const hasRequestedProduct = new URLSearchParams(window.location.search).has("product");
   const checkoutRows = useMemo(() => {
