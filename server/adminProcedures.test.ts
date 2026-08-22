@@ -47,6 +47,10 @@ function adminContext(): TrpcContext {
 const productInput = {
   categoryId: 1,
   slug: "admin-validation-product",
+  seoTitle: "Administrative validation product | ЖОАН",
+  seoDescription: "Validated administrative product metadata description for search results.",
+  seoKeywords: "administrative product, validation",
+  seoRobots: "index,follow" as const,
   sku: "ADM-01",
   brand: "Joan",
   name: "Administrative validation product",
@@ -69,6 +73,11 @@ describe("administrator management procedures", () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.createProduct(productInput)).resolves.toBe(501);
     expect(service.createAdminProduct).toHaveBeenCalledWith(productInput, 17);
+  });
+
+  it("rejects a custom product slug that is not Latin-only", async () => {
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.createProduct({ ...productInput, slug: "артикул-за-проверка" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("accepts and forwards a nested public category tree to the protected category workflow", async () => {

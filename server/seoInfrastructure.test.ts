@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const html = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
 const vite = readFileSync(resolve(process.cwd(), "server/_core/vite.ts"), "utf8");
 const prefetch = readFileSync(resolve(process.cwd(), "client/src/ssr/prefetch.ts"), "utf8");
+const productPage = readFileSync(resolve(process.cwd(), "client/src/pages/Product.tsx"), "utf8");
 const sitemapService = readFileSync(resolve(process.cwd(), "server/catalogueService.ts"), "utf8");
 
 describe("public SEO infrastructure", () => {
@@ -32,5 +33,13 @@ describe("public SEO infrastructure", () => {
 
   it("keeps transactional and authenticated routes out of search indexes", () => {
     expect(prefetch).toContain('path === "/checkout" || path === "/favorites" || path.startsWith("/account") || path.startsWith("/admin")');
+  });
+
+  it("uses administrator-provided product title, description and indexing directives in SSR and after hydration", () => {
+    expect(prefetch).toContain('title: product.metaTitle || `${product.name} | ${SITE}`');
+    expect(prefetch).toContain('description: product.metaDescription || product.description || DEFAULT_DESCRIPTION');
+    expect(prefetch).toContain('noindex: product.metaRobots === "noindex,follow"');
+    expect(productPage).toContain('title={product.metaTitle || product.name}');
+    expect(productPage).toContain('metaRobots={product.metaRobots || "index,follow"}');
   });
 });

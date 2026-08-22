@@ -66,9 +66,13 @@ const categoryNodeSchema: z.ZodType<CategoryNodeInput> = z.lazy(() => z.object({
   children: z.array(categoryNodeSchema).max(24).optional(),
 }));
 
-const productPayloadSchema = z.object({
+export const productPayloadSchema = z.object({
   categoryId: z.number().int().positive(),
-  slug: z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/),
+  slug: z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/, "URL адресът използва само малки латински букви, цифри и тирета."),
+  seoTitle: z.string().trim().max(70).nullable().optional(),
+  seoDescription: z.string().trim().max(200).nullable().optional(),
+  seoKeywords: z.string().trim().max(255).nullable().optional(),
+  seoRobots: z.enum(["index,follow", "noindex,follow"]).optional(),
   sku: z.string().trim().max(96).nullable().optional(),
   brand: z.string().trim().max(160).nullable().optional(),
   name: z.string().trim().min(3).max(500),

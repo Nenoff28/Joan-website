@@ -34,7 +34,7 @@ export default function Product() {
   if (!product) return <Layout><PageMeta title="Продукт" description="Преглед на продукт от каталога на Жоан." /><main className="product-page"><div className="page-frame"><section className="empty-products"><h1>{isLoading ? "Зареждане на продукта…" : "Продуктът не е намерен."}</h1><p>{isLoading ? "Извличаме само избрания продукт." : "Артикулът може да е спрян или адресът да не е валиден."}</p><Link href="/products" className="filter-reset">Към всички продукти</Link></section></div></main></Layout>;
 
   return <Layout>
-    <PageMeta title={product.name} description={product.description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}/product/${product.slug}`} metaRobots="index,follow" />
+    <PageMeta title={product.metaTitle || product.name} description={product.metaDescription || product.description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}/product/${product.slug}`} metaRobots={product.metaRobots || "index,follow"} />
     <JsonLd product={product} />
     <main className="product-page">
       <div className="page-frame">

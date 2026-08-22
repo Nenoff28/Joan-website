@@ -43,7 +43,7 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
     if (!data?.product) return { title: SITE, description: DEFAULT_DESCRIPTION, notFound: true };
     await seed(queryClient, getQueryKey(trpc.catalogue.product, { slug: productMatch[1] }, "query"), data);
     const product = data.product;
-    return { title: `${product.name} | ${SITE}`, description: product.description || DEFAULT_DESCRIPTION, canonicalPath: `/product/${product.slug}`, ogImage: product.image, ogImageAlt: product.imageAlt, ogType: "product" };
+    return { title: product.metaTitle || `${product.name} | ${SITE}`, description: product.metaDescription || product.description || DEFAULT_DESCRIPTION, canonicalPath: `/product/${product.slug}`, ogImage: product.image, ogImageAlt: product.imageAlt, ogType: "product", noindex: product.metaRobots === "noindex,follow" };
   }
   const staticPages: Record<string, [string, string]> = { "/about": ["За ЖОАН", "Научете повече за строителен хипермаркет ЖОАН в Силистра."], "/contact": ["Контакти", "Свържете се с екипа на строителен хипермаркет ЖОАН."], "/delivery": ["Доставка", "Информация за доставка и потвърждение от екипа на ЖОАН."], "/terms": ["Условия за ползване", "Условия за ползване на онлайн каталога на ЖОАН."], "/faq": ["Често задавани въпроси", "Отговори на често задавани въпроси за ЖОАН."], "/returns": ["Връщане", "Информация за връщане на продукти от ЖОАН."] };
   if (staticPages[path]) return { title: `${staticPages[path][0]} | ${SITE}`, description: staticPages[path][1], canonicalPath: path };

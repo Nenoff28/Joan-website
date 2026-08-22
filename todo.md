@@ -309,3 +309,9 @@
 - [x] Add pagination controls with page-number ranges, ellipses, and direct navigation to distant pages such as page 147.
 - [x] Perform a comprehensive 375px mobile visual QA across public pages and correct reproducible layout, spacing, touch-target, and overflow issues.
 - [x] Add regression coverage and verify legacy redirects, Latin-only product URLs, hierarchy routes, pagination, mobile layouts, TypeScript, tests, and production build before publishing.
+- [x] Add administrator-controlled Latin-only custom product slug entry with uniqueness validation and safe canonical URL updates.
+- [x] Add prepared product SEO metadata controls and preview guidance for future search optimization.
+- [x] Verify administrator product create/edit SEO workflow, validation errors, public canonical output, tests, and production build before publishing.
+- [x] Define dashboard daily, weekly, monthly, and yearly request metrics with an explicit distinction between requested value and confirmed profit.
+- [x] Add administrator dashboard views for period-specific request counts, order-status breakdowns, and available request-value totals.
+- [x] Verify dashboard calculations, empty states, responsive admin layout, tests, and production build before publishing.

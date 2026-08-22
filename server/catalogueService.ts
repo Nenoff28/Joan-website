@@ -9,10 +9,15 @@ export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
 export type ContactEnquiryStatus = "new" | "contacted" | "closed";
 export type CategoryNode = { label: string; children?: CategoryNode[] };
+type ReportingOrder = Pick<typeof orderRequests.$inferSelect, "createdAt" | "status" | "totalEur">;
 
 export type ProductPayload = {
   categoryId: number;
   slug: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
+  seoRobots?: "index,follow" | "noindex,follow";
   sku?: string | null;
   brand?: string | null;
   name: string;
@@ -428,7 +433,7 @@ export async function getAdminProducts() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const rows = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).orderBy(desc(catalogueProducts.updatedAt));
-  return rows.map((row) => ({ ...publicProduct(row.product, row.category), categoryId: row.product.categoryId, categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt }));
+  return rows.map((row) => ({ ...publicProduct(row.product, row.category), seoTitle: row.product.legacyMetaTitleBg ?? "", seoDescription: row.product.legacyMetaDescriptionBg ?? "", seoKeywords: row.product.legacySeoKeywordBg ?? "", seoRobots: row.product.legacyMetaRobots === "noindex,follow" ? "noindex,follow" as const : "index,follow" as const, categoryId: row.product.categoryId, categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt }));
 }
 
 export async function getAdminOrders() {
@@ -484,8 +489,50 @@ export async function getAdminOperations() {
     inventoryQueue,
     qualityQueue,
     orderCounts,
+    reporting: buildAdminReportingSnapshot(orders),
     activities: activityRows.map((row) => ({ id: row.activity.id, action: row.activity.action, entityType: row.activity.entityType, entityId: row.activity.entityId, metadata: (() => { try { return JSON.parse(row.activity.metadataJson) as Record<string, unknown>; } catch { return {}; } })(), createdAt: row.activity.createdAt, adminName: row.adminName ?? row.adminEmail ?? "Администратор" })),
   };
+}
+
+type SofiaCalendarDate = { year: number; month: number; day: number; key: string };
+const sofiaTimeZone = "Europe/Sofia";
+const padCalendarPart = (value: number) => String(value).padStart(2, "0");
+function sofiaCalendarDate(date: Date): SofiaCalendarDate {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: sofiaTimeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((item) => item.type === type)?.value ?? 0);
+  const year = part("year"); const month = part("month"); const day = part("day");
+  return { year, month, day, key: `${year}-${padCalendarPart(month)}-${padCalendarPart(day)}` };
+}
+
+function mondayKey(date: SofiaCalendarDate) {
+  const weekday = new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() || 7;
+  const monday = new Date(Date.UTC(date.year, date.month - 1, date.day - (weekday - 1)));
+  return `${monday.getUTCFullYear()}-${padCalendarPart(monday.getUTCMonth() + 1)}-${padCalendarPart(monday.getUTCDate())}`;
+}
+
+export function buildAdminReportingSnapshot(orders: ReportingOrder[], now = new Date()) {
+  const reference = sofiaCalendarDate(now);
+  const weekStart = mondayKey(reference);
+  const periodPredicates = {
+    today: (date: SofiaCalendarDate) => date.key === reference.key,
+    week: (date: SofiaCalendarDate) => date.key >= weekStart && date.key <= reference.key,
+    month: (date: SofiaCalendarDate) => date.year === reference.year && date.month === reference.month,
+    year: (date: SofiaCalendarDate) => date.year === reference.year,
+  };
+  const calculate = (contains: (date: SofiaCalendarDate) => boolean) => {
+    const periodOrders = orders.filter((order) => contains(sofiaCalendarDate(order.createdAt)));
+    const statusCounts: Record<OrderRequestStatus, number> = { new: 0, contacted: 0, confirmed: 0, closed: 0, cancelled: 0 };
+    periodOrders.forEach((order) => { statusCounts[order.status] += 1; });
+    const valueFor = (statuses: OrderRequestStatus[]) => periodOrders.filter((order) => statuses.includes(order.status)).reduce((sum, order) => sum + Number(order.totalEur ?? 0), 0);
+    return {
+      requestCount: periodOrders.length,
+      activeRequestCount: statusCounts.new + statusCounts.contacted + statusCounts.confirmed,
+      statusCounts,
+      requestedValueEur: valueFor(["new", "contacted", "confirmed", "closed"]),
+      confirmedRequestValueEur: valueFor(["confirmed", "closed"]),
+    };
+  };
+  return { asOf: reference.key, timeZone: sofiaTimeZone, periods: { today: calculate(periodPredicates.today), week: calculate(periodPredicates.week), month: calculate(periodPredicates.month), year: calculate(periodPredicates.year) } };
 }
 
 export async function logAdminActivity(adminUserId: number, action: string, entityType: string, entityId?: number | null, metadata: Record<string, unknown> = {}) {
@@ -493,10 +540,20 @@ export async function logAdminActivity(adminUserId: number, action: string, enti
   await db.insert(adminActivities).values({ adminUserId, action, entityType, entityId: entityId ?? null, metadataJson: JSON.stringify(metadata) });
 }
 
+async function assertAdminProductSlugAvailable(slug: string, excludingProductId?: number) {
+  const db = await requireDb();
+  const scope = excludingProductId
+    ? and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug)), ne(catalogueProducts.id, excludingProductId))
+    : or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug));
+  const [conflict] = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).where(scope!).limit(1);
+  if (conflict) throw new Error("Този URL адрес вече е зает от друг продукт или е запазен за стар адрес.");
+}
+
 export async function createAdminProduct(payload: ProductPayload, adminUserId: number) {
+  await assertAdminProductSlugAvailable(payload.slug);
   const db = await requireDb();
   const result = await db.insert(catalogueProducts).values({
-    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
+    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
   });
   const id = Number(result[0].insertId);
   await logAdminActivity(adminUserId, "product.created", "product", id, { slug: payload.slug, name: payload.name });
@@ -505,8 +562,12 @@ export async function createAdminProduct(payload: ProductPayload, adminUserId: n
 
 export async function updateAdminProduct(id: number, payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
+  const [existing] = await db.select({ id: catalogueProducts.id, slug: catalogueProducts.slug }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1);
+  if (!existing) throw new Error("Продуктът не е намерен.");
+  if (existing.slug !== payload.slug) throw new Error("URL адресът на публикуван продукт не се променя, за да се запазят SEO адресите и външните връзки.");
+  await assertAdminProductSlugAvailable(payload.slug, id);
   await db.update(catalogueProducts).set({
-    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), isActive: payload.isActive,
+    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
   }).where(eq(catalogueProducts.id, id));
   await logAdminActivity(adminUserId, "product.updated", "product", id, { slug: payload.slug, name: payload.name });
 }
