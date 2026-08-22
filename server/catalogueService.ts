@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts, contactEnquiries, orderRequests, users } from "../drizzle/schema";
@@ -311,11 +311,12 @@ function publicCatalogueConditions(input: PublicCataloguePageInput, categoryId?:
 }
 
 function publicCatalogueOrder(sort: PublicCataloguePageInput["sort"]) {
-  if (sort === "price-asc") return [asc(catalogueProducts.priceEur), asc(catalogueProducts.name)] as const;
-  if (sort === "price-desc") return [desc(catalogueProducts.priceEur), asc(catalogueProducts.name)] as const;
-  if (sort === "name-asc") return [asc(catalogueProducts.name)] as const;
-  if (sort === "name-desc") return [desc(catalogueProducts.name)] as const;
-  return [desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)] as const;
+  const outOfStockLast = sql`CASE WHEN ${catalogueProducts.availability} = 'out_of_stock' THEN 1 ELSE 0 END`;
+  if (sort === "price-asc") return [outOfStockLast, asc(catalogueProducts.priceEur), asc(catalogueProducts.name)] as const;
+  if (sort === "price-desc") return [outOfStockLast, desc(catalogueProducts.priceEur), asc(catalogueProducts.name)] as const;
+  if (sort === "name-asc") return [outOfStockLast, asc(catalogueProducts.name)] as const;
+  if (sort === "name-desc") return [outOfStockLast, desc(catalogueProducts.name)] as const;
+  return [outOfStockLast, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)] as const;
 }
 
 export async function getPublicCatalogueMetadata() {

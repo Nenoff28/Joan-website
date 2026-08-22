@@ -14,4 +14,9 @@ describe("public product-detail price presentation", () => {
   it("suppresses the internal product-detail implementation marker from public rendering", () => {
     expect(stylesSource).toContain(".product-detail::before { content: none; }");
   });
+
+  it("keeps the full description in its lower section without duplicating it under the product title", () => {
+    expect(productSource).not.toContain('<p className="detail-summary">{product.description}</p>');
+    expect(productSource).toContain('<h2>{t("aboutProduct")}</h2><p>{product.description}</p>');
+  });
 });

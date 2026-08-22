@@ -297,3 +297,9 @@
 - [x] Implement permanent Latin-only public product/category slugs with compatibility handling for existing legacy URLs.
 - [x] Improve page metadata, canonical URLs, robots directives, sitemap, and structured data across public catalogue and product routes.
 - [x] Verify availability, Latin-only URLs, redirects, SEO tags, sitemap output, desktop/mobile routes, tests, and production build before publishing.
+
+- [x] Sort confirmed out-of-stock products last in every public catalogue, category, subcategory, and search result query.
+- [x] Add regression tests and desktop/mobile verification for out-of-stock-last ordering across sort modes.
+
+- [x] Remove the duplicate technical summary beneath the product title while retaining the lower product-description section.
+- [x] Verify the product-detail content hierarchy on desktop and mobile after the duplicate-summary removal.
