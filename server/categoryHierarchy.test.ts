@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { publicCategoryHierarchy } from "../client/src/lib/categoryHierarchy";
+import { categoryTreeFor, publicCategoryHierarchy } from "../client/src/lib/categoryHierarchy";
 
 const headerSource = readFileSync(resolve(process.cwd(), "client/src/components/Storefront.tsx"), "utf8");
 const categorySource = readFileSync(resolve(process.cwd(), "client/src/pages/Category.tsx"), "utf8");
@@ -33,11 +33,18 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("selected-subcategory-bar");
   });
 
+  it("uses exact imported category trees instead of stale static labels when legacy metadata is available", () => {
+    const importedTree = [{ label: "Точна група", children: [{ label: "Точен подтип" }] }];
+    expect(categoryTreeFor("instrumenti", importedTree)).toEqual(importedTree);
+  });
+
   it("provides a complete catalogue route instead of mapping all products to Tools", () => {
     expect(appSource).toContain('path={"/products"} component={AllProducts}');
     expect(categorySource).toContain("export function AllProducts() { return <CataloguePage showAll />; }");
-    expect(categorySource).toContain("const cataloguePage = useCataloguePage({ page, pageSize");
+    expect(categorySource).toContain("const cataloguePage = useCataloguePage(catalogueInput)");
     expect(categorySource).toContain("categorySlug: showAll ? undefined : category?.slug");
+    expect(categorySource).toContain("const catalogueInput = useMemo(() =>");
+    expect(categorySource).toContain("const navigateToCatalogue = (href: string)");
     expect(headerSource).toContain('href="/products"');
     expect(homeSource).toContain('href="/products">Всички продукти');
     expect(headerSource).toContain('location === "/products" || location.startsWith("/category")');

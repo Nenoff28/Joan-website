@@ -140,7 +140,8 @@ function Header() {
   const [cartOpen, setCartOpen] = useState(false);
   const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity } = useCart();
   const { products: cartProducts } = useCatalogueProducts(cartItems.map((item) => item.slug));
-  const searchResults = useCataloguePage({ page: 1, pageSize: 4, query: query.trim() || undefined, sort: "relevance" });
+  const searchInput = useMemo(() => ({ page: 1, pageSize: 4, query: query.trim() || undefined, sort: "relevance" as const }), [query]);
+  const searchResults = useCataloguePage(searchInput);
   const cartRows = cartItems.flatMap((line) => {
     const product = cartProducts.find((item) => item.slug === line.slug);
     return product ? [{ product, quantity: line.quantity }] : [];

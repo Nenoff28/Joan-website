@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, like, lte, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts, contactEnquiries, orderRequests, users } from "../drizzle/schema";
@@ -264,6 +264,18 @@ const legacyCategoryRootsByPublicSlug: Record<string, number[]> = {
   instrumenti: [91], gradina: [93], banya: [95], "podovi-i-stenni-pokritiya": [90], "v-i-k": [97], osvetlenie: [163], "boi-lakove-mazilki": [92], "vrati-obkov-krepezhi": [199], "za-doma": [204], stroitelstvo: [178, 85], "rabotno-obleklo": [61],
 };
 
+type LegacyCategoryTreeRow = Pick<typeof catalogueCategories.$inferSelect, "legacyCategoryId" | "legacyParentCategoryId" | "name" | "sortOrder">;
+
+function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: number[], depth = 2): Array<{ label: string; children?: Array<{ label: string; children?: Array<{ label: string }> }> }> {
+  if (!roots.length) return [];
+  const childrenOf = (parents: number[]) => rows.filter((row) => row.legacyParentCategoryId != null && parents.includes(row.legacyParentCategoryId)).sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "bg"));
+  const build = (parents: number[], remainingDepth: number): Array<{ label: string; children?: Array<{ label: string; children?: Array<{ label: string }> }> }> => childrenOf(parents).map((row) => {
+    const children = remainingDepth > 0 && row.legacyCategoryId != null ? build([row.legacyCategoryId], remainingDepth - 1) : [];
+    return children.length ? { label: row.name, children } : { label: row.name };
+  });
+  return build(roots, depth);
+}
+
 async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]) {
   if (!path.length) return [];
   const roots = legacyCategoryRootsByPublicSlug[categorySlug] ?? [];
@@ -305,8 +317,11 @@ function publicCatalogueOrder(sort: PublicCataloguePageInput["sort"]) {
 export async function getPublicCatalogueMetadata() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const categoryRows = await db.select().from(catalogueCategories).where(eq(catalogueCategories.isActive, true)).orderBy(asc(catalogueCategories.sortOrder));
-  return { categories: categoryRows.map(publicCategory) };
+  const [categoryRows, legacyRows] = await Promise.all([
+    db.select().from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId))).orderBy(asc(catalogueCategories.sortOrder)),
+    db.select({ legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.slug))),
+  ]);
+  return { categories: categoryRows.map((category) => ({ ...publicCategory(category), subcategories: legacyTreeForPublicCategory(legacyRows, legacyCategoryRootsByPublicSlug[category.slug] ?? []) })) };
 }
 
 export async function getPublicCataloguePage(input: PublicCataloguePageInput) {

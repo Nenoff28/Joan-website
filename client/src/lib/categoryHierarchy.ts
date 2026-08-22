@@ -80,8 +80,6 @@ export function legacySubcategoriesToTree(items: string[] | undefined): Category
 }
 
 export function categoryTreeFor(slug: string, stored?: CategoryNode[] | string[]): CategoryNode[] {
-  if (publicCategoryHierarchy[slug]) return publicCategoryHierarchy[slug];
-  if (!stored?.length) return [];
-  if (typeof stored[0] === "string") return legacySubcategoriesToTree(stored as string[]);
-  return stored as CategoryNode[];
+  if (stored?.length) return typeof stored[0] === "string" ? legacySubcategoriesToTree(stored as string[]) : stored as CategoryNode[];
+  return publicCategoryHierarchy[slug] ?? [];
 }

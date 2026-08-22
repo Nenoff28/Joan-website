@@ -56,7 +56,7 @@ export function useCatalogue() {
 }
 
 export function useCataloguePage(input: CataloguePageInput) {
-  const query = trpc.catalogue.page.useQuery(input, { staleTime: 60_000, retry: 1, placeholderData: (previous) => previous });
+  const query = trpc.catalogue.page.useQuery(input, { staleTime: 60_000, retry: 1 });
   return { ...query, products: (query.data?.products ?? []) as ManagedProduct[], total: query.data?.total ?? 0, brands: query.data?.brands ?? [], page: query.data?.page ?? input.page, pageSize: query.data?.pageSize ?? input.pageSize };
 }
 

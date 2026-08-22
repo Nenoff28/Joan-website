@@ -266,3 +266,7 @@
 - [x] Replace full-catalogue client payload loading with efficient server-side catalogue pagination, filtering, and sorting.
 - [x] Add and run regression tests plus desktop/mobile verification for pricing, promotions, descriptions, category navigation, and catalogue performance.
 - [x] Verify every imported product’s visible EUR price and promotion state product-by-product against the live legacy Joan.bg catalogue, recording source URLs and exceptions before applying corrections.
+- [x] Reproduce and repair public subcategory selection so every selected legacy path changes the product results correctly.
+- [x] Repair category and search navigation so moving from one open category to another always updates route state and results.
+- [x] Optimize mobile catalogue, category hierarchy, filters, and product-navigation layouts for smooth use on narrow screens.
+- [x] Add and run regression tests plus desktop/mobile route verification for subcategories, category switching, search, and mobile catalogue behavior.
