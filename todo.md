@@ -315,3 +315,6 @@
 - [x] Define dashboard daily, weekly, monthly, and yearly request metrics with an explicit distinction between requested value and confirmed profit.
 - [x] Add administrator dashboard views for period-specific request counts, order-status breakdowns, and available request-value totals.
 - [x] Verify dashboard calculations, empty states, responsive admin layout, tests, and production build before publishing.
+- [x] Build real daily and monthly request time series for the administrator dashboard, with requested-value data clearly labeled as non-payment revenue data.
+- [x] Add interactive dashboard charts for request volume and request value by day and month.
+- [x] Verify chart time-series calculations, tooltips, responsive layout, tests, and production build before publishing.

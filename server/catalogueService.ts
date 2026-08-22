@@ -495,6 +495,7 @@ export async function getAdminOperations() {
 }
 
 type SofiaCalendarDate = { year: number; month: number; day: number; key: string };
+type AdminChartPoint = { key: string; label: string; requestCount: number; requestedValueEur: number; confirmedRequestValueEur: number };
 const sofiaTimeZone = "Europe/Sofia";
 const padCalendarPart = (value: number) => String(value).padStart(2, "0");
 function sofiaCalendarDate(date: Date): SofiaCalendarDate {
@@ -510,6 +511,38 @@ function mondayKey(date: SofiaCalendarDate) {
   return `${monday.getUTCFullYear()}-${padCalendarPart(monday.getUTCMonth() + 1)}-${padCalendarPart(monday.getUTCDate())}`;
 }
 
+function requestedValueFor(orders: ReportingOrder[]) {
+  return orders.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + Number(order.totalEur ?? 0), 0);
+}
+
+function confirmedValueFor(orders: ReportingOrder[]) {
+  return orders.filter((order) => order.status === "confirmed" || order.status === "closed").reduce((sum, order) => sum + Number(order.totalEur ?? 0), 0);
+}
+
+function dashboardDailySeries(orders: ReportingOrder[], reference: SofiaCalendarDate): AdminChartPoint[] {
+  const byDate = new Map<string, ReportingOrder[]>();
+  orders.forEach((order) => { const key = sofiaCalendarDate(order.createdAt).key; byDate.set(key, [...(byDate.get(key) ?? []), order]); });
+  return Array.from({ length: 14 }, (_, index) => {
+    const value = new Date(Date.UTC(reference.year, reference.month - 1, reference.day - (13 - index)));
+    const key = `${value.getUTCFullYear()}-${padCalendarPart(value.getUTCMonth() + 1)}-${padCalendarPart(value.getUTCDate())}`;
+    const periodOrders = byDate.get(key) ?? [];
+    return { key, label: `${padCalendarPart(value.getUTCDate())}.${padCalendarPart(value.getUTCMonth() + 1)}`, requestCount: periodOrders.length, requestedValueEur: requestedValueFor(periodOrders), confirmedRequestValueEur: confirmedValueFor(periodOrders) };
+  });
+}
+
+function dashboardMonthlySeries(orders: ReportingOrder[], reference: SofiaCalendarDate): AdminChartPoint[] {
+  const byMonth = new Map<string, ReportingOrder[]>();
+  orders.forEach((order) => { const date = sofiaCalendarDate(order.createdAt); const key = `${date.year}-${padCalendarPart(date.month)}`; byMonth.set(key, [...(byMonth.get(key) ?? []), order]); });
+  return Array.from({ length: 12 }, (_, index) => {
+    const value = new Date(Date.UTC(reference.year, reference.month - 12 + index, 1));
+    const year = value.getUTCFullYear(); const month = value.getUTCMonth() + 1;
+    const key = `${year}-${padCalendarPart(month)}`;
+    const periodOrders = byMonth.get(key) ?? [];
+    const label = new Intl.DateTimeFormat("bg-BG", { month: "short", year: "2-digit", timeZone: sofiaTimeZone }).format(new Date(Date.UTC(year, month - 1, 15))).replace(" ", "");
+    return { key, label, requestCount: periodOrders.length, requestedValueEur: requestedValueFor(periodOrders), confirmedRequestValueEur: confirmedValueFor(periodOrders) };
+  });
+}
+
 export function buildAdminReportingSnapshot(orders: ReportingOrder[], now = new Date()) {
   const reference = sofiaCalendarDate(now);
   const weekStart = mondayKey(reference);
@@ -523,16 +556,15 @@ export function buildAdminReportingSnapshot(orders: ReportingOrder[], now = new 
     const periodOrders = orders.filter((order) => contains(sofiaCalendarDate(order.createdAt)));
     const statusCounts: Record<OrderRequestStatus, number> = { new: 0, contacted: 0, confirmed: 0, closed: 0, cancelled: 0 };
     periodOrders.forEach((order) => { statusCounts[order.status] += 1; });
-    const valueFor = (statuses: OrderRequestStatus[]) => periodOrders.filter((order) => statuses.includes(order.status)).reduce((sum, order) => sum + Number(order.totalEur ?? 0), 0);
     return {
       requestCount: periodOrders.length,
       activeRequestCount: statusCounts.new + statusCounts.contacted + statusCounts.confirmed,
       statusCounts,
-      requestedValueEur: valueFor(["new", "contacted", "confirmed", "closed"]),
-      confirmedRequestValueEur: valueFor(["confirmed", "closed"]),
+      requestedValueEur: requestedValueFor(periodOrders),
+      confirmedRequestValueEur: confirmedValueFor(periodOrders),
     };
   };
-  return { asOf: reference.key, timeZone: sofiaTimeZone, periods: { today: calculate(periodPredicates.today), week: calculate(periodPredicates.week), month: calculate(periodPredicates.month), year: calculate(periodPredicates.year) } };
+  return { asOf: reference.key, timeZone: sofiaTimeZone, periods: { today: calculate(periodPredicates.today), week: calculate(periodPredicates.week), month: calculate(periodPredicates.month), year: calculate(periodPredicates.year) }, charts: { daily: dashboardDailySeries(orders, reference), monthly: dashboardMonthlySeries(orders, reference) } };
 }
 
 export async function logAdminActivity(adminUserId: number, action: string, entityType: string, entityId?: number | null, metadata: Record<string, unknown> = {}) {

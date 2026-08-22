@@ -16,5 +16,10 @@ describe("admin reporting snapshot", () => {
     expect(result.periods.week).toMatchObject({ requestCount: 3, requestedValueEur: 62.5, confirmedRequestValueEur: 50 });
     expect(result.periods.month).toMatchObject({ requestCount: 4, requestedValueEur: 62.5, confirmedRequestValueEur: 50, statusCounts: { cancelled: 1 } });
     expect(result.periods.year).toMatchObject({ requestCount: 4 });
+    expect(result.charts.daily).toHaveLength(14);
+    expect(result.charts.daily.at(-1)).toMatchObject({ key: "2026-08-22", requestCount: 2, requestedValueEur: 32.5, confirmedRequestValueEur: 20 });
+    expect(result.charts.monthly).toHaveLength(12);
+    expect(result.charts.monthly.at(-1)).toMatchObject({ key: "2026-08", requestCount: 4, requestedValueEur: 62.5, confirmedRequestValueEur: 50 });
+    expect(result.charts.monthly.find((point) => point.key === "2026-07")).toMatchObject({ requestCount: 0, requestedValueEur: 0 });
   });
 });
