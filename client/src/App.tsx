@@ -21,6 +21,7 @@ import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
 import FAQ from "./pages/FAQ";
 import Returns from "./pages/Returns";
+import CustomerAccount, { CustomerActivation } from "./pages/CustomerAccount";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -64,6 +65,8 @@ function Router() {
         <Route path={"/checkout"} component={Checkout} />
         <Route path={"/favorites"} component={Favorites} />
         <Route path={"/returns"} component={Returns} />
+        <Route path={"/account/activate"} component={CustomerActivation} />
+        <Route path={"/account"} component={CustomerAccount} />
         <Route path={"/admin/:section"} component={Admin} />
         <Route path={"/admin"} component={Admin} />
         <Route path={"/404"} component={NotFound} />

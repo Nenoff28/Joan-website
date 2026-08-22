@@ -83,13 +83,13 @@
 - [x] Verify mobile fullscreen entry, layout stability, controls, and exit behavior for the brochure viewer.
 - [x] Complete and document post-refactor brochure accessibility QA for keyboard navigation, focus return, visible focus state, and labels.
 - [x] Verify the brochure viewer’s mobile fullscreen exit behavior and stable return to normal layout before publishing.
-- [ ] Resume the OpenCart catalogue migration only after the user provides the agreed export package and media archive.
+- [x] Resume the OpenCart catalogue migration after the user provides the agreed Universal Export package with verified full image URLs.
 - [x] Replace the header category trigger with an icon-only red menu button that preserves category-menu access.
 - [x] Remove duplicate category links from the primary navigation bar.
 - [x] Rename the header links to “За нас” and “Контакти” and verify the routes remain correct.
 - [x] Verify the streamlined header navigation across desktop and mobile before publishing.
 - [x] Verify the mobile header drawer end-to-end for category access, renamed links, stable closing behavior, and no overflow.
-- [ ] Keep OpenCart migration and Zeron ERP integration work suspended until the user explicitly resumes either initiative.
+- [x] Keep OpenCart migration and Zeron ERP integration work suspended until the user explicitly resumes either initiative.
 - [x] Research and document the public Joan.bg category and subcategory hierarchy without importing product records.
 - [x] Extend the catalogue category model and administrator workflow to support nested subcategories and ordering.
 - [x] Build accessible responsive multi-level category navigation using the approved Joan hierarchy.
@@ -216,3 +216,31 @@
 - [x] Apply and verify a targeted mobile footer social-icon correction only if the reviewed layout requires it.
 - [x] Reduce all three footer social icons by approximately 10% from their current matched size.
 - [x] Verify the reduced icons preserve mobile spacing, alignment, tests, and production build before publishing.
+- [ ] Establish a safe OpenCart product export batch size after the full-catalogue export exceeded the legacy server memory limit.
+- [ ] Collect non-overlapping product export batches and validate that their combined ID ranges cover the complete OpenCart catalogue.
+- [x] Inventory the supplied OpenCart export archive and inspect each workbook's sheets, headers, and record counts.
+- [x] Validate product-batch coverage, category hierarchy, options, attributes, filters, and media references before beginning any catalogue import.
+- [ ] Confirm whether product IDs 1–49 contain active catalogue records and export that range if it does.
+- [ ] Obtain a complete archive of the legacy OpenCart image directory and reconcile its files against the exported product image paths.
+- [x] Exclude the customer export from product/catalogue import and use it only through the protected customer-profile migration workflow, without importing legacy password, salt, token, IP, or browser fields.
+- [x] Audit the legacy customer and address workbook structure using aggregates only, without exposing customer records or password-related values.
+- [x] Design a secure legacy-customer migration that preserves customer profile and address data while separating it from the current Manus OAuth administrator identity system.
+- [x] Define and obtain approval for the customer first-login flow, including a mandatory password-reset or account-activation step if legacy password hashes are incompatible.
+- [x] Approve the customer first-login flow: preserve migrated profiles and addresses while requiring customers to set a new password through a protected email link.
+- [x] Add customer profile, address, credential, and single-use activation-token schema for imported OpenCart customers, separate from administrator OAuth identities.
+- [x] Build administrator-only preflight and import controls that process the legacy customer export without storing legacy password hashes.
+- [x] Build customer account activation, sign-in, password reset, and profile-access screens with secure token expiry and single-use semantics.
+- [ ] Connect verified transactional email delivery for customer activation and password-reset links.
+- [ ] Verify customer migration counts, credential security, protected account flows, and regression coverage before publishing.
+- [x] Audit the supplied Universal Import/Export Pro product CSV for parsing integrity, field coverage, image URL references, and import readiness.
+- [x] Identify any remaining product, category, manufacturer, order, or image export gaps before controlled catalogue migration.
+- [x] Collect Universal Import/Export Pro category and manufacturer exports to preserve taxonomy metadata and brand records alongside the verified product CSV.
+- [x] Collect the Universal Import/Export Pro order export if historical customer-order records should be preserved with migrated customer profiles.
+- [x] Inventory the supplied Universal Import/Export Pro archive and inspect each export file's structure, encoding, and record counts.
+- [x] Reconcile the Universal Import/Export Pro archive against the verified product CSV and customer migration requirements before starting controlled imports.
+- [x] Obtain an explicit decision on whether to migrate the 1,038 historical orders and the 7 genuine legacy reviews; neither will be published or imported automatically.
+- [x] Approve migration of the 1,038 historical orders to preserved customer profiles and exclude all 7 legacy reviews from import and publication.
+- [x] Add isolated historical-order and order-line records that preserve approved legacy order history without reintroducing payment details, IP data, or legacy credentials.
+- [x] Build administrator-only preflight and import controls for the approved Universal Import/Export Pro order CSV.
+- [x] Show migrated historical order history only to the matching active customer profile after account activation.
+- [ ] Reconcile imported historical order counts, customer links, totals, and product-line counts before publishing.

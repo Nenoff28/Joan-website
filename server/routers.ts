@@ -28,7 +28,17 @@ import {
   updateOrderRequest,
   uploadAdminBrochure,
   uploadProductImage,
+  logAdminActivity,
 } from "./catalogueService";
+import {
+  activateCustomerAccount,
+  clearCustomerSession,
+  getCustomerFromRequest,
+  importLegacyCustomers,
+  loginCustomer,
+  previewLegacyCustomerWorkbook,
+} from "./customerAccounts";
+import { importLegacyOrders, previewLegacyOrders } from "./legacyOrders";
 
 const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
@@ -104,6 +114,12 @@ export const appRouter = router({
       message: z.string().trim().min(10).max(5000),
     })).mutation(({ input }) => createContactEnquiry(input)),
   }),
+  customer: router({
+    me: publicProcedure.query(({ ctx }) => getCustomerFromRequest(ctx.req.headers.cookie)),
+    login: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(256) })).mutation(({ input, ctx }) => loginCustomer(input.email, input.password, ctx.res)),
+    activate: publicProcedure.input(z.object({ token: z.string().trim().min(32).max(160), password: z.string().min(12).max(256) })).mutation(({ input, ctx }) => activateCustomerAccount(input.token, input.password, ctx.res)),
+    logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),
+  }),
   admin: router({
     summary: adminProcedure.query(() => getAdminSummary()),
     operations: adminProcedure.query(() => getAdminOperations()),
@@ -112,6 +128,18 @@ export const appRouter = router({
     orders: adminProcedure.query(() => getAdminOrders()),
     contactEnquiries: adminProcedure.query(() => getAdminContactEnquiries()),
     brochures: adminProcedure.query(() => getAdminBrochures()),
+    previewLegacyCustomerImport: adminProcedure.input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyCustomerWorkbook(input.workbookData)),
+    importLegacyCustomers: adminProcedure.input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
+      const result = await importLegacyCustomers(input.workbookData, ctx.user.id);
+      await logAdminActivity(ctx.user.id, "customer_profiles.imported", "customer_profile_import", null, { importedProfiles: result.importedProfiles, importedAddresses: result.importedAddresses, pendingActivation: result.pendingActivation, disabledProfiles: result.disabledProfiles });
+      return result;
+    }),
+    previewLegacyOrderImport: adminProcedure.input(z.object({ csvData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyOrders(input.csvData)),
+    importLegacyOrders: adminProcedure.input(z.object({ csvData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
+      const result = await importLegacyOrders(input.csvData);
+      await logAdminActivity(ctx.user.id, "customer_orders.imported", "legacy_customer_order_import", null, { importedOrders: result.importedOrders, importedOrderLines: result.importedOrderLines, linkedByLegacyCustomerId: result.linkedByLegacyCustomerId, linkedByEmail: result.linkedByEmail, unlinkedGuestOrRemoved: result.unlinkedGuestOrRemoved });
+      return result;
+    }),
     createProduct: adminProcedure.input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.user.id)),
     updateProduct: adminProcedure.input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.user.id)),
     adjustStock: adminProcedure.input(z.object({ id: z.number().int().positive(), delta: z.number().int().min(-999999).max(999999).refine((value) => value !== 0) })).mutation(({ input, ctx }) => adjustProductStock(input.id, input.delta, ctx.user.id)),

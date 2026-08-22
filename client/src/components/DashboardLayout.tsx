@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BadgePercent, BookOpen, Boxes, ClipboardList, History, LayoutDashboard, LogOut, MessageSquare, PackageSearch, PanelLeft, Tags } from "lucide-react";
+import { Archive, BadgePercent, BookOpen, Boxes, ClipboardList, History, LayoutDashboard, LogOut, MessageSquare, PackageSearch, PanelLeft, Tags, UsersRound } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -36,6 +36,8 @@ const menuItems = [
   { icon: Tags, label: "Категории", path: "/admin/categories" },
   { icon: ClipboardList, label: "Заявки", path: "/admin/orders" },
   { icon: MessageSquare, label: "Запитвания", path: "/admin/enquiries" },
+  { icon: UsersRound, label: "Клиенти", path: "/admin/customers" },
+  { icon: Archive, label: "Исторически поръчки", path: "/admin/legacy-orders" },
   { icon: History, label: "Активност", path: "/admin/activity" },
 ];
 
