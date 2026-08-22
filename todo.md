@@ -278,3 +278,5 @@
 - [x] Verify faster product discovery on selected-subcategory pages across desktop and mobile.
 - [x] Move selected-subcategory context from the listing area into the category hero directly beneath the main category title and description.
 - [x] Verify the hero-embedded selected path remains concise and readable on desktop and mobile while products remain immediately accessible.
+- [x] Remove the “Подбрани продукти / Продукти в … / Продуктите са филтрирани…” listing heading from selected-subcategory pages.
+- [x] Verify selected-subcategory pages move directly from the hero into useful catalogue controls and product results on desktop and mobile.

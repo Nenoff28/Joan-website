@@ -39,6 +39,12 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("Каталог Жоан");
   });
 
+  it("removes the redundant listing heading only for selected subcategory paths", () => {
+    expect(categorySource).toContain('selectedPathLabel ? "is-selected-subcategory" : ""');
+    expect(categorySource).toContain('{!selectedPathLabel && <div className="listing-heading">');
+    expect(categorySource).toContain("selected-path-filter");
+  });
+
   it("uses exact imported category trees instead of stale static labels when legacy metadata is available", () => {
     const importedTree = [{ label: "Точна група", children: [{ label: "Точен подтип" }] }];
     expect(categoryTreeFor("instrumenti", importedTree)).toEqual(importedTree);
