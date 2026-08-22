@@ -2,6 +2,6 @@
 
 When a visitor selects a concrete subcategory path, the large expandable subcategory browser is no longer rendered above the product list. The category hero remains as the main-category context.
 
-The listing begins immediately below the hero and filter boundary with a compact context block containing **Каталог Жоан**, the main category, the selected nested path, and the category description. It also retains a single **Всички в [категория]** return action.
+Following the requested placement correction, the compact selected nested path now appears **inside the category hero**, directly beneath the main category description. The hero retains the existing **Каталог Жоан** label, main category, description, selected nested path, and a single **Всички в [категория]** return action. There is no separate context panel above the product list.
 
-The **За Дома → Електроуреди → Вакуум машини** route was checked at desktop and 375 px mobile widths. The dense hierarchy block is absent in both views, and the path context remains readable without pushing products behind a large selection grid.
+The **За Дома → Електроуреди → Вакуум машини** route was checked at desktop and 375 px mobile widths. The dense hierarchy block is absent in both views, the selected path sits under **За Дома** inside the hero, and the product results follow directly after the hero and filter boundary.

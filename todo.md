@@ -276,3 +276,5 @@
 - [x] Remove the expanded subcategory hierarchy from product-result pages after a specific subcategory path is selected.
 - [x] Add compact selected-path context with the main category, nested path, and helpful category description above the results.
 - [x] Verify faster product discovery on selected-subcategory pages across desktop and mobile.
+- [x] Move selected-subcategory context from the listing area into the category hero directly beneath the main category title and description.
+- [x] Verify the hero-embedded selected path remains concise and readable on desktop and mobile while products remain immediately accessible.
