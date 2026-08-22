@@ -270,3 +270,6 @@
 - [x] Repair category and search navigation so moving from one open category to another always updates route state and results.
 - [x] Optimize mobile catalogue, category hierarchy, filters, and product-navigation layouts for smooth use on narrow screens.
 - [x] Add and run regression tests plus desktop/mobile route verification for subcategories, category switching, search, and mobile catalogue behavior.
+- [x] Remove the internal “PDP—01” label from public product-detail pages.
+- [x] Show a neutral price label for standard products and a promotion label only when a verified old EUR price exists.
+- [x] Verify standard and promotional product-detail price presentation on desktop and mobile.
