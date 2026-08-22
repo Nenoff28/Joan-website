@@ -5,15 +5,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { useCatalogueProducts } from "@/hooks/useCatalogue";
 import { ArrowRight, Heart, ShoppingCart, Trash2 } from "lucide-react";
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
 export default function Favorites() {
   const { t } = useLanguage();
-  const { count, favoriteSlugs, isFavorite, removeFavorite, clearFavorites } = useFavorites();
+  const { count, favoriteSlugs, isFavorite, removeFavorite, normalizeSlugs, clearFavorites } = useFavorites();
   const { addItem } = useCart();
   const { products } = useCatalogueProducts(favoriteSlugs);
-  const savedProducts = products.filter((product) => isFavorite(product.slug));
+  useEffect(() => normalizeSlugs(products.flatMap((product) => product.legacyPublicSlug ? [{ from: product.legacyPublicSlug, to: product.slug }] : [])), [products, normalizeSlugs]);
+  const savedProducts = products.filter((product) => isFavorite(product.slug) || Boolean(product.legacyPublicSlug && isFavorite(product.legacyPublicSlug)));
 
   return <Layout>
     <PageMeta title={t("favoritesTitle")} description={t("favoritesLead")} />

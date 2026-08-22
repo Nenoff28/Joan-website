@@ -20,6 +20,7 @@ export type CatalogueCategory = {
 
 export type ManagedProduct = Product & {
   id?: number;
+  legacyPublicSlug?: string;
   sku?: string;
   availabilityCode?: "in_stock" | "on_request" | "out_of_stock";
   stockQuantity?: number;

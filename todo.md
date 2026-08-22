@@ -303,3 +303,9 @@
 
 - [x] Remove the duplicate technical summary beneath the product title while retaining the lower product-description section.
 - [x] Verify the product-detail content hierarchy on desktop and mobile after the duplicate-summary removal.
+
+- [x] Audit all public product slugs and replace `legacy-…` product URLs with unique readable Latin SEO slugs, while preserving safe redirects from existing URLs.
+- [x] Make every imported category and nested subcategory independently browseable with products at that exact hierarchy level.
+- [x] Add pagination controls with page-number ranges, ellipses, and direct navigation to distant pages such as page 147.
+- [x] Perform a comprehensive 375px mobile visual QA across public pages and correct reproducible layout, spacing, touch-target, and overflow issues.
+- [x] Add regression coverage and verify legacy redirects, Latin-only product URLs, hierarchy routes, pagination, mobile layouts, TypeScript, tests, and production build before publishing.

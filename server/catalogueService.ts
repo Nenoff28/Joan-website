@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts, contactEnquiries, orderRequests, users } from "../drizzle/schema";
@@ -66,6 +66,10 @@ function parseJsonArray(value: string) {
   } catch {
     return [];
   }
+}
+
+export function publicProductFeatures(value: string) {
+  return parseJsonArray(value).filter((feature) => !/^(?:radio|select|checkbox|text|textarea|date|time|datetime):/i.test(feature.trim()));
 }
 
 function normalizeCategoryNodes(value: unknown, depth = 0): CategoryNode[] {
@@ -202,6 +206,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
   return {
     id: product.id,
     slug: product.slug,
+    legacyPublicSlug: product.legacyPublicSlug ?? undefined,
     sku: product.sku ?? undefined,
     brand: product.brand ?? undefined,
     name: product.name,
@@ -215,7 +220,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     availability: availabilityLabels[product.availability],
     availabilityCode: product.availability,
     stockQuantity: product.stockQuantity,
-    features: parseJsonArray(product.featuresJson),
+    features: publicProductFeatures(product.featuresJson),
     description: product.description,
     isActive: product.isActive,
     metaTitle: product.legacyMetaTitleBg ?? undefined,
@@ -268,6 +273,7 @@ const cyrillicToLatin: Record<string, string> = { а: "a", б: "b", в: "v", г:
 const latinPathToken = (value: string) => Array.from(value.toLocaleLowerCase("bg-BG").normalize("NFD")).map((character) => cyrillicToLatin[character] ?? character).join("").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "category";
 
 type LegacyCategoryTreeRow = Pick<typeof catalogueCategories.$inferSelect, "legacyCategoryId" | "legacyParentCategoryId" | "name" | "sortOrder">;
+type LegacyCategoryBranchRow = Pick<typeof catalogueCategories.$inferSelect, "id" | "legacyCategoryId" | "legacyParentCategoryId">;
 
 function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: number[], depth = 2): Array<{ label: string; children?: Array<{ label: string; children?: Array<{ label: string }> }> }> {
   if (!roots.length) return [];
@@ -277,6 +283,29 @@ function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: numbe
     return children.length ? { label: row.name, children } : { label: row.name };
   });
   return build(roots, depth);
+}
+
+export function descendantCategoryIds(rows: LegacyCategoryBranchRow[], selectedInternalIds: number[]) {
+  const selected = new Set(selectedInternalIds);
+  const childrenByParent = new Map<number, LegacyCategoryBranchRow[]>();
+  const selectedLegacyIds = rows.filter((row) => selected.has(row.id)).flatMap((row) => row.legacyCategoryId == null ? [] : [row.legacyCategoryId]);
+  for (const row of rows) {
+    if (row.legacyParentCategoryId == null) continue;
+    const children = childrenByParent.get(row.legacyParentCategoryId) ?? [];
+    children.push(row);
+    childrenByParent.set(row.legacyParentCategoryId, children);
+  }
+  const pending = [...selectedLegacyIds];
+  while (pending.length) {
+    const legacyParentId = pending.shift();
+    if (legacyParentId == null) continue;
+    for (const child of childrenByParent.get(legacyParentId) ?? []) {
+      if (selected.has(child.id)) continue;
+      selected.add(child.id);
+      if (child.legacyCategoryId != null) pending.push(child.legacyCategoryId);
+    }
+  }
+  return Array.from(selected);
 }
 
 async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]) {
@@ -293,7 +322,8 @@ async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]
     matchedInternalIds = rows.map((row) => row.id);
     parentLegacyIds = rows.flatMap((row) => row.legacyCategoryId == null ? [] : [row.legacyCategoryId]);
   }
-  return matchedInternalIds;
+  const treeRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId }).from(catalogueCategories).where(eq(catalogueCategories.isActive, true));
+  return descendantCategoryIds(treeRows, matchedInternalIds);
 }
 
 function publicCatalogueConditions(input: PublicCataloguePageInput, categoryId?: number) {
@@ -341,10 +371,10 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
   const order = publicCatalogueOrder(input.sort);
   const withPath = pathCategoryIds.length > 0;
   const selectProducts = withPath
-    ? db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
+    ? db.selectDistinct({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
     : db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(...conditions)).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize);
   const countRows = withPath
-    ? await db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
+    ? await db.select({ total: countDistinct(catalogueProducts.id) }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
     : await db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(...conditions));
   const [rows, brandRows] = await Promise.all([
     selectProducts,
@@ -356,7 +386,7 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
 export async function getPublicProductBySlug(slug: string) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(eq(catalogueProducts.slug, slug), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).limit(1);
+  const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).limit(1);
   if (!row) return null;
   const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(eq(catalogueProducts.categoryId, row.product.categoryId), eq(catalogueProducts.isActive, true))).orderBy(desc(catalogueProducts.updatedAt)).limit(4);
   return { product: publicProduct(row.product, row.category), related: relatedRows.filter((candidate) => candidate.product.id !== row.product.id).slice(0, 3).map((candidate) => publicProduct(candidate.product, candidate.category)) };
@@ -366,7 +396,7 @@ export async function getPublicProductsBySlugs(slugs: string[]) {
   if (!slugs.length) return [];
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(inArray(catalogueProducts.slug, slugs), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)));
+  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)));
   return rows.map((row) => publicProduct(row.product, row.category));
 }
 

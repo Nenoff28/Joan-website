@@ -3,6 +3,7 @@ import { Breadcrumbs, CategoryIcon, JsonLd, Layout, PageMeta, ProductCard } from
 import { useCatalogue, useCataloguePage } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { categoryLabelsFromTokens, categoryPathTokens } from "@/lib/categoryHierarchy";
+import { paginationItems } from "@/lib/pagination";
 import { ArrowRight, ChevronDown, Grid2X2, ListFilter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useRoute, useSearch } from "wouter";
@@ -51,7 +52,8 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [page, setPage] = useState(1);
-  const resetFilters = () => { setSelectedBrand("Всички марки"); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); };
+  const [pageInput, setPageInput] = useState("");
+  const resetFilters = () => { setSelectedBrand("Всички марки"); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); setPage(1); };
 
   useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(1); }, [category?.slug, selectedPathLabel, showAll]);
   useEffect(() => {
@@ -79,7 +81,15 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const matchingBrands = brands.filter((brand) => brand === "Всички марки" || !normalizedManufacturerQuery || brand.toLocaleLowerCase("bg-BG").includes(normalizedManufacturerQuery));
   const totalPages = Math.max(1, Math.ceil(cataloguePage.total / pageSize));
   const currentPage = Math.min(page, totalPages);
+  const visiblePages = useMemo(() => paginationItems(totalPages, currentPage), [currentPage, totalPages]);
   const pageProducts = cataloguePage.products;
+  const goToPage = (target: number) => {
+    const next = Math.max(1, Math.min(totalPages, Math.floor(target) || 1));
+    setPage(next);
+    setPageInput("");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
   const navigateToCatalogue = (href: string) => { setPage(1); setFiltersOpen(false); setLocation(href); };
   const selectSubcategory = (path: string[]) => navigateToCatalogue(pathLink(category.slug, path));
   const title = showAll ? "Всички продукти" : category.label;
@@ -134,7 +144,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
                 <label>Сортиране <select value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }}><option value="relevance">По актуалност</option><option value="price-asc">Цена: ниска към висока</option><option value="price-desc">Цена: висока към ниска</option><option value="name-asc">Име: А – Я</option><option value="name-desc">Име: Я – А</option></select></label>
               </div>
               {cataloguePage.isLoading ? <div className="empty-products"><ListFilter size={26} /><h3>Зареждане на продукти…</h3><p>Извличаме само резултатите за избраната категория.</p></div> : pageProducts.length ? (
-                <div className="catalogue-workbench"><div className="product-grid listing-grid">{pageProducts.map((product) => <ProductCard key={product.slug} product={product} />)}</div>{totalPages > 1 && <nav className="catalogue-pagination" aria-label="Страници с продукти"><button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Предишна</button><span>Страница <b>{currentPage}</b> от {totalPages}</span><button type="button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Следваща</button></nav>}</div>
+                <div className="catalogue-workbench"><div className="product-grid listing-grid">{pageProducts.map((product) => <ProductCard key={product.slug} product={product} />)}</div>{totalPages > 1 && <nav className="catalogue-pagination" aria-label="Страници с продукти"><button type="button" className="pagination-step" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>Предишна</button><div className="pagination-page-list" aria-label="Номера на страници">{visiblePages.map((item, index) => item === "ellipsis" ? <span key={`ellipsis-${index}`} className="pagination-ellipsis" aria-hidden="true">…</span> : <button type="button" key={item} className={`pagination-page-number ${item === currentPage ? "is-current" : ""}`} onClick={() => goToPage(item)} aria-current={item === currentPage ? "page" : undefined} aria-label={`Страница ${item}`}>{item}</button>)}</div><form className="pagination-jump" onSubmit={(event) => { event.preventDefault(); goToPage(Number(pageInput)); }}><label htmlFor="catalogue-page-jump">Към страница</label><input id="catalogue-page-jump" type="number" inputMode="numeric" min="1" max={totalPages} value={pageInput} onChange={(event) => setPageInput(event.target.value)} placeholder={String(totalPages)} /><button type="submit">Към</button></form><span className="pagination-status">Страница <b>{currentPage}</b> от {totalPages}</span><button type="button" className="pagination-step" disabled={currentPage === totalPages} onClick={() => goToPage(currentPage + 1)}>Следваща</button></nav>}</div>
               ) : <div className="empty-products"><ListFilter size={26} /><h3>Няма продукти за избрания филтър.</h3><p>Изчистете активните филтри, променете търсенето или се върнете към по-горна категория.</p><button type="button" className="filter-reset" onClick={resetFilters}><RotateCcw size={14} /> Покажи всички</button></div>}
               <div className="catalogue-note"><CategoryIcon icon={showAll ? "drill" : category.icon} size={25} /><p><b>Каталожни резултати.</b> {showAll ? "Изберете категория от горното меню за подробна подкатегорийна структура." : "Използвайте подкатегориите по-горе, за да стесните задача и тип продукт."}</p></div>
             </section>

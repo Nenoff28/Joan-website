@@ -7,13 +7,14 @@ import { useCatalogue, useCatalogueProduct } from "@/hooks/useCatalogue";
 import { Check, ChevronRight, Heart, MessageSquareText, Minus, Plus, Scale, ShieldCheck, ShoppingCart, Truck, X, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 
 export default function Product() {
   const { language, t } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addItem } = useCart();
   const [, params] = useRoute("/product/:slug");
+  const [, setLocation] = useLocation();
   const { categories } = useCatalogue();
   const { product, related, isLoading } = useCatalogueProduct(params?.slug);
   const category = categories.find((item) => item.slug === product?.category);
@@ -26,6 +27,9 @@ export default function Product() {
   const isOutOfStock = product?.availabilityCode === "out_of_stock";
 
   useEffect(() => { setSelectedImage(0); setIsZoomed(false); }, [product?.slug]);
+  useEffect(() => {
+    if (product && params?.slug && product.slug !== params.slug) setLocation(`/product/${product.slug}`, { replace: true });
+  }, [params?.slug, product?.slug, setLocation]);
 
   if (!product) return <Layout><PageMeta title="Продукт" description="Преглед на продукт от каталога на Жоан." /><main className="product-page"><div className="page-frame"><section className="empty-products"><h1>{isLoading ? "Зареждане на продукта…" : "Продуктът не е намерен."}</h1><p>{isLoading ? "Извличаме само избрания продукт." : "Артикулът може да е спрян или адресът да не е валиден."}</p><Link href="/products" className="filter-reset">Към всички продукти</Link></section></div></main></Layout>;
 

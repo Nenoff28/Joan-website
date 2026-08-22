@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import fs from "fs";
+import type { Request, Response } from "express";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
@@ -8,7 +9,7 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 import { buildSsrPrefetch } from "./ssrCaller";
 import type { HeadMeta } from "../../client/src/ssr/prefetch";
-import { getPublicSitemapEntries } from "../catalogueService";
+import { getPublicProductBySlug, getPublicSitemapEntries } from "../catalogueService";
 
 const canonicalOrigin = (process.env.CANONICAL_ORIGIN ?? "").replace(/\/+$/, "");
 const siteName = process.env.SITE_NAME ?? "ЖОАН";
@@ -31,12 +32,24 @@ function compose(template: string, html: string, head: HeadMeta, state: unknown)
   return template.replace("</body>", () => `<script>window.__RQ_STATE__=${stateJson}</script></body>`).replace("<!--app-head-->", () => headTags(head)).replace("<!--app-html-->", () => html);
 }
 function normalizePath(reqPath: string, originalUrl: string) { const query = originalUrl.slice(reqPath.length); return (reqPath.replace(/\/+$/, "") || "/").replace(/^\/\/+/, "/") + query; }
+async function canonicalProductRedirect(req: Request, res: Response) {
+  const requestUrl = new URL(req.originalUrl, "http://localhost");
+  const match = requestUrl.pathname.match(/^\/product\/([a-z0-9-]+)$/);
+  if (!match) return false;
+  const found = await getPublicProductBySlug(match[1]);
+  if (found && found.product.slug !== match[1]) {
+    res.redirect(301, `/product/${found.product.slug}${requestUrl.search}`);
+    return true;
+  }
+  return false;
+}
 
 export async function setupVite(app: Express, server: Server) {
   const vite = await createViteServer({ ...viteConfig, configFile: false, server: { middlewareMode: true, hmr: { server }, allowedHosts: true }, appType: "custom" });
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     try {
+      if (await canonicalProductRedirect(req, res)) return;
       let template = await fs.promises.readFile(path.resolve(import.meta.dirname, "../..", "client", "index.html"), "utf-8");
       template = template.replace(`src="/src/entry-client.tsx"`, `src="/src/entry-client.tsx?v=${nanoid()}"`);
       template = await vite.transformIndexHtml(req.originalUrl, template);
@@ -67,6 +80,7 @@ export function serveStatic(app: Express) {
   });
   app.use(express.static(distPath, { index: false, redirect: false }));
   app.use("*", async (req, res) => {
+    if (await canonicalProductRedirect(req, res)) return;
     const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
     try {
       const { render } = await import(path.resolve(import.meta.dirname, "server-ssr", "entry-server.js"));

@@ -23,6 +23,13 @@ describe("public SEO infrastructure", () => {
     expect(sitemapService).toContain("getPublicSitemapEntries");
   });
 
+  it("redirects preserved legacy product URLs to their canonical readable slugs", () => {
+    expect(vite).toContain("canonicalProductRedirect");
+    expect(vite).toContain("new URL(req.originalUrl, \"http://localhost\")");
+    expect(vite).toContain('res.redirect(301, `/product/${found.product.slug}${requestUrl.search}`)');
+    expect(sitemapService).toContain("catalogueProducts.legacyPublicSlug");
+  });
+
   it("keeps transactional and authenticated routes out of search indexes", () => {
     expect(prefetch).toContain('path === "/checkout" || path === "/favorites" || path.startsWith("/account") || path.startsWith("/admin")');
   });

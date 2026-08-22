@@ -110,7 +110,7 @@ function MegaCategoryTree({ category, onNavigate, activePath }: { category: Cata
   return <section className="mega-category-tree">
     <Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mega-category-heading ${activePath ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}><Icon size={18} /><span>{category.label}</span><ChevronRight size={15} /></Link>
     <div className="mega-category-groups">{category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details className={`mega-category-group ${groupActive ? "is-active" : ""}`} key={group.label} open={groupActive}>
-      <summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
+      <summary><Link href={categoryPath(category.slug, [group.label])} onClick={(event) => { event.stopPropagation(); onNavigate(); }} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{group.label}</Link><Plus size={15} aria-hidden="true" /></summary>
       <div className="mega-category-disclosure"><div className="mega-category-leaves">{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
     </details>; })}</div>
   </section>;
@@ -121,7 +121,7 @@ function MobileCategoryTree({ category, onNavigate, activePath }: { category: Ca
   return <details className={`mobile-category-tree ${activePath ? "is-current" : ""}`} open={Boolean(activePath)}>
     <summary><Icon size={18} /><span>{category.label}</span><ChevronRight size={16} /></summary>
     <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mobile-category-all ${activePath && activePath.length === 0 ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}>Всички в {category.label}</Link>
-      {category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details key={group.label} className={`mobile-category-branch ${groupActive ? "is-active" : ""}`} open={groupActive}><summary><span>{group.label}</span><Plus size={15} aria-hidden="true" /></summary>
+      {category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details key={group.label} className={`mobile-category-branch ${groupActive ? "is-active" : ""}`} open={groupActive}><summary><Link href={categoryPath(category.slug, [group.label])} onClick={(event) => { event.stopPropagation(); onNavigate(); }} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{group.label}</Link><Plus size={15} aria-hidden="true" /></summary>
         <div className="mobile-category-disclosure"><div>{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
       </details>; })}
     </div>
@@ -139,12 +139,13 @@ function Header() {
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity } = useCart();
+  const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity, normalizeSlugs } = useCart();
   const { products: cartProducts } = useCatalogueProducts(cartItems.map((item) => item.slug));
+  useEffect(() => normalizeSlugs(cartProducts.flatMap((product) => product.legacyPublicSlug ? [{ from: product.legacyPublicSlug, to: product.slug }] : [])), [cartProducts, normalizeSlugs]);
   const searchInput = useMemo(() => ({ page: 1, pageSize: 4, query: query.trim() || undefined, sort: "relevance" as const }), [query]);
   const searchResults = useCataloguePage(searchInput);
   const cartRows = cartItems.flatMap((line) => {
-    const product = cartProducts.find((item) => item.slug === line.slug);
+    const product = cartProducts.find((item) => item.slug === line.slug || item.legacyPublicSlug === line.slug);
     return product ? [{ product, quantity: line.quantity }] : [];
   });
   const cartTotal = cartRows.reduce((total, row) => total + (Number(row.product.price?.replace("€", "")) || 0) * row.quantity, 0);

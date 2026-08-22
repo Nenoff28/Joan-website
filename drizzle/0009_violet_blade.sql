@@ -1,0 +1,2 @@
+ALTER TABLE `catalogue_products` ADD `legacyPublicSlug` varchar(160);--> statement-breakpoint
+ALTER TABLE `catalogue_products` ADD CONSTRAINT `catalogue_products_legacyPublicSlug_unique` UNIQUE(`legacyPublicSlug`);

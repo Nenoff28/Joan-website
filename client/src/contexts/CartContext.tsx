@@ -2,6 +2,19 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type CartLine = { slug: string; quantity: number };
+export type SlugMigration = { from: string; to: string };
+
+export function normalizeCartLines(items: CartLine[], migrations: SlugMigration[]) {
+  const replacements = new Map(migrations.filter((migration) => migration.from && migration.to && migration.from !== migration.to).map((migration) => [migration.from, migration.to]));
+  if (!replacements.size) return items;
+  const normalized = new Map<string, number>();
+  for (const item of items) {
+    const slug = replacements.get(item.slug) ?? item.slug;
+    normalized.set(slug, Math.min((normalized.get(slug) ?? 0) + item.quantity, 99));
+  }
+  const next = Array.from(normalized, ([slug, quantity]) => ({ slug, quantity }));
+  return next.length === items.length && next.every((item, index) => item.slug === items[index]?.slug && item.quantity === items[index]?.quantity) ? items : next;
+}
 
 type CartContextValue = {
   items: CartLine[];
@@ -9,6 +22,7 @@ type CartContextValue = {
   addItem: (slug: string, quantity?: number) => void;
   setQuantity: (slug: string, quantity: number) => void;
   removeItem: (slug: string) => void;
+  normalizeSlugs: (migrations: SlugMigration[]) => void;
   clearCart: () => void;
 };
 
@@ -28,9 +42,10 @@ function readCart(): CartLine[] {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartLine[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => { setItems(readCart()); }, []);
-  useEffect(() => { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items)); }, [items]);
+  useEffect(() => { setItems(readCart()); setHydrated(true); }, []);
+  useEffect(() => { if (hydrated) localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items)); }, [hydrated, items]);
 
   const addItem = useCallback((slug: string, quantity = 1) => {
     const safeQuantity = Math.max(1, Math.min(Math.floor(quantity) || 1, 99));
@@ -45,9 +60,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removeItem = useCallback((slug: string) => setItems((current) => current.filter((item) => item.slug !== slug)), []);
+  const normalizeSlugs = useCallback((migrations: SlugMigration[]) => setItems((current) => normalizeCartLines(current, migrations)), []);
   const clearCart = useCallback(() => setItems([]), []);
   const count = useMemo(() => items.reduce((total, item) => total + item.quantity, 0), [items]);
-  const value = useMemo(() => ({ items, count, addItem, setQuantity, removeItem, clearCart }), [items, count, addItem, setQuantity, removeItem, clearCart]);
+  const value = useMemo(() => ({ items, count, addItem, setQuantity, removeItem, normalizeSlugs, clearCart }), [items, count, addItem, setQuantity, removeItem, normalizeSlugs, clearCart]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

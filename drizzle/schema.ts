@@ -143,6 +143,7 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   legacyManufacturerId: int("legacyManufacturerId"),
   categoryId: int("categoryId").notNull().references(() => catalogueCategories.id),
   slug: varchar("slug", { length: 160 }).notNull().unique(),
+  legacyPublicSlug: varchar("legacyPublicSlug", { length: 160 }).unique(),
   sku: varchar("sku", { length: 96 }),
   brand: varchar("brand", { length: 160 }),
   name: varchar("name", { length: 500 }).notNull(),

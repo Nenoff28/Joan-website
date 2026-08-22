@@ -1,5 +1,13 @@
 /** Red Workshop Modernism state: saved products are lightweight, local, and always reversible. */
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { SlugMigration } from "./CartContext";
+
+export function normalizeFavoriteSlugs(slugs: Set<string>, migrations: SlugMigration[]) {
+  const replacements = new Map(migrations.filter((migration) => migration.from && migration.to && migration.from !== migration.to).map((migration) => [migration.from, migration.to]));
+  if (!replacements.size) return slugs;
+  const next = new Set(Array.from(slugs, (slug) => replacements.get(slug) ?? slug));
+  return next.size === slugs.size && Array.from(next).every((slug) => slugs.has(slug)) ? slugs : next;
+}
 
 type FavoritesContextValue = {
   count: number;
@@ -7,6 +15,7 @@ type FavoritesContextValue = {
   isFavorite: (slug: string) => boolean;
   toggleFavorite: (slug: string) => void;
   removeFavorite: (slug: string) => void;
+  normalizeSlugs: (migrations: SlugMigration[]) => void;
   clearFavorites: () => void;
 };
 
@@ -25,11 +34,12 @@ function readFavorites() {
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favoriteSlugs, setFavoriteSlugs] = useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => { setFavoriteSlugs(readFavorites()); }, []);
+  useEffect(() => { setFavoriteSlugs(readFavorites()); setHydrated(true); }, []);
   useEffect(() => {
-    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favoriteSlugs)));
-  }, [favoriteSlugs]);
+    if (hydrated) localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favoriteSlugs)));
+  }, [favoriteSlugs, hydrated]);
 
   const toggleFavorite = useCallback((slug: string) => {
     setFavoriteSlugs((current) => {
@@ -49,6 +59,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearFavorites = useCallback(() => setFavoriteSlugs(new Set<string>()), []);
+  const normalizeSlugs = useCallback((migrations: SlugMigration[]) => setFavoriteSlugs((current) => normalizeFavoriteSlugs(current, migrations)), []);
   const isFavorite = useCallback((slug: string) => favoriteSlugs.has(slug), [favoriteSlugs]);
 
   const value = useMemo(() => ({
@@ -57,8 +68,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     isFavorite,
     toggleFavorite,
     removeFavorite,
+    normalizeSlugs,
     clearFavorites,
-  }), [favoriteSlugs, isFavorite, toggleFavorite, removeFavorite, clearFavorites]);
+  }), [favoriteSlugs, isFavorite, toggleFavorite, removeFavorite, normalizeSlugs, clearFavorites]);
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

@@ -5,7 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCatalogueProducts, type ManagedProduct } from "@/hooks/useCatalogue";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, CheckCircle2, ChevronLeft, ClipboardCheck, LockKeyhole, Minus, PackageCheck, Plus, ShieldAlert, Trash2 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -21,15 +21,16 @@ function getCheckoutProduct(products: ManagedProduct[]) {
 
 export default function Checkout() {
   const { language, t } = useLanguage();
-  const { items, setQuantity, removeItem, clearCart } = useCart();
+  const { items, setQuantity, removeItem, normalizeSlugs, clearCart } = useCart();
   const requestedSlug = new URLSearchParams(window.location.search).get("product") ?? undefined;
   const lookupSlugs = useMemo(() => Array.from(new Set([...items.map((item) => item.slug), ...(requestedSlug ? [requestedSlug] : [])])), [items, requestedSlug]);
   const { products } = useCatalogueProducts(lookupSlugs);
+  useEffect(() => normalizeSlugs(products.flatMap((product) => product.legacyPublicSlug ? [{ from: product.legacyPublicSlug, to: product.slug }] : [])), [products, normalizeSlugs]);
   const { product, quantity } = useMemo(() => getCheckoutProduct(products), [products]);
   const hasRequestedProduct = new URLSearchParams(window.location.search).has("product");
   const checkoutRows = useMemo(() => {
     const cartRows = items.flatMap((item) => {
-      const cartProduct = products.find((candidate) => candidate.slug === item.slug);
+      const cartProduct = products.find((candidate) => candidate.slug === item.slug || candidate.legacyPublicSlug === item.slug);
       return cartProduct ? [{ product: cartProduct, quantity: item.quantity }] : [];
     });
     return cartRows.length ? cartRows : hasRequestedProduct && product ? [{ product, quantity }] : [];
