@@ -30,7 +30,13 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("function CategoryHierarchy");
     expect(categorySource).toContain("category-hierarchy-browser");
     expect(categorySource).toContain("category-hierarchy-leaves");
-    expect(categorySource).toContain("selected-subcategory-bar");
+    expect(categorySource).toContain("selected-subcategory-context");
+  });
+
+  it("replaces the expanded browser with concise path context after a subcategory is selected", () => {
+    expect(categorySource).toContain("{!selectedPathLabel && <CategoryHierarchy");
+    expect(categorySource).toContain("selected-subcategory-context");
+    expect(categorySource).toContain("Каталог Жоан");
   });
 
   it("uses exact imported category trees instead of stale static labels when legacy metadata is available", () => {

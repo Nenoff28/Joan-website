@@ -217,6 +217,9 @@ h1, h2 { font-weight: 800; letter-spacing: -.065em; }
 /* Internal implementation markers must never appear in the customer-facing product page. */
 .product-detail::before { content: none; }
 
+.selected-subcategory-context { align-items: start; background: #f1f2ee; border-left: 3px solid var(--red); display: grid; gap: .55rem; grid-template-columns: auto minmax(0, 1fr) auto; margin-top: .8rem; padding: .62rem .72rem; }.selected-subcategory-context > svg { color: var(--red); margin-top: .15rem; }.selected-subcategory-context div { display: grid; gap: .08rem; }.selected-subcategory-context p { color: var(--red); font-family: "Manrope", sans-serif; font-size: .58rem; font-weight: 800; letter-spacing: .08em; margin: 0; text-transform: uppercase; }.selected-subcategory-context b { color: var(--ink); font-family: "Manrope", sans-serif; font-size: .78rem; }.selected-subcategory-context span { color: var(--red); font-family: "Manrope", sans-serif; font-size: .72rem; font-weight: 800; }.selected-subcategory-context small { color: var(--slate); font-size: .67rem; line-height: 1.35; margin-top: .1rem; }.selected-subcategory-context button { align-self: center; color: var(--red); font-family: "Manrope", sans-serif; font-size: .65rem; font-weight: 800; white-space: nowrap; }
+@media (max-width: 760px) { .selected-subcategory-context { grid-template-columns: auto minmax(0, 1fr); padding: .62rem; }.selected-subcategory-context button { grid-column: 2; justify-self: start; min-height: 34px; }.selected-subcategory-context small { font-size: .65rem; } }
+
 /* Mobile catalogue pass: category selection remains touch-first and never compresses long legacy labels into unusable controls. */
 @media (max-width: 760px) {
   .category-hierarchy-browser { padding: .95rem .8rem 1.1rem; }

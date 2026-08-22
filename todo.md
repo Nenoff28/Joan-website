@@ -273,3 +273,6 @@
 - [x] Remove the internal “PDP—01” label from public product-detail pages.
 - [x] Show a neutral price label for standard products and a promotion label only when a verified old EUR price exists.
 - [x] Verify standard and promotional product-detail price presentation on desktop and mobile.
+- [x] Remove the expanded subcategory hierarchy from product-result pages after a specific subcategory path is selected.
+- [x] Add compact selected-path context with the main category, nested path, and helpful category description above the results.
+- [x] Verify faster product discovery on selected-subcategory pages across desktop and mobile.
