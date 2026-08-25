@@ -8,7 +8,7 @@ describe("security response policy", () => {
     expect(policy).not.toContain("script-src 'self' 'unsafe-inline'");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("frame-ancestors 'self'");
-    expect(policy).toContain("img-src 'self' data: blob:");
+    expect(policy).toContain("img-src 'self' data: blob: https://d36hbw14aib5lz.cloudfront.net");
     expect(policy).not.toContain("img-src 'self' data: https:");
     expect(policy).toContain("https://manus-analytics.com");
   });
