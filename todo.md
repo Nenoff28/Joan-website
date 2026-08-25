@@ -321,3 +321,5 @@
 - [x] Inventory the current application, managed data, media, authentication, and deployment dependencies for a self-hosted SuperHosting migration.
 - [ ] Confirm a SuperHosting server environment capable of running the application, database, storage, backups, and TLS under company control.
 - [ ] Prepare and validate a reversible migration and DNS cutover plan only after the owner approves the target SuperHosting environment.
+- [x] Document a full pre-migration database, media, source, configuration, and DNS backup procedure with restore validation steps.
+- [x] Document the minimum SuperHosting cPanel, SSH/SFTP, database, DNS, TLS, and deployment access required for a safe migration.
