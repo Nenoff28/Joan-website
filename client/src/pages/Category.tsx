@@ -12,11 +12,13 @@ import { Link, useLocation, useRoute, useSearch } from "wouter";
 const pathLink = (slug: string, labels: string[] = []) => `/category/${slug}${labels.length ? `?path=${categoryPathTokens(labels).join("~")}` : ""}`;
 
 function CategoryHierarchy({ category, selectedPath, onSelect }: { category: CatalogueCategory; selectedPath: string; onSelect: (path: string[]) => void }) {
+  const { language } = useLanguage();
+  const en = language === "en";
   return (
-    <section className="category-hierarchy-browser" aria-label={`Подкатегории в ${category.label}`}>
+    <section className="category-hierarchy-browser" aria-label={`${en ? "Subcategories in" : "Подкатегории в"} ${category.label}`}>
       <div className="category-hierarchy-heading">
-        <div><p className="eyebrow">Подкатегории</p><h2>Изберете вид продукт</h2></div>
-        <button type="button" className={!selectedPath ? "is-active" : ""} onClick={() => onSelect([])}>Всички в {category.label}</button>
+        <div><p className="eyebrow">{en ? "Subcategories" : "Подкатегории"}</p><h2>{en ? "Choose a product type" : "Изберете вид продукт"}</h2></div>
+        <button type="button" className={!selectedPath ? "is-active" : ""} onClick={() => onSelect([])}>{en ? "All in" : "Всички в"} {category.label}</button>
       </div>
       <div className="category-hierarchy-grid">
         {category.subcategories.map((node, index) => (
