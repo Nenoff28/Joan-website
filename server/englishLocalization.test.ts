@@ -13,6 +13,7 @@ const notFoundSource = readFileSync(resolve(root, "client/src/pages/NotFound.tsx
 const appSource = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
 const stylesheetSource = readFileSync(resolve(root, "client/src/index.css"), "utf8");
 const contactSource = readFileSync(resolve(root, "client/src/pages/Contact.tsx"), "utf8");
+const returnsSource = readFileSync(resolve(root, "client/src/pages/Returns.tsx"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -84,5 +85,6 @@ describe("public English localization", () => {
     expect(contactSource).toContain('en ? "Silistra, 22 Tutrakan St." : store.address');
     expect(storefrontSource).toContain('language === "en" ? "Silistra, 22 Tutrakan St." : store.address');
     expect(homeSource).toContain('en ? "22 Tutrakan St." : store.address');
+    expect(returnsSource).toContain('en ? "Silistra, 22 Tutrakan St." : store.address');
   });
 });
