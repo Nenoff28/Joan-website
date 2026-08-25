@@ -329,3 +329,4 @@
 - [x] Apply security hardening that preserves public catalogue, administrator, customer, and request workflows.
 - [x] Run regression, dependency, security-header, crawlability, TypeScript, test, build, and desktop/mobile verification before publishing.
 - [x] Diagnose and repair the empty product result observed for the intermediate Инструменти → Електроинструменти category branch during final visual verification.
+- [x] Diagnose and fix the homepage SSR/client hydration mismatch reported for `/?from_webdev=1`, then verify production hydration and console output.
