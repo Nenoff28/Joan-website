@@ -336,3 +336,4 @@
 - [x] Measure and improve homepage loading performance by addressing verified render-blocking assets, excessive payload, and avoidable requests without weakening CSP or managed media delivery.
 - [x] Assess external-service recommendations from the audit (analytics, social profiles, email DNS, and llms.txt) and apply only the user-approved, technically applicable items.
 - [x] Diagnose and restore homepage hero video playback and fallback visibility on the published site.
+- [x] Assess and address actionable homepage SEO audit findings for useful text content, Apple touch icon, semantic emphasis, accessible internal link text, and response latency.

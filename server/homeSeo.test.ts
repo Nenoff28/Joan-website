@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const homeSource = readFileSync(resolve(process.cwd(), "client/src/pages/Home.tsx"), "utf8");
 const storefrontSource = readFileSync(resolve(process.cwd(), "client/src/components/Storefront.tsx"), "utf8");
 const prefetchSource = readFileSync(resolve(process.cwd(), "client/src/ssr/prefetch.ts"), "utf8");
+const htmlTemplate = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
 
 describe("homepage SEO audit regressions", () => {
   it("uses the same relevant construction-material keywords in title, description, and H1", () => {
@@ -29,5 +30,13 @@ describe("homepage SEO audit regressions", () => {
   it("starts independent homepage SSR queries before awaiting metadata", () => {
     expect(prefetchSource).toContain("const metadataPromise = prefetch.metadata()");
     expect(prefetchSource).toContain("const headerSearchPromise = prefetch.page(headerSearch)");
+  });
+
+  it("includes useful catalogue guidance, a textual label for the icon-only link, and an Apple touch icon", () => {
+    expect(homeSource).toContain("<HomeCatalogueGuide />");
+    expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Изберете материали и инструменти според задачата.");
+    expect(homeSource).toContain("Строителни материали за ремонт");
+    expect(homeSource).toContain('className="sr-only">Към продуктовото търсене</span>');
+    expect(htmlTemplate).toContain('rel="apple-touch-icon"');
   });
 });
