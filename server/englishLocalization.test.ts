@@ -10,6 +10,7 @@ const categorySource = readFileSync(resolve(root, "client/src/pages/Category.tsx
 const productSource = readFileSync(resolve(root, "client/src/pages/Product.tsx"), "utf8");
 const accountSource = readFileSync(resolve(root, "client/src/pages/CustomerAccount.tsx"), "utf8");
 const notFoundSource = readFileSync(resolve(root, "client/src/pages/NotFound.tsx"), "utf8");
+const appSource = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -58,5 +59,9 @@ describe("public English localization", () => {
     expect(notFoundSource).toContain('"Page not found"');
     expect(notFoundSource).toContain('"Страницата не е намерена"');
     expect(notFoundSource).toContain('"Go home"');
+  });
+
+  it("localizes the lazy-route loading fallback", () => {
+    expect(appSource).toContain('{language === "en" ? "Loading…" : "Зареждане…"}');
   });
 });

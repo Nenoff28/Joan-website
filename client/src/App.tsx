@@ -5,6 +5,7 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { useLanguage } from "./contexts/LanguageContext";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
 import { CartProvider } from "./contexts/CartContext";
 import Home from "./pages/Home";
@@ -49,8 +50,9 @@ function ScrollToTop() {
 }
 
 function AppRoutes() {
+  const { language } = useLanguage();
   return (
-    <Suspense fallback={<main className="page-frame"><p className="py-12 text-sm text-slate-600">Зареждане…</p></main>}>
+    <Suspense fallback={<main className="page-frame"><p className="py-12 text-sm text-slate-600">{language === "en" ? "Loading…" : "Зареждане…"}</p></main>}>
       <Switch>
         <Route path="/" component={Home} />
         <Route path={"/products"} component={AllProducts} />
