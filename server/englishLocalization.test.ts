@@ -17,6 +17,8 @@ describe("public English localization", () => {
     expect(storefrontSource).toContain('"Primary navigation"');
     expect(storefrontSource).toContain('"Frequently asked questions"');
     expect(storefrontSource).toContain('"In stock"');
+    expect(storefrontSource).toContain('{language === "en" ? "Open" : "Отвори"}');
+    expect(storefrontSource).toContain('{language === "en" ? "All in" : "Всички в"}');
   });
 
   it("localizes homepage shelves and public support pages without translating imported product records", () => {

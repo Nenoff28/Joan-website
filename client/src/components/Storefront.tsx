@@ -107,23 +107,25 @@ function activeCategoryPath(location: string, slug: string) {
 }
 
 function MegaCategoryTree({ category, onNavigate, activePath }: { category: CatalogueCategory; onNavigate: () => void; activePath: string[] | null }) {
+  const { language } = useLanguage();
   const Icon = categoryIcons[category.icon];
   return <section className="mega-category-tree">
     <Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mega-category-heading ${activePath ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}><Icon size={18} /><span>{category.label}</span><ChevronRight size={15} /></Link>
     <div className="mega-category-groups">{category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details className={`mega-category-group ${groupActive ? "is-active" : ""}`} key={group.label} open={groupActive}>
       <summary><Link href={categoryPath(category.slug, [group.label])} onClick={(event) => { event.stopPropagation(); onNavigate(); }} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{group.label}</Link><Plus size={15} aria-hidden="true" /></summary>
-      <div className="mega-category-disclosure"><div className="mega-category-leaves">{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
+      <div className="mega-category-disclosure"><div className="mega-category-leaves">{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{language === "en" ? "Open" : "Отвори"} {group.label}</Link>}</div></div>
     </details>; })}</div>
   </section>;
 }
 
 function MobileCategoryTree({ category, onNavigate, activePath }: { category: CatalogueCategory; onNavigate: () => void; activePath: string[] | null }) {
+  const { language } = useLanguage();
   const Icon = categoryIcons[category.icon];
   return <details className={`mobile-category-tree ${activePath ? "is-current" : ""}`} open={Boolean(activePath)}>
     <summary><Icon size={18} /><span>{category.label}</span><ChevronRight size={16} /></summary>
-      <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mobile-category-all ${activePath && activePath.length === 0 ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}>All in {category.label}</Link>
+      <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mobile-category-all ${activePath && activePath.length === 0 ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}>{language === "en" ? "All in" : "Всички в"} {category.label}</Link>
       {category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details key={group.label} className={`mobile-category-branch ${groupActive ? "is-active" : ""}`} open={groupActive}><summary><Link href={categoryPath(category.slug, [group.label])} onClick={(event) => { event.stopPropagation(); onNavigate(); }} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{group.label}</Link><Plus size={15} aria-hidden="true" /></summary>
-        <div className="mobile-category-disclosure"><div>{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
+        <div className="mobile-category-disclosure"><div>{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{language === "en" ? "Open" : "Отвори"} {group.label}</Link>}</div></div>
       </details>; })}
     </div>
   </details>;
