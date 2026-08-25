@@ -76,5 +76,6 @@ describe("public English localization", () => {
   it("keeps CSS-generated Product and Favorites labels in English after the toggle", () => {
     expect(stylesheetSource).toContain('html[lang="en"] .product-detail-info::after { content: "AVAILABILITY · PRICE · TECHNICAL DETAILS · ENQUIRY"; }');
     expect(stylesheetSource).toContain('html[lang="en"] .favorites-empty-guide::after { content: "BRAND · PRICE · AVAILABILITY · SAVE"; }');
+    expect(stylesheetSource).toContain('html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }');
   });
 });
