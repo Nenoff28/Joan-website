@@ -4,7 +4,7 @@ import { Router } from "wouter";
 import superjson from "superjson";
 import { httpBatchLink } from "@trpc/client";
 import { trpc } from "@/lib/trpc";
-import SsrApp from "./SsrApp";
+import App from "./App";
 import { prefetchForPath, type HeadMeta, type SsrPrefetch } from "./ssr/prefetch";
 
 export async function render(url: string, prefetch: SsrPrefetch) {
@@ -14,6 +14,6 @@ export async function render(url: string, prefetch: SsrPrefetch) {
   const ssrSearch = splitAt === -1 ? "" : url.slice(splitAt + 1);
   const head = await prefetchForPath(url, queryClient, prefetch);
   const client = trpc.createClient({ links: [httpBatchLink({ url: "/api/trpc", transformer: superjson })] });
-  const html = renderToString(<trpc.Provider client={client} queryClient={queryClient}><QueryClientProvider client={queryClient}><Router ssrPath={ssrPath} ssrSearch={ssrSearch}><SsrApp /></Router></QueryClientProvider></trpc.Provider>);
+  const html = renderToString(<trpc.Provider client={client} queryClient={queryClient}><QueryClientProvider client={queryClient}><Router ssrPath={ssrPath} ssrSearch={ssrSearch}><App /></Router></QueryClientProvider></trpc.Provider>);
   return { html, dehydratedState: dehydrate(queryClient), head: head as HeadMeta };
 }
