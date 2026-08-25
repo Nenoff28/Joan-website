@@ -18,12 +18,11 @@ import Terms from "./pages/Terms";
 import FAQ from "./pages/FAQ";
 import Returns from "./pages/Returns";
 import NotFound from "./pages/NotFound";
+import Checkout from "./pages/Checkout";
+import Favorites from "./pages/Favorites";
+import CustomerAccount, { CustomerActivation } from "./pages/CustomerAccount";
 
-const Checkout = lazy(() => import("./pages/Checkout"));
-const Favorites = lazy(() => import("./pages/Favorites"));
 const Admin = lazy(() => import("./pages/Admin"));
-const CustomerAccount = lazy(() => import("./pages/CustomerAccount"));
-const CustomerActivation = lazy(() => import("./pages/CustomerAccount").then((module) => ({ default: module.CustomerActivation })));
 
 function ScrollToTop() {
   const [location] = useLocation();
