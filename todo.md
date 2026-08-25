@@ -343,3 +343,6 @@
 - [x] Audit all public routes and shared storefront components for Bulgarian static copy that remains when English is selected.
 - [x] Extend the English translation system across shared navigation, homepage, catalogue, product interactions, cart, checkout, forms, notices, and support pages without fabricating translations for imported catalogue data.
 - [x] Verify English language switching across desktop/mobile public routes, console, TypeScript, tests, and production build before publishing.
+- [x] Assess whether the current SuperHosting plan can host the existing full-stack application without an upgrade, and identify the minimum non-upgrade deployment path.
+- [ ] Verify whether the confirmed SuperHosting SuperPro plan provides a production-compatible Node.js environment for the existing SSR application without a VPS upgrade.
+- [x] Prepare portable SuperHosting deployment, rollback, and cPanel staging materials for both Node.js App and no-Node scenarios before cPanel access is available.
