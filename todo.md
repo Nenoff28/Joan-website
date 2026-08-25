@@ -318,3 +318,6 @@
 - [x] Build real daily and monthly request time series for the administrator dashboard, with requested-value data clearly labeled as non-payment revenue data.
 - [x] Add interactive dashboard charts for request volume and request value by day and month.
 - [x] Verify chart time-series calculations, tooltips, responsive layout, tests, and production build before publishing.
+- [x] Inventory the current application, managed data, media, authentication, and deployment dependencies for a self-hosted SuperHosting migration.
+- [ ] Confirm a SuperHosting server environment capable of running the application, database, storage, backups, and TLS under company control.
+- [ ] Prepare and validate a reversible migration and DNS cutover plan only after the owner approves the target SuperHosting environment.
