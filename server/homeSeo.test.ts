@@ -36,7 +36,7 @@ describe("homepage SEO audit regressions", () => {
     expect(homeSource).toContain("<HomeCatalogueGuide />");
     expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Изберете материали и инструменти според задачата.");
     expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Building materials for renovation");
-    expect(homeSource).toContain('className="sr-only">Към продуктовото търсене</span>');
+    expect(homeSource).toContain('<span className="sr-only">{en ? "Go to product search" : "Към продуктовото търсене"}</span>');
     expect(htmlTemplate).toContain('rel="apple-touch-icon"');
   });
 
