@@ -345,4 +345,7 @@
 - [x] Verify English language switching across desktop/mobile public routes, console, TypeScript, tests, and production build before publishing.
 - [x] Assess whether the current SuperHosting plan can host the existing full-stack application without an upgrade, and identify the minimum non-upgrade deployment path.
 - [ ] Verify whether the confirmed SuperHosting SuperPro plan provides a production-compatible Node.js environment for the existing SSR application without a VPS upgrade.
+- [x] Confirm that the current SuperHosting SuperPro server has no installed Node.js runtime and must not receive the full-stack application in public_html.
+- [ ] Prepare the joan.bg custom-domain DNS cutover from SuperHosting to the current managed Node hosting, including an approved rollback plan.
+- [ ] Complete a high-volume operational readiness assessment for backup, restore, availability monitoring, capacity and incident response before any production DNS cutover.
 - [x] Prepare portable SuperHosting deployment, rollback, and cPanel staging materials for both Node.js App and no-Node scenarios before cPanel access is available.

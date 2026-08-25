@@ -39,4 +39,14 @@ describe("SuperHosting readiness materials", () => {
     expect(checklist).toContain("Не пипаме DNS");
     expect(checklist).toContain("rollback");
   });
+
+  it("requires backup, restore, capacity and monitoring evidence before a high-volume cutover", () => {
+    const readiness = fs.readFileSync(path.resolve(import.meta.dirname, "../docs/managed-hosting-high-volume-readiness.md"), "utf8");
+
+    expect(readiness).toContain("не е SLA");
+    expect(readiness).toContain("restore proof");
+    expect(readiness).toContain("load test");
+    expect(readiness).toContain("Monitoring");
+    expect(readiness).toContain("не одобрено за high-volume production cutover");
+  });
 });
