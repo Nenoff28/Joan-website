@@ -39,4 +39,13 @@ describe("homepage SEO audit regressions", () => {
     expect(homeSource).toContain('className="sr-only">Към продуктовото търсене</span>');
     expect(htmlTemplate).toContain('rel="apple-touch-icon"');
   });
+
+  it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {
+    expect(homeSource).toContain('title="Актуални предложения"');
+    expect(homeSource).toContain('featuredProducts.products.slice(0, 12)');
+    expect(homeSource).toContain('title="Най-продавани"');
+    expect(homeSource).toContain('(bestSellersQuery.data ?? []).slice(0, 8)');
+    expect(homeSource.indexOf('title="Актуални предложения"')).toBeLessThan(homeSource.indexOf('id="brochure"'));
+    expect(homeSource.indexOf('title="Най-продавани"')).toBeLessThan(homeSource.indexOf('id="brochure"'));
+  });
 });

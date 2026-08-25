@@ -1,7 +1,7 @@
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts, contactEnquiries, orderRequests, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 
@@ -386,6 +386,28 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
     db.select({ brand: catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(...publicCatalogueConditions({ ...input, brand: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(catalogueProducts.brand).orderBy(asc(catalogueProducts.brand)),
   ]);
   return { products: rows.map((row) => publicProduct(row.product, row.category)), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
+}
+
+/** Aggregated historical quantities are used only for transparent public popularity ordering. */
+export async function getPublicBestSellers(limit = 8) {
+  await ensureCatalogueSeeded();
+  const db = await requireDb();
+  const cappedLimit = Math.min(24, Math.max(1, limit));
+  const quantityTotals = db
+    .select({ legacyProductId: legacyCustomerOrderLines.legacyProductId, units: sql<number>`SUM(${legacyCustomerOrderLines.quantity})`.as("units") })
+    .from(legacyCustomerOrderLines)
+    .where(sql`${legacyCustomerOrderLines.legacyProductId} IS NOT NULL`)
+    .groupBy(legacyCustomerOrderLines.legacyProductId)
+    .as("historical_product_quantities");
+  const rows = await db
+    .select({ product: catalogueProducts, category: catalogueCategories, units: quantityTotals.units })
+    .from(quantityTotals)
+    .innerJoin(catalogueProducts, eq(catalogueProducts.legacyProductId, quantityTotals.legacyProductId))
+    .innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id))
+    .where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)))
+    .orderBy(desc(quantityTotals.units), desc(catalogueProducts.updatedAt), asc(catalogueProducts.name))
+    .limit(cappedLimit);
+  return rows.map((row) => publicProduct(row.product, row.category));
 }
 
 export async function getPublicProductBySlug(slug: string) {

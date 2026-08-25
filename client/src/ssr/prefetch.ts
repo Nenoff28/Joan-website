@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 
 export type HeadMeta = { title: string; description: string; canonicalPath?: string; ogImage?: string; ogImageAlt?: string; ogType?: "website" | "product"; noindex?: boolean; notFound?: boolean };
 export type CataloguePageInput = { page: number; pageSize: number; categorySlug?: string; path?: string[]; query?: string; brand?: string; availability?: Array<"in_stock" | "on_request" | "out_of_stock">; minPrice?: number; maxPrice?: number; sort?: "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc" };
-export type SsrPrefetch = { metadata: () => Promise<any>; page: (input: CataloguePageInput) => Promise<any>; product: (input: { slug: string }) => Promise<any>; brochure: () => Promise<any> };
+export type SsrPrefetch = { metadata: () => Promise<any>; page: (input: CataloguePageInput) => Promise<any>; bestSellers: () => Promise<any>; product: (input: { slug: string }) => Promise<any>; brochure: () => Promise<any> };
 
 const SITE = "ЖОАН";
 const DEFAULT_DESCRIPTION = "Онлайн каталог на ЖОАН за инструменти, дом, градина, баня и строителни материали.";
@@ -20,10 +20,11 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
   const headerSearchPromise = prefetch.page(headerSearch);
   if (path === "/") {
     const homeInput = { page: 1, pageSize: 12, sort: "relevance" as const };
-    const [metadata, headerSearchData, homeData, brochureData] = await Promise.all([metadataPromise, headerSearchPromise, prefetch.page(homeInput), prefetch.brochure()]);
+    const [metadata, headerSearchData, homeData, bestSellerData, brochureData] = await Promise.all([metadataPromise, headerSearchPromise, prefetch.page(homeInput), prefetch.bestSellers(), prefetch.brochure()]);
     seed(queryClient, getQueryKey(trpc.catalogue.metadata, undefined, "query"), metadata);
     seed(queryClient, getQueryKey(trpc.catalogue.page, headerSearch, "query"), headerSearchData);
     seed(queryClient, getQueryKey(trpc.catalogue.page, homeInput, "query"), homeData);
+    seed(queryClient, getQueryKey(trpc.catalogue.bestSellers, undefined, "query"), bestSellerData);
     seed(queryClient, getQueryKey(trpc.catalogue.brochure, undefined, "query"), brochureData);
     return { title: HOME_TITLE, description: HOME_DESCRIPTION, canonicalPath: "/" };
   }

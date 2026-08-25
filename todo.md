@@ -337,3 +337,6 @@
 - [x] Assess external-service recommendations from the audit (analytics, social profiles, email DNS, and llms.txt) and apply only the user-approved, technically applicable items.
 - [x] Diagnose and restore homepage hero video playback and fallback visibility on the published site.
 - [x] Assess and address actionable homepage SEO audit findings for useful text content, Apple touch icon, semantic emphasis, accessible internal link text, and response latency.
+- [x] Add an “Актуални предложения” homepage module between hero and brochure with 12 real catalogue products in a 3-by-4 desktop grid.
+- [x] Add a “Най-продавани” homepage module between hero and brochure with 8 real catalogue products in a 2-by-4 desktop grid, using a non-fabricated deterministic selection rule.
+- [x] Verify homepage catalogue module data, desktop/mobile layouts, TypeScript, tests and production build before publishing.
