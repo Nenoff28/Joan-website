@@ -9,7 +9,7 @@ const htmlTemplate = readFileSync(resolve(process.cwd(), "client/index.html"), "
 
 describe("homepage SEO audit regressions", () => {
   it("uses the same relevant construction-material keywords in title, description, and H1", () => {
-    expect(homeSource).toContain('title="Строителни материали и инструменти"');
+    expect(homeSource).toContain('title={en ? "Building materials and tools" : "Строителни материали и инструменти"}');
     expect(homeSource).toContain("ЖОАН в Силистра: строителни материали, инструменти");
     expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}<br /><span>{en ? "and tools" : "и инструменти"}</span></h1>');
     expect(prefetchSource).toContain("HOME_TITLE");
@@ -21,7 +21,7 @@ describe("homepage SEO audit regressions", () => {
   });
 
   it("provides non-empty descriptions for homepage category, brochure, social, and product images", () => {
-    expect(homeSource).toContain('alt={`${brochureTitle} — предишна страница`}');
+    expect(homeSource).toContain('alt={`${brochureTitle} — ${en ? "previous page" : "предишна страница"}`}');
     expect(homeSource).toContain('alt={`${category.label} — ${category.description}`}');
     expect(storefrontSource).toContain('alt={product.imageAlt || product.name}');
     expect(storefrontSource).toContain('alt="Joan on Facebook"');

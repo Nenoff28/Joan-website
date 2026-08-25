@@ -9,8 +9,8 @@ describe("3D brochure viewer", () => {
   it("keeps the page stage accessible through labelled carousel and numeric navigation controls", () => {
     expect(homeSource).toContain('aria-roledescription="carousel"');
     expect(homeSource).toContain('role="tablist"');
-    expect(homeSource).toContain('aria-label="Предишна страница"');
-    expect(homeSource).toContain('aria-label="Следваща страница"');
+    expect(homeSource).toContain('aria-label={en ? "Previous page" : "Предишна страница"}');
+    expect(homeSource).toContain('aria-label={en ? "Next page" : "Следваща страница"}');
   });
 
   it("limits optional sheet and gloss motion to browsers that do not prefer reduced motion", () => {
@@ -42,9 +42,11 @@ describe("3D brochure viewer", () => {
   });
 
   it("keeps the requested monthly brochure heading without broad inline type overrides", () => {
-    expect(homeSource).toContain("Разгледайте офертите от месечната брошура.");
+    expect(homeSource).toContain('"Browse the offers in the monthly brochure."');
+    expect(homeSource).toContain('"Разгледайте офертите от месечната брошура."');
     expect(homeSource).not.toContain("style={{fontSize: '20px'}}");
-    expect(homeSource).toContain("Разгледайте<br />офертите");
+    expect(homeSource).toContain('Browse<br />offers');
+    expect(homeSource).toContain('Разгледайте<br />офертите');
     expect(homeSource).toContain("Строителни материали");
     expect(homeSource).not.toContain("style={{fontSize: '55px'}}");
     expect(styleSource).toContain(".brochure-heading-meta b { font-size: .9375rem;");
