@@ -13,7 +13,7 @@ const cssSource = readFileSync(resolve(root, "client/src/index.css"), "utf8");
 
 describe("support interaction refinements", () => {
   it("keeps the complete terms reader while providing a mobile-friendly index treatment", () => {
-    expect(termsSource).toContain('aria-label="Съдържание"');
+    expect(termsSource).toContain('aria-label={en ? "Contents" : "Съдържание"}');
     expect(cssSource).toContain(".terms-index { background: #f0f2ed; display: flex");
     expect(cssSource).toContain(".terms-section { gap: .55rem; grid-template-columns: 23px minmax(0,1fr)");
   });

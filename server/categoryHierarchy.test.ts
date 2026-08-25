@@ -55,7 +55,7 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("const [manufacturerQuery, setManufacturerQuery]");
     expect(categorySource).toContain('<details className="manufacturer-filter">');
     expect(categorySource).toContain("Производител");
-    expect(categorySource).toContain('placeholder="Търсене на производител"');
+    expect(categorySource).toContain('placeholder={en ? "Search manufacturer" : "Търсене на производител"}');
   });
 
   it("suppresses the ITEM and CAT-FILTER implementation markers in public catalogue views", () => {
