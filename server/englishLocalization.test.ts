@@ -11,6 +11,7 @@ const productSource = readFileSync(resolve(root, "client/src/pages/Product.tsx")
 const accountSource = readFileSync(resolve(root, "client/src/pages/CustomerAccount.tsx"), "utf8");
 const notFoundSource = readFileSync(resolve(root, "client/src/pages/NotFound.tsx"), "utf8");
 const appSource = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
+const stylesheetSource = readFileSync(resolve(root, "client/src/index.css"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -63,5 +64,10 @@ describe("public English localization", () => {
 
   it("localizes the lazy-route loading fallback", () => {
     expect(appSource).toContain('{language === "en" ? "Loading…" : "Зареждане…"}');
+  });
+
+  it("keeps the visually rendered homepage hero heading in English after the toggle", () => {
+    expect(stylesheetSource).toContain('html[lang="en"] .hero-content h1::before { content: "Building materials"; }');
+    expect(stylesheetSource).toContain('html[lang="en"] .hero-content h1::after { content: "and tools"; }');
   });
 });

@@ -320,6 +320,8 @@ h1, h2 { font-weight: 800; letter-spacing: -.065em; }
 .hero-content h1::before, .hero-content h1::after { display: block; font-family: "Manrope", Arial, sans-serif; font-size: clamp(3.3rem, 6.1vw, 6.3rem); letter-spacing: -.045em; line-height: 1.08; }
 .hero-content h1::before { content: "Строителни материали"; }
 .hero-content h1::after { color: #f2c9c8; content: "и инструменти"; }
+html[lang="en"] .hero-content h1::before { content: "Building materials"; }
+html[lang="en"] .hero-content h1::after { content: "and tools"; }
 @media (max-width: 760px) { .hero-content h1::before, .hero-content h1::after { font-size: clamp(2.9rem, 14vw, 4rem); } }
 
 /* Customer accounts and protected legacy-profile import. */
