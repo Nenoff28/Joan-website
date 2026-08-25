@@ -11,6 +11,7 @@ export function buildContentSecurityPolicy(nonce: string) {
     "frame-ancestors 'self'",
     "form-action 'self'",
     "img-src 'self' data: blob: https://d36hbw14aib5lz.cloudfront.net",
+    "media-src 'self' https://d36hbw14aib5lz.cloudfront.net",
     "font-src 'self' data: https://fonts.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src 'self' 'nonce-${nonce}' https://manus-analytics.com`,

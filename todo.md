@@ -335,3 +335,4 @@
 - [x] Verify and resolve the confirmed SEO audit findings for canonicalization, page title and meta description, H1/body relevance, image alt text, 404 behavior, and JavaScript errors.
 - [x] Measure and improve homepage loading performance by addressing verified render-blocking assets, excessive payload, and avoidable requests without weakening CSP or managed media delivery.
 - [x] Assess external-service recommendations from the audit (analytics, social profiles, email DNS, and llms.txt) and apply only the user-approved, technically applicable items.
+- [x] Diagnose and restore homepage hero video playback and fallback visibility on the published site.

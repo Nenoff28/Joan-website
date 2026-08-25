@@ -10,6 +10,8 @@ describe("security response policy", () => {
     expect(policy).toContain("frame-ancestors 'self'");
     expect(policy).toContain("img-src 'self' data: blob: https://d36hbw14aib5lz.cloudfront.net");
     expect(policy).not.toContain("img-src 'self' data: https:");
+    expect(policy).toContain("media-src 'self' https://d36hbw14aib5lz.cloudfront.net");
+    expect(policy).not.toMatch(/media-src[^;]*\shttps:(?!\/\/)/);
     expect(policy).toContain("https://manus-analytics.com");
   });
 });
