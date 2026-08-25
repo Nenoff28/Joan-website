@@ -12,6 +12,7 @@ const accountSource = readFileSync(resolve(root, "client/src/pages/CustomerAccou
 const notFoundSource = readFileSync(resolve(root, "client/src/pages/NotFound.tsx"), "utf8");
 const appSource = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
 const stylesheetSource = readFileSync(resolve(root, "client/src/index.css"), "utf8");
+const contactSource = readFileSync(resolve(root, "client/src/pages/Contact.tsx"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -77,5 +78,11 @@ describe("public English localization", () => {
     expect(stylesheetSource).toContain('html[lang="en"] .product-detail-info::after { content: "AVAILABILITY · PRICE · TECHNICAL DETAILS · ENQUIRY"; }');
     expect(stylesheetSource).toContain('html[lang="en"] .favorites-empty-guide::after { content: "BRAND · PRICE · AVAILABILITY · SAVE"; }');
     expect(stylesheetSource).toContain('html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }');
+  });
+
+  it("presents the Joan address in English without changing the underlying business record", () => {
+    expect(contactSource).toContain('en ? "Silistra, 22 Tutrakan St." : store.address');
+    expect(storefrontSource).toContain('language === "en" ? "Silistra, 22 Tutrakan St." : store.address');
+    expect(homeSource).toContain('en ? "22 Tutrakan St." : store.address');
   });
 });
