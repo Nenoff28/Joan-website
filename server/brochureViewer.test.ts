@@ -45,11 +45,11 @@ describe("3D brochure viewer", () => {
     expect(homeSource).toContain("Разгледайте офертите от месечната брошура.");
     expect(homeSource).not.toContain("style={{fontSize: '20px'}}");
     expect(homeSource).toContain("Разгледайте<br />офертите");
-    expect(homeSource).toContain("Всичко за ремонта на едно място");
+    expect(homeSource).toContain("Строителни материали");
     expect(homeSource).not.toContain("style={{fontSize: '55px'}}");
     expect(styleSource).toContain(".brochure-heading-meta b { font-size: .9375rem;");
-    expect(styleSource).toContain('.hero-content h1::before { content: "Всичко за ремонта"; }');
-    expect(styleSource).toContain('.hero-content h1::after { color: #f2c9c8; content: "на едно място"; }');
+    expect(styleSource).toContain('.hero-content h1::before { content: "Строителни материали"; }');
+    expect(styleSource).toContain('.hero-content h1::after { color: #f2c9c8; content: "и инструменти"; }');
   });
 
   it("advances every seven seconds without presenting a pause control", () => {

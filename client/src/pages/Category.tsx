@@ -111,7 +111,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
           ) : (
             <>
               <section className="category-hero">
-                <img src={category.image} alt="" /><div className="category-hero-overlay" />
+                <img src={category.image} alt={`${category.label} — ${category.description}`} /><div className="category-hero-overlay" />
                 <div className="category-hero-content">
                   <p className="eyebrow">Каталог Жоан</p><h1>{category.label}</h1><p>{category.description}</p>
                   {selectedPathLabel && <div className="category-hero-path"><span>{selectedPath.join(" / ")}</span><button type="button" onClick={() => selectSubcategory([])}>Всички в {category.label}</button></div>}

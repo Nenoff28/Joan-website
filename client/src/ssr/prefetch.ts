@@ -8,20 +8,28 @@ export type SsrPrefetch = { metadata: () => Promise<any>; page: (input: Catalogu
 
 const SITE = "ЖОАН";
 const DEFAULT_DESCRIPTION = "Онлайн каталог на ЖОАН за инструменти, дом, градина, баня и строителни материали.";
+const HOME_TITLE = `Строителни материали и инструменти | ${SITE}`;
+const HOME_DESCRIPTION = "ЖОАН в Силистра: строителни материали, инструменти, продукти за дома и градината. Открийте всичко за ремонта на едно място.";
 const seed = (queryClient: QueryClient, key: unknown, data: unknown) => queryClient.setQueryData(key as any, data);
 const cleanPath = (url: string) => { try { return decodeURI(url.split("?")[0]).replace(/\/+$/, "") || "/"; } catch { return "/"; } };
 
 export async function prefetchForPath(url: string, queryClient: QueryClient, prefetch: SsrPrefetch): Promise<HeadMeta> {
   const path = cleanPath(url);
-  const metadata = await prefetch.metadata();
-  await seed(queryClient, getQueryKey(trpc.catalogue.metadata, undefined, "query"), metadata);
+  const metadataPromise = prefetch.metadata();
   const headerSearch = { page: 1, pageSize: 4, query: undefined, sort: "relevance" as const };
-  await seed(queryClient, getQueryKey(trpc.catalogue.page, headerSearch, "query"), await prefetch.page(headerSearch));
+  const headerSearchPromise = prefetch.page(headerSearch);
   if (path === "/") {
     const homeInput = { page: 1, pageSize: 12, sort: "relevance" as const };
-    await Promise.all([seed(queryClient, getQueryKey(trpc.catalogue.page, homeInput, "query"), prefetch.page(homeInput)), seed(queryClient, getQueryKey(trpc.catalogue.brochure, undefined, "query"), prefetch.brochure())]);
-    return { title: SITE, description: DEFAULT_DESCRIPTION, canonicalPath: "/" };
+    const [metadata, headerSearchData, homeData, brochureData] = await Promise.all([metadataPromise, headerSearchPromise, prefetch.page(homeInput), prefetch.brochure()]);
+    seed(queryClient, getQueryKey(trpc.catalogue.metadata, undefined, "query"), metadata);
+    seed(queryClient, getQueryKey(trpc.catalogue.page, headerSearch, "query"), headerSearchData);
+    seed(queryClient, getQueryKey(trpc.catalogue.page, homeInput, "query"), homeData);
+    seed(queryClient, getQueryKey(trpc.catalogue.brochure, undefined, "query"), brochureData);
+    return { title: HOME_TITLE, description: HOME_DESCRIPTION, canonicalPath: "/" };
   }
+  const metadata = await metadataPromise;
+  await seed(queryClient, getQueryKey(trpc.catalogue.metadata, undefined, "query"), metadata);
+  await seed(queryClient, getQueryKey(trpc.catalogue.page, headerSearch, "query"), await headerSearchPromise);
   if (path === "/products") {
     const input = { page: 1, pageSize: 48, sort: "relevance" as const };
     await seed(queryClient, getQueryKey(trpc.catalogue.page, input, "query"), await prefetch.page(input));
