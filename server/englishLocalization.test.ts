@@ -8,6 +8,7 @@ const storefrontSource = readFileSync(resolve(root, "client/src/components/Store
 const homeSource = readFileSync(resolve(root, "client/src/pages/Home.tsx"), "utf8");
 const categorySource = readFileSync(resolve(root, "client/src/pages/Category.tsx"), "utf8");
 const productSource = readFileSync(resolve(root, "client/src/pages/Product.tsx"), "utf8");
+const accountSource = readFileSync(resolve(root, "client/src/pages/CustomerAccount.tsx"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -40,5 +41,13 @@ describe("public English localization", () => {
     expect(productSource).toContain('"Decrease quantity"');
     expect(productSource).toContain('"Product not found."');
     expect(productSource).toContain('"Compare product"');
+  });
+
+  it("localizes customer profile, sign-in and account-activation interface copy", () => {
+    expect(accountSource).toContain('"CUSTOMER ACCOUNT"');
+    expect(accountSource).toContain('"Sign in to your account."');
+    expect(accountSource).toContain('"Previous orders"');
+    expect(accountSource).toContain('"Activate your account"');
+    expect(accountSource).toContain('"Save new password"');
   });
 });
