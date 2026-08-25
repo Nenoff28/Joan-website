@@ -35,7 +35,7 @@ describe("homepage SEO audit regressions", () => {
   it("includes useful catalogue guidance, a textual label for the icon-only link, and an Apple touch icon", () => {
     expect(homeSource).toContain("<HomeCatalogueGuide />");
     expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Изберете материали и инструменти според задачата.");
-    expect(homeSource).toContain("Строителни материали за ремонт");
+    expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Building materials for renovation");
     expect(homeSource).toContain('className="sr-only">Към продуктовото търсене</span>');
     expect(htmlTemplate).toContain('rel="apple-touch-icon"');
   });
