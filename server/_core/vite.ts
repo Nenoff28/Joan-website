@@ -27,9 +27,10 @@ function headTags(head: HeadMeta) {
     head.noindex || head.notFound ? `<meta name="robots" content="noindex, follow" />` : `<meta name="robots" content="index, follow, max-image-preview:large" />`,
   ].filter(Boolean).join("\n");
 }
-function compose(template: string, html: string, head: HeadMeta, state: unknown) {
+function compose(template: string, html: string, head: HeadMeta, state: unknown, nonce?: string) {
   const stateJson = JSON.stringify(superjson.serialize(state)).replace(/</g, "\\u003c");
-  return template.replace("</body>", () => `<script>window.__RQ_STATE__=${stateJson}</script></body>`).replace("<!--app-head-->", () => headTags(head)).replace("<!--app-html-->", () => html);
+  const nonceAttribute = nonce ? ` nonce="${nonce}"` : "";
+  return template.replace("</body>", () => `<script${nonceAttribute}>window.__RQ_STATE__=${stateJson}</script></body>`).replace("<!--app-head-->", () => headTags(head)).replace("<!--app-html-->", () => html);
 }
 function normalizePath(reqPath: string, originalUrl: string) { const query = originalUrl.slice(reqPath.length); return (reqPath.replace(/\/+$/, "") || "/").replace(/^\/\/+/, "/") + query; }
 async function canonicalProductRedirect(req: Request, res: Response) {
@@ -56,7 +57,7 @@ export async function setupVite(app: Express, server: Server) {
       template = template.replace("</head>", `<link rel="stylesheet" href="/src/index.css?direct" data-ssr-dev-css></head>`);
       const { render } = await vite.ssrLoadModule("/src/entry-server.tsx");
       const result = await render(req.originalUrl, await buildSsrPrefetch(req, res));
-      res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState));
+      res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState, res.locals.cspNonce));
     } catch (error) { vite.ssrFixStacktrace(error as Error); next(error); }
   });
 }
@@ -85,10 +86,10 @@ export function serveStatic(app: Express) {
     try {
       const { render } = await import(path.resolve(import.meta.dirname, "server-ssr", "entry-server.js"));
       const result = await render(req.originalUrl, await buildSsrPrefetch(req, res));
-      res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState));
+      res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState, res.locals.cspNonce));
     } catch (error) {
       console.error("[SSR] render failed, serving shell:", error);
-      res.status(200).set("Cache-Control", "no-cache").type("html").end(template.replace("<!--app-head-->", () => headTags({ title: siteName, description: "Онлайн каталог на ЖОАН." })).replace("<!--app-html-->", () => ""));
+      res.status(200).set("Cache-Control", "no-cache").type("html").end(compose(template, "", { title: siteName, description: "Онлайн каталог на ЖОАН." }, {}, res.locals.cspNonce));
     }
   });
 }

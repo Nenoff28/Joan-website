@@ -323,3 +323,9 @@
 - [ ] Prepare and validate a reversible migration and DNS cutover plan only after the owner approves the target SuperHosting environment.
 - [x] Document a full pre-migration database, media, source, configuration, and DNS backup procedure with restore validation steps.
 - [x] Document the minimum SuperHosting cPanel, SSH/SFTP, database, DNS, TLS, and deployment access required for a safe migration.
+- [x] Audit all public SEO outputs, structured data, crawler directives, duplicate-route handling, and internal discovery paths for safe improvements.
+- [x] Implement verified public SEO improvements without fabricating product, review, pricing, availability, or promotional data.
+- [x] Audit authentication, authorization, input validation, HTTP response headers, uploads, cookies, and public attack-surface controls.
+- [x] Apply security hardening that preserves public catalogue, administrator, customer, and request workflows.
+- [x] Run regression, dependency, security-header, crawlability, TypeScript, test, build, and desktop/mobile verification before publishing.
+- [x] Diagnose and repair the empty product result observed for the intermediate Инструменти → Електроинструменти category branch during final visual verification.

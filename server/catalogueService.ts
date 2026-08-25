@@ -673,9 +673,10 @@ export async function createContactEnquiry(input: { fullName: string; email: str
 export async function uploadProductImage(input: { dataUrl: string; fileName: string }, adminUserId: number) {
   const match = input.dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
   if (!match) throw new Error("Only JPEG, PNG, and WEBP image uploads are supported");
-  const contentType = match[1];
+  const contentType = match[1] as "image/jpeg" | "image/png" | "image/webp";
   const bytes = Buffer.from(match[2], "base64");
   if (bytes.length === 0 || bytes.length > 4 * 1024 * 1024) throw new Error("Image files must be between 1 byte and 4 MB");
+  assertUploadSignature(bytes, contentType);
   const extension = contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1];
   const safeName = input.fileName.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80) || "product";
   const stored = await storagePut(`catalogue/admin/${safeName}.${extension}`, bytes, contentType);
@@ -689,6 +690,15 @@ function decodeDataUrl(dataUrl: string, expression: RegExp, message: string) {
   return Buffer.from(match[1], "base64");
 }
 
+export function assertUploadSignature(bytes: Buffer, contentType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf") {
+  const isJpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isPng = bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const isWebp = bytes.length >= 12 && bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP";
+  const isPdf = bytes.length >= 4 && bytes.subarray(0, 4).toString("ascii") === "%PDF";
+  const isValid = contentType === "image/jpeg" ? isJpeg : contentType === "image/png" ? isPng : contentType === "image/webp" ? isWebp : isPdf;
+  if (!isValid) throw new Error("The uploaded file content does not match its declared type");
+}
+
 function safeBrochureName(fileName: string, fallback: string) {
   return fileName.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80) || fallback;
 }
@@ -700,7 +710,7 @@ export async function uploadAdminBrochure(input: BrochureUploadPayload, adminUse
   if (input.sourcePdf) {
     const pdfBytes = decodeDataUrl(input.sourcePdf.dataUrl, /^data:(?:application|binary)\/(?:pdf|octet-stream);base64,([A-Za-z0-9+/=]+)$/, "A valid PDF brochure is required");
     if (pdfBytes.length === 0 || pdfBytes.length > 20 * 1024 * 1024) throw new Error("PDF brochures must be between 1 byte and 20 MB");
-    if (pdfBytes.subarray(0, 4).toString("ascii") !== "%PDF") throw new Error("The uploaded file is not a valid PDF brochure");
+    assertUploadSignature(pdfBytes, "application/pdf");
     const safePdfName = safeBrochureName(input.sourcePdf.fileName.replace(/\.pdf$/i, ""), "brochure");
     sourcePdf = await storagePut(`brochures/${reference}/${safePdfName}.pdf`, pdfBytes, "application/pdf");
   }
@@ -709,6 +719,7 @@ export async function uploadAdminBrochure(input: BrochureUploadPayload, adminUse
     const page = input.pages[index];
     const pageBytes = decodeDataUrl(page.dataUrl, /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/, "Brochure pages must be JPEG images");
     if (pageBytes.length === 0 || pageBytes.length > 3 * 1024 * 1024) throw new Error("Each brochure page must be between 1 byte and 3 MB");
+    assertUploadSignature(pageBytes, "image/jpeg");
     const safePageName = safeBrochureName(page.fileName.replace(/\.(jpg|jpeg)$/i, ""), `page-${index + 1}`);
     const stored = await storagePut(`brochures/${reference}/${String(index + 1).padStart(2, "0")}-${safePageName}.jpg`, pageBytes, "image/jpeg");
     pageUrls.push(stored.url);
@@ -723,6 +734,7 @@ export async function uploadAdminBrochure(input: BrochureUploadPayload, adminUse
 export async function uploadBrochurePage(input: { dataUrl: string; fileName: string }, adminUserId: number) {
   const pageBytes = decodeDataUrl(input.dataUrl, /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/, "Brochure pages must be JPEG images");
   if (pageBytes.length === 0 || pageBytes.length > 3 * 1024 * 1024) throw new Error("Each brochure page must be between 1 byte and 3 MB");
+  assertUploadSignature(pageBytes, "image/jpeg");
   const safePageName = safeBrochureName(input.fileName.replace(/\.(jpg|jpeg)$/i, ""), "brochure-page");
   const stored = await storagePut(`brochures/pages/${randomUUID()}-${safePageName}.jpg`, pageBytes, "image/jpeg");
   await logAdminActivity(adminUserId, "brochure.page_uploaded", "brochure_page", null, { key: stored.key });

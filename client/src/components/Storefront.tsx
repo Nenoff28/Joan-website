@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCatalogue, useCataloguePage, useCatalogueProducts } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { categoryPathTokens } from "@/lib/categoryHierarchy";
+import { organizationStructuredData, productStructuredData, safeJsonLd } from "@/lib/structuredData";
 import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
@@ -61,7 +62,7 @@ const categoryIcons = {
 
 function usePageTitle(title: string, description: string, canonicalUrl?: string, metaRobots?: string) {
   useEffect(() => {
-    document.title = `${title} | ЖОАН`;
+    document.title = title.endsWith("| ЖОАН") || title === "ЖОАН" ? title : `${title} | ЖОАН`;
     let descriptionTag = document.querySelector('meta[name="description"]');
     if (!descriptionTag) {
       descriptionTag = document.createElement("meta");
@@ -391,21 +392,6 @@ export function CategoryIcon({ icon, size = 22 }: { icon: keyof typeof categoryI
 }
 
 export function JsonLd({ product }: { product?: Product }) {
-  const data = product ? {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
-    image: product.image,
-    description: product.description,
-    offers: product.price ? { "@type": "Offer", priceCurrency: "EUR", price: product.price.replace("€", ""), availability: product.availabilityCode === "out_of_stock" ? "https://schema.org/OutOfStock" : product.availabilityCode === "in_stock" ? "https://schema.org/InStock" : "https://schema.org/LimitedAvailability" } : undefined,
-  } : {
-    "@context": "https://schema.org",
-    "@type": "HardwareStore",
-    name: "ЖОАН",
-    email: store.email,
-    telephone: store.phones[2],
-    address: { "@type": "PostalAddress", streetAddress: "ул. Тутракан №22", addressLocality: "Силистра", addressCountry: "BG" },
-  };
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
+  const data = product ? productStructuredData(product) : organizationStructuredData();
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />;
 }
