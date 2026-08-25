@@ -348,4 +348,5 @@
 - [x] Confirm that the current SuperHosting SuperPro server has no installed Node.js runtime and must not receive the full-stack application in public_html.
 - [ ] Prepare the joan.bg custom-domain DNS cutover from SuperHosting to the current managed Node hosting, including an approved rollback plan.
 - [ ] Complete a high-volume operational readiness assessment for backup, restore, availability monitoring, capacity and incident response before any production DNS cutover.
+- [x] Create and verify a portable local ZIP export with independent static media and documented local backend/database requirements.
 - [x] Prepare portable SuperHosting deployment, rollback, and cPanel staging materials for both Node.js App and no-Node scenarios before cPanel access is available.

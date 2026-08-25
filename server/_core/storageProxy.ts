@@ -1,7 +1,20 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
+import path from "node:path";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
+  const localMediaRoot = process.env.LOCAL_MEDIA_ROOT?.trim();
+  if (localMediaRoot) {
+    const resolvedRoot = path.resolve(localMediaRoot);
+    app.use("/manus-storage", express.static(resolvedRoot, {
+      fallthrough: false,
+      immutable: true,
+      maxAge: "7d",
+    }));
+    console.log(`[StorageProxy] Serving local media from ${resolvedRoot}`);
+    return;
+  }
+
   app.get("/manus-storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
     if (!key) {
