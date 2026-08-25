@@ -11,13 +11,13 @@ describe("returns information and back-to-top interaction", () => {
   it("provides a dedicated public returns route and footer link", () => {
     expect(appSource).toContain('path={"/returns"} component={Returns}');
     expect(storefrontSource).toContain('<Link href="/returns">{t("returns")}</Link>');
-    expect(returnsSource).toContain('title="Връщане на продукти"');
+    expect(returnsSource).toContain('title={en ? "Product returns" : "Връщане на продукти"}');
   });
 
   it("keeps return information accurate to the original public workflow without claiming a live submission", () => {
-    expect(returnsSource).toContain("14 дни");
+    expect(returnsSource).toContain('14 {en ? "days" : "дни"}');
     expect(returnsSource).toContain("входящ номер за връщане (RMA)");
-    expect(returnsSource).toContain("Това е информационна страница");
+    expect(returnsSource).toContain("This is an information page");
     expect(returnsSource).toContain("originalTermsUrl");
   });
 

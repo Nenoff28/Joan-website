@@ -12,14 +12,14 @@ describe("customer-support pages", () => {
   it("uses a dedicated FAQ route instead of leaving return FAQs embedded in the return process", () => {
     expect(appSource).toContain('<Route path={"/faq"} component={FAQ} />');
     expect(faqSource).toContain("Често задавани въпроси");
-    expect(faqSource).toContain("Какво е входящ номер за връщане (RMA)?");
-    expect(returnsSource).not.toContain("Какво е входящ номер за връщане (RMA)?");
+    expect(faqSource).toContain("What is a return reference number (RMA)?");
+    expect(returnsSource).not.toContain("What is a return reference number (RMA)?");
   });
 
   it("submits contact enquiries through the validated tRPC workflow and provides a reference-number success state", () => {
     expect(contactSource).toContain("trpc.contact.createEnquiry.useMutation");
     expect(contactSource).toContain("referenceNumber");
-    expect(contactSource).toContain("Запитването е изпратено успешно.");
+    expect(contactSource).toContain("Your enquiry was sent successfully.");
     expect(contactSource).not.toContain("Формата е готова за интеграция");
   });
 

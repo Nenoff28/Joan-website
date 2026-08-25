@@ -24,13 +24,13 @@ describe("returns FAQ and footer refinements", () => {
 
   it("groups the supplied accessible Facebook link and map destination with the left contact details", () => {
     expect(storefrontSource).toContain('className="footer-facebook"');
-    expect(storefrontSource).toContain('aria-label="Facebook на ЖОАН"');
-    expect(storefrontSource).toContain('aria-label="Instagram на ЖОАН — профилът предстои"');
-    expect(storefrontSource).toContain('aria-label="TikTok на ЖОАН — профилът предстои"');
+    expect(storefrontSource).toContain('aria-label="Joan on Facebook"');
+    expect(storefrontSource).toContain('Joan on Instagram — profile coming soon');
+    expect(storefrontSource).toContain('Joan on TikTok — profile coming soon');
     expect(storefrontSource).toContain('src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png"');
     expect(storefrontSource).toContain('src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png"');
     expect(storefrontSource).toContain('src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png"');
-    expect(storefrontSource).toContain('alt="Facebook на ЖОАН"');
+    expect(storefrontSource).toContain('alt="Joan on Facebook"');
     expect(storefrontSource).toContain('href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8"');
     expect(storefrontSource).toContain('className="footer-contact-line footer-map-link"');
     expect(storefrontSource).not.toContain('className="footer-contact-list"');

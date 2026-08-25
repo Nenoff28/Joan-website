@@ -85,10 +85,10 @@ export function PageMeta({ title, description, canonicalUrl, metaRobots }: { tit
 }
 
 function Wordmark() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   return (
     <Link href="/" className="brand-mark" aria-label={`ЖОАН — ${t("home")}`}>
-      <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Лого на Строителен хипермаркет Жоан" className="brand-real-logo" />
+      <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt={language === "en" ? "Joan building hypermarket logo" : "Лого на Строителен хипермаркет Жоан"} className="brand-real-logo" />
     </Link>
   );
 }
@@ -121,7 +121,7 @@ function MobileCategoryTree({ category, onNavigate, activePath }: { category: Ca
   const Icon = categoryIcons[category.icon];
   return <details className={`mobile-category-tree ${activePath ? "is-current" : ""}`} open={Boolean(activePath)}>
     <summary><Icon size={18} /><span>{category.label}</span><ChevronRight size={16} /></summary>
-    <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mobile-category-all ${activePath && activePath.length === 0 ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}>Всички в {category.label}</Link>
+      <div className="mobile-category-tree-content"><Link href={categoryPath(category.slug)} onClick={onNavigate} className={`mobile-category-all ${activePath && activePath.length === 0 ? "is-active" : ""}`} aria-current={activePath && activePath.length === 0 ? "page" : undefined}>All in {category.label}</Link>
       {category.subcategories.map((group) => { const groupActive = activePath?.[0] === categoryPathTokens([group.label])[0]; return <details key={group.label} className={`mobile-category-branch ${groupActive ? "is-active" : ""}`} open={groupActive}><summary><Link href={categoryPath(category.slug, [group.label])} onClick={(event) => { event.stopPropagation(); onNavigate(); }} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>{group.label}</Link><Plus size={15} aria-hidden="true" /></summary>
         <div className="mobile-category-disclosure"><div>{group.children?.length ? group.children.map((child) => { const childActive = groupActive && activePath?.[1] === categoryPathTokens([child.label])[0]; return <Link key={child.label} href={categoryPath(category.slug, [group.label, child.label])} onClick={onNavigate} className={childActive ? "is-active" : ""} aria-current={childActive ? "page" : undefined}>{child.label}</Link>; }) : <Link href={categoryPath(category.slug, [group.label])} onClick={onNavigate} className={groupActive ? "is-active" : ""} aria-current={groupActive ? "page" : undefined}>Отвори {group.label}</Link>}</div></div>
       </details>; })}
@@ -236,11 +236,11 @@ function Header() {
           <button type="button" className="catalogue-trigger" onClick={() => setMegaOpen(!megaOpen)} aria-expanded={megaOpen} aria-controls="catalogue-mega-menu" aria-label={t("allCategories")}>
             <Menu size={22} aria-hidden="true" />
           </button>
-          <nav aria-label="Основна навигация" className="desktop-links">
+          <nav aria-label={language === "en" ? "Primary navigation" : "Основна навигация"} className="desktop-links">
             <Link href="/">{t("home")}</Link>
             <Link href="/about">{t("about")}</Link>
             <Link href="/contact">{t("storeContacts")}</Link>
-            <Link href="/faq" aria-label="Често задавани въпроси">ЧЗВ</Link>
+            <Link href="/faq" aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>
           </nav>
         </div>
       </div>
@@ -265,7 +265,7 @@ function Header() {
 
       {mobileOpen && (
         <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label={t("allCategories")}>
-          <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close"><X size={24} /></button></div></div>
+          <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label={language === "en" ? "Close" : "Затвори"}><X size={24} /></button></div></div>
           <form className="mobile-search-wrap" onSubmit={(event) => { submitSearch(event); setMobileOpen(false); }} role="search"><label htmlFor="mobile-site-search" className="sr-only">{t("searchLabel")}</label><Search size={18} aria-hidden="true" /><input id="mobile-site-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("searchPlaceholder")} autoComplete="off" /><Button type="submit" className="search-submit">{t("search")}</Button></form>
           {query && <div className="mobile-search-results" aria-live="polite">{searchMatches.length ? searchMatches.map((product) => <button key={product.slug} type="button" onClick={() => { setLocation(`/product/${product.slug}`); setQuery(""); setSearchFocused(false); setMobileOpen(false); }}><img src={product.image} alt={product.imageAlt || product.name} /><span><b>{product.brand}</b>{product.name}</span><ChevronRight size={16} /></button>) : <p>{t("noMatches")}</p>}</div>}
           <MiniCart id="mobile-mini-cart" rows={cartRows} total={cartTotal} copy={cartCopy} onClose={() => setMobileOpen(false)} onIncrement={(slug) => addItem(slug)} onDecrement={(slug, quantity) => setQuantity(slug, quantity - 1)} onRemove={removeItem} />
@@ -274,7 +274,7 @@ function Header() {
             <Link href="/about" onClick={() => setMobileOpen(false)}>{t("about")}</Link>
             <Link href="/delivery" onClick={() => setMobileOpen(false)}>{t("delivery")}</Link>
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
-            <Link href="/faq" onClick={() => setMobileOpen(false)} aria-label="Често задавани въпроси">ЧЗВ</Link>
+            <Link href="/faq" onClick={() => setMobileOpen(false)} aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
           </div>
           <Link href="/products" onClick={() => setMobileOpen(false)} className="mobile-all-products">{t("viewAllProducts")} <ArrowRight size={17} /></Link>
@@ -294,7 +294,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
 type MiniCartProps = { id: string; rows: { product: Product; quantity: number }[]; total: number; copy: { heading: string; empty: string; browse: string; remove: string; review: string; count: string; total: string }; onClose: () => void; onIncrement: (slug: string) => void; onDecrement: (slug: string, quantity: number) => void; onRemove: (slug: string) => void };
 function MiniCart({ id, rows, total, copy, onClose, onIncrement, onDecrement, onRemove }: MiniCartProps) {
-  return <section id={id} className="mini-cart" aria-label={copy.heading}><div className="mini-cart-heading"><div><p className="eyebrow">{copy.heading}</p><h2>{rows.reduce((sum, row) => sum + row.quantity, 0)} {copy.count}</h2></div><button type="button" onClick={onClose} aria-label="Затвори количката"><X size={17} /></button></div>{rows.length ? <><div className="mini-cart-items">{rows.map(({ product, quantity }) => <article key={product.slug} className="mini-cart-item"><img src={product.image} alt={product.imageAlt || product.name} /><div><p className="product-brand">{product.brand}</p><b>{product.name}</b><span>{product.price ?? "Запитване"}</span><div className="mini-cart-quantity"><button type="button" onClick={() => onDecrement(product.slug, quantity)} aria-label={`Намали количеството на ${product.name}`}><Minus size={14} /></button><output aria-label={`Количество ${product.name}`}>{quantity}</output><button type="button" onClick={() => onIncrement(product.slug)} aria-label={`Увеличи количеството на ${product.name}`}><Plus size={14} /></button><button type="button" className="mini-cart-remove" onClick={() => onRemove(product.slug)} aria-label={`${copy.remove}: ${product.name}`}><Trash2 size={14} /></button></div></div></article>)}</div><div className="mini-cart-total"><span>{copy.total}</span><strong>{total ? `${total.toFixed(2)}€` : "Запитване"}</strong></div><Link href="/checkout" className="mini-cart-checkout" onClick={onClose}>{copy.review}<ArrowRight size={16} /></Link></> : <div className="mini-cart-empty"><ShoppingCart size={22} /><p>{copy.empty}</p><Link href="/products" onClick={onClose}>{copy.browse} <ArrowRight size={15} /></Link></div>}</section>;
+  const { language } = useLanguage();
+  const ask = language === "en" ? "Enquiry" : "Запитване";
+  return <section id={id} className="mini-cart" aria-label={copy.heading}><div className="mini-cart-heading"><div><p className="eyebrow">{copy.heading}</p><h2>{rows.reduce((sum, row) => sum + row.quantity, 0)} {copy.count}</h2></div><button type="button" onClick={onClose} aria-label={language === "en" ? "Close cart" : "Затвори количката"}><X size={17} /></button></div>{rows.length ? <><div className="mini-cart-items">{rows.map(({ product, quantity }) => <article key={product.slug} className="mini-cart-item"><img src={product.image} alt={product.imageAlt || product.name} /><div><p className="product-brand">{product.brand}</p><b>{product.name}</b><span>{product.price ?? ask}</span><div className="mini-cart-quantity"><button type="button" onClick={() => onDecrement(product.slug, quantity)} aria-label={`${language === "en" ? "Decrease quantity for" : "Намали количеството на"} ${product.name}`}><Minus size={14} /></button><output aria-label={`${language === "en" ? "Quantity" : "Количество"} ${product.name}`}>{quantity}</output><button type="button" onClick={() => onIncrement(product.slug)} aria-label={`${language === "en" ? "Increase quantity for" : "Увеличи количеството на"} ${product.name}`}><Plus size={14} /></button><button type="button" className="mini-cart-remove" onClick={() => onRemove(product.slug)} aria-label={`${copy.remove}: ${product.name}`}><Trash2 size={14} /></button></div></div></article>)}</div><div className="mini-cart-total"><span>{copy.total}</span><strong>{total ? `${total.toFixed(2)}€` : ask}</strong></div><Link href="/checkout" className="mini-cart-checkout" onClick={onClose}>{copy.review}<ArrowRight size={16} /></Link></> : <div className="mini-cart-empty"><ShoppingCart size={22} /><p>{copy.empty}</p><Link href="/products" onClick={onClose}>{copy.browse} <ArrowRight size={15} /></Link></div>}</section>;
 }
 
 function BackToTop() {
@@ -315,7 +317,7 @@ function BackToTop() {
 }
 
 function Footer() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { categories } = useCatalogue();
   return (
     <footer className="site-footer">
@@ -326,12 +328,12 @@ function Footer() {
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
           <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer"><MapPin size={16} /> {store.address}</a>
-          <div className="footer-social-row" aria-label="Социални мрежи"><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Facebook на ЖОАН" title="Facebook на ЖОАН"><img src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png" alt="Facebook на ЖОАН" /></a><span className="footer-social-placeholder" role="img" aria-label="Instagram на ЖОАН — профилът предстои" title="Instagram — скоро"><img src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram на ЖОАН" /></span><span className="footer-social-placeholder" role="img" aria-label="TikTok на ЖОАН — профилът предстои" title="TikTok — скоро"><img src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok на ЖОАН" /></span></div>
+          <div className="footer-social-row" aria-label={language === "en" ? "Social media" : "Социални мрежи"}><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Joan on Facebook" title="Joan on Facebook"><img src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png" alt="Joan on Facebook" /></a><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on Instagram — profile coming soon" : "Instagram на ЖОАН — профилът предстои"} title={language === "en" ? "Instagram — coming soon" : "Instagram — скоро"}><img src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram" /></span><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on TikTok — profile coming soon" : "TikTok на ЖОАН — профилът предстои"} title={language === "en" ? "TikTok — coming soon" : "TikTok — скоро"}><img src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok" /></span></div>
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">ЧЗВ</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">{language === "en" ? "FAQ" : "ЧЗВ"}</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
       </div>
-      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. Всички права запазени.</span><span>Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.</span></div></div>
+      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. {language === "en" ? "All rights reserved." : "Всички права запазени."}</span><span>{language === "en" ? "Online catalogue with availability and delivery confirmed by the Joan team." : "Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан."}</span></div></div>
     </footer>
   );
 }
@@ -346,7 +348,7 @@ export function SectionHeading({ eyebrow, title, text, action }: { eyebrow?: str
 }
 
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addItem } = useCart();
   const [, setLocation] = useLocation();
@@ -373,7 +375,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           </div>
           {product.price && !isOutOfStock ? <button type="button" className="cart-square" aria-label={`${t("cart")}: ${product.name}`} onClick={() => { addItem(product.slug); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={19} /></button> : <button type="button" className="cart-square" aria-label={`${t("enquiry")}: ${product.name}`} onClick={() => { setLocation("/contact"); toast(t("productEnquiry")); }}><MessageCircle size={19} /></button>}
         </div>
-        <div className={`availability availability-${product.availabilityCode ?? "on_request"}`}><span />{product.availability || t("checkAvailability")}</div>
+        <div className={`availability availability-${product.availabilityCode ?? "on_request"}`}><span />{language === "en" ? product.availabilityCode === "in_stock" ? "In stock" : product.availabilityCode === "out_of_stock" ? "Out of stock" : "On request" : product.availability || t("checkAvailability")}</div>
       </div>
     </article>
   );

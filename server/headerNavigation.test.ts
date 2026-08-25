@@ -14,7 +14,7 @@ describe("streamlined storefront header navigation", () => {
   });
 
   it("keeps category routes inside the category menu rather than duplicating them in the desktop links", () => {
-    const desktopNav = headerSource.match(/<nav aria-label="Основна навигация" className="desktop-links">([\s\S]*?)<\/nav>/)?.[1] ?? "";
+    const desktopNav = headerSource.match(/<nav aria-label=\{language === "en" \? "Primary navigation" : "Основна навигация"\} className="desktop-links">([\s\S]*?)<\/nav>/)?.[1] ?? "";
     expect(desktopNav).toContain('href="/"');
     expect(desktopNav).toContain('href="/about"');
     expect(desktopNav).toContain('href="/contact"');
@@ -46,9 +46,9 @@ describe("streamlined storefront header navigation", () => {
   });
 
   it("exposes ЧЗВ through neutral desktop and mobile navigation without a promotion shortcut", () => {
-    expect(headerSource).toContain('aria-label="Често задавани въпроси">ЧЗВ</Link>');
+    expect(headerSource).toContain('aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>');
     expect(headerSource).not.toContain('className="faq-nav-link"');
-    expect(headerSource).toContain('aria-label="Често задавани въпроси"');
+    expect(headerSource).toContain('Frequently asked questions');
     expect(headerSource).toContain('<Link href="/faq" onClick={() => setMobileOpen(false)}');
     expect(headerSource).not.toContain('className="promo-nav-link"');
   });

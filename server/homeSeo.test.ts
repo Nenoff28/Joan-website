@@ -11,7 +11,7 @@ describe("homepage SEO audit regressions", () => {
   it("uses the same relevant construction-material keywords in title, description, and H1", () => {
     expect(homeSource).toContain('title="Строителни материали и инструменти"');
     expect(homeSource).toContain("ЖОАН в Силистра: строителни материали, инструменти");
-    expect(homeSource).toContain("<h1>Строителни материали<br /><span>и инструменти</span></h1>");
+    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}<br /><span>{en ? "and tools" : "и инструменти"}</span></h1>');
     expect(prefetchSource).toContain("HOME_TITLE");
     expect(prefetchSource).toContain("HOME_DESCRIPTION");
   });
@@ -24,7 +24,7 @@ describe("homepage SEO audit regressions", () => {
     expect(homeSource).toContain('alt={`${brochureTitle} — предишна страница`}');
     expect(homeSource).toContain('alt={`${category.label} — ${category.description}`}');
     expect(storefrontSource).toContain('alt={product.imageAlt || product.name}');
-    expect(storefrontSource).toContain('alt="Facebook на ЖОАН"');
+    expect(storefrontSource).toContain('alt="Joan on Facebook"');
   });
 
   it("starts independent homepage SSR queries before awaiting metadata", () => {
@@ -41,11 +41,11 @@ describe("homepage SEO audit regressions", () => {
   });
 
   it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {
-    expect(homeSource).toContain('title="Актуални предложения"');
+    expect(homeSource).toContain('title={en ? "Current offers" : "Актуални предложения"}');
     expect(homeSource).toContain('featuredProducts.products.slice(0, 12)');
-    expect(homeSource).toContain('title="Най-продавани"');
+    expect(homeSource).toContain('title={en ? "Best sellers" : "Най-продавани"}');
     expect(homeSource).toContain('(bestSellersQuery.data ?? []).slice(0, 8)');
-    expect(homeSource.indexOf('title="Актуални предложения"')).toBeLessThan(homeSource.indexOf('id="brochure"'));
-    expect(homeSource.indexOf('title="Най-продавани"')).toBeLessThan(homeSource.indexOf('id="brochure"'));
+    expect(homeSource.indexOf('title={en ? "Current offers" : "Актуални предложения"}')).toBeLessThan(homeSource.indexOf('id="brochure"'));
+    expect(homeSource.indexOf('title={en ? "Best sellers" : "Най-продавани"}')).toBeLessThan(homeSource.indexOf('id="brochure"'));
   });
 });

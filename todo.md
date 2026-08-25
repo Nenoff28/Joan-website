@@ -340,3 +340,6 @@
 - [x] Add an “Актуални предложения” homepage module between hero and brochure with 12 real catalogue products in a 3-by-4 desktop grid.
 - [x] Add a “Най-продавани” homepage module between hero and brochure with 8 real catalogue products in a 2-by-4 desktop grid, using a non-fabricated deterministic selection rule.
 - [x] Verify homepage catalogue module data, desktop/mobile layouts, TypeScript, tests and production build before publishing.
+- [ ] Audit all public routes and shared storefront components for Bulgarian static copy that remains when English is selected.
+- [ ] Extend the English translation system across shared navigation, homepage, catalogue, product interactions, cart, checkout, forms, notices, and support pages without fabricating translations for imported catalogue data.
+- [ ] Verify English language switching across desktop/mobile public routes, console, TypeScript, tests, and production build before publishing.
