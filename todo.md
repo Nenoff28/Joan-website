@@ -349,4 +349,7 @@
 - [ ] Prepare the joan.bg custom-domain DNS cutover from SuperHosting to the current managed Node hosting, including an approved rollback plan.
 - [ ] Complete a high-volume operational readiness assessment for backup, restore, availability monitoring, capacity and incident response before any production DNS cutover.
 - [x] Create and verify a portable local ZIP export with independent static media and documented local backend/database requirements.
+- [x] Create complete PRODUCTION_DEPLOYMENT.md with architecture, dependencies, commands, environment inventory, DNS, SEO and self-hosted compatibility requirements.
+- [x] Create complete DATABASE_MIGRATION.md with backup, restore, validation queries, record counts and zero-data-loss cutover procedure.
+- [x] Create complete DISASTER_RECOVERY.md with backup retention, incident escalation, DNS rollback and recovery verification procedure.
 - [x] Prepare portable SuperHosting deployment, rollback, and cPanel staging materials for both Node.js App and no-Node scenarios before cPanel access is available.
