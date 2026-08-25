@@ -1,5 +1,6 @@
 import { JsonLd, Layout, PageMeta } from "@/components/Storefront";
 import { trpc } from "@/lib/trpc";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { CheckCircle2, KeyRound, Loader2, LogIn, LogOut, MapPin, ShieldCheck } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -10,11 +11,12 @@ function AccountShell({ children, title, description }: { children: React.ReactN
 }
 
 export default function CustomerAccount() {
+  const { language } = useLanguage();
   const [location, setLocation] = useLocation();
   const account = trpc.customer.me.useQuery();
   const login = trpc.customer.login.useMutation({
-    onSuccess: async () => { await account.refetch(); toast.success("Влязохте успешно в профила си."); },
-    onError: (error) => toast.error(error.message || "Входът не е успешен. Проверете данните си."),
+    onSuccess: async () => { await account.refetch(); toast.success(language === "en" ? "You signed in successfully." : "Влязохте успешно в профила си."); },
+    onError: (error) => toast.error(error.message || (language === "en" ? "Sign-in was not successful. Check your details." : "Входът не е успешен. Проверете данните си.")),
   });
   const logout = trpc.customer.logout.useMutation({ onSuccess: async () => { await account.refetch(); toast.success("Излязохте от профила си."); setLocation("/"); } });
   const [error, setError] = useState("");
@@ -24,12 +26,12 @@ export default function CustomerAccount() {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
-    if (!email || !password) { setError("Попълнете имейл и парола."); return; }
+    if (!email || !password) { setError(language === "en" ? "Enter an email and password." : "Попълнете имейл и парола."); return; }
     setError("");
     login.mutate({ email, password });
   }
 
-  if (account.isLoading) return <AccountShell title="Профил" description="Вход в клиентски профил на Жоан."><div className="account-loading"><Loader2 className="animate-spin" size={24} /> Зареждане на профил…</div></AccountShell>;
+  if (account.isLoading) return <AccountShell title={language === "en" ? "Account" : "Профил"} description={language === "en" ? "Sign in to a Joan customer account." : "Вход в клиентски профил на Жоан."}><div className="account-loading"><Loader2 className="animate-spin" size={24} /> {language === "en" ? "Loading account…" : "Зареждане на профил…"}</div></AccountShell>;
   if (account.data) {
     const profile = account.data;
     return <AccountShell title="Моят профил" description="Преглед на клиентския профил, запазените адреси и наличната историческа информация.">
