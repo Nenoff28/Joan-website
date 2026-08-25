@@ -7,6 +7,7 @@ const languageSource = readFileSync(resolve(root, "client/src/contexts/LanguageC
 const storefrontSource = readFileSync(resolve(root, "client/src/components/Storefront.tsx"), "utf8");
 const homeSource = readFileSync(resolve(root, "client/src/pages/Home.tsx"), "utf8");
 const categorySource = readFileSync(resolve(root, "client/src/pages/Category.tsx"), "utf8");
+const productSource = readFileSync(resolve(root, "client/src/pages/Product.tsx"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -31,5 +32,13 @@ describe("public English localization", () => {
     expect(categorySource).toContain('"Price: low to high"');
     expect(categorySource).toContain('"Product pages"');
     expect(categorySource).toContain('"No products for the selected filter."');
+  });
+
+  it("localizes fixed Product gallery, quantity and fallback interface copy", () => {
+    expect(productSource).toContain('"Zoom product image"');
+    expect(productSource).toContain('"Product gallery"');
+    expect(productSource).toContain('"Decrease quantity"');
+    expect(productSource).toContain('"Product not found."');
+    expect(productSource).toContain('"Compare product"');
   });
 });
