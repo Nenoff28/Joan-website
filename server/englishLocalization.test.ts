@@ -9,6 +9,7 @@ const homeSource = readFileSync(resolve(root, "client/src/pages/Home.tsx"), "utf
 const categorySource = readFileSync(resolve(root, "client/src/pages/Category.tsx"), "utf8");
 const productSource = readFileSync(resolve(root, "client/src/pages/Product.tsx"), "utf8");
 const accountSource = readFileSync(resolve(root, "client/src/pages/CustomerAccount.tsx"), "utf8");
+const notFoundSource = readFileSync(resolve(root, "client/src/pages/NotFound.tsx"), "utf8");
 const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms"].map((name) => readFileSync(resolve(root, `client/src/pages/${name}.tsx`), "utf8")).join("\n");
 
 describe("public English localization", () => {
@@ -51,5 +52,11 @@ describe("public English localization", () => {
     expect(accountSource).toContain('"Previous orders"');
     expect(accountSource).toContain('"Activate your account"');
     expect(accountSource).toContain('"Save new password"');
+  });
+
+  it("localizes the public not-found fallback", () => {
+    expect(notFoundSource).toContain('"Page not found"');
+    expect(notFoundSource).toContain('"Страницата не е намерена"');
+    expect(notFoundSource).toContain('"Go home"');
   });
 });
