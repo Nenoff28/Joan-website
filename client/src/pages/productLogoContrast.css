@@ -1,4 +1,4 @@
-.product-detail-info .product-brand-logo-wrap {
+.product-detail-info .product-brand-logo-wrap.is-light-wordmark {
   background: linear-gradient(135deg, #eef2ee 0%, #d9e0da 100%);
   border: 1px solid rgba(25, 45, 42, 0.24);
   border-radius: 5px;
@@ -8,16 +8,12 @@
   width: fit-content;
 }
 
-.product-detail-info .product-brand-logo {
+.product-detail-info .product-brand-logo-wrap.is-light-wordmark .product-brand-logo {
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.98)) drop-shadow(0 1px 1px rgba(14, 29, 31, 0.86)) drop-shadow(0 2px 3px rgba(14, 29, 31, 0.58));
 }
 
-.product-detail-info .product-brand-logo-wrap .product-brand {
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.85);
-}
-
 @media (max-width: 640px) {
-  .product-detail-info .product-brand-logo-wrap {
+  .product-detail-info .product-brand-logo-wrap.is-light-wordmark {
     min-height: 40px;
     padding: 0.28rem 0.48rem;
   }

@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { Link, useLocation, useRoute } from "wouter";
 import "./productLogoContrast.css";
 
+const lightWordmarkBrands = new Set(["Ceresit", "FAYANS", "GRONE", "Legrand", "SPIRIT", "Vormann", "Zvezda"]);
+
 export default function Product() {
   const { language, t } = useLanguage();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -60,7 +62,7 @@ export default function Product() {
             <div className="gallery-thumbs" aria-label={language === "en" ? "Product gallery" : "Галерия на продукта"}>{product.gallery.map((image, index) => <button type="button" key={`${image}-${index}`} onClick={() => setSelectedImage(index)} className={selectedImage === index ? "is-active" : ""} aria-label={language === "en" ? `Image ${index + 1} of ${product.gallery.length}` : `Снимка ${index + 1} от ${product.gallery.length}`} aria-pressed={selectedImage === index}><img src={image} alt={`${product.name} — ${language === "en" ? `image ${index + 1}` : `снимка ${index + 1}`}`} /><span>{String(index + 1).padStart(2, "0")}</span></button>)}</div>
           </div>
           <div className="product-detail-info">
-            <div className="product-brand-logo-wrap">{product.brandLogo && failedBrandLogo !== product.brandLogo ? <img className="product-brand-logo" src={product.brandLogo} alt="" onError={() => setFailedBrandLogo(product.brandLogo)} /> : <p className="product-brand">{productBrand}</p>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></div>
+            <div className={`product-brand-logo-wrap${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{product.brandLogo && failedBrandLogo !== product.brandLogo ? <img className="product-brand-logo" src={product.brandLogo} alt="" onError={() => setFailedBrandLogo(product.brandLogo)} /> : <p className="product-brand">{productBrand}</p>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></div>
             <h1>{product.name}</h1>
             <div className={`detail-status detail-status-${product.availabilityCode ?? "on_request"}`}><span />{availabilityLabel}</div>
             <div className="product-spec-pills">{product.features.map((feature) => <span key={feature}><Check size={14} /> {feature}</span>)}</div>

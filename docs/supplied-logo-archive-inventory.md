@@ -23,3 +23,5 @@ The ZIP does not include external source URLs. The owner explicitly instructed p
 After the owner explicitly approved publishing every supplied asset, representative public product-detail checks confirmed that both the original `.UNK` MOTIP file and the Kronotex SVG resolve and display as manufacturer marks above their product titles. The existing `contain` presentation keeps these compact logo marks visible without changing product media or layout.
 
 The subsequent product-detail contrast refinement was verified on a Ceresit product with a white manufacturer mark. The neutral panel and layered shadow keep the white letters visibly separated from the page background while preserving the original logo file unchanged.
+
+Following user feedback, the contrast wrapper was restricted to the visually white-wordmark set: Ceresit, FAYANS, GRONE, Legrand, SPIRIT, Vormann and Zvezda. Public representative checks confirm that Legrand keeps the discreet contrast treatment while the colored Moment mark is rendered without a background panel.
