@@ -28,6 +28,30 @@
 | Vidima | https://www.vidima.bg/ | Not assigned | The official Vidima homepage renders `/images/logo.svg` with the alt text “Vidima logo”, but its origin rejected asset retrieval in the current environment. No unrelated or third-party logo was substituted; the product page retains its text fallback pending a usable first-party capture. |
 | HERLY | https://www.herly.com.tr/en/ | `/manus-storage/herly-official-logo_11de6777.png` | The official HERLY homepage header exposes `https://www.herly.com.tr/en/css_images/logo.png` with the alt text “HERLY | Profesyonel Bahçe Ekipmanları ve Hortumlar”; the asset was downloaded and assigned to the `HERLY` manufacturer record on 2026-08-26. |
 
+| Decorex | https://www.valerii.com/en/decorex-en-gb | Not assigned | The official Valeriy SiM Group page identifies Decorex as its 100% Bulgarian-owned trademark, but it does not expose a standalone Decorex brand-logo asset in the current page rendering. No product-packaging crop, reseller, or unrelated logo was used; the product page retains its text fallback. |
+
+| HARDY | https://hardy.pl/ | `/manus-storage/hardy-official-logo_798a3380.jpg` | The official Hardy Working Tools storefront identifies the relevant painting and surface-preparation product line. Its first-party header asset `https://b.assecobs.com/https://static.connector-b2b.com/design/accounts/kaem/cache1787638599589/img/id/logo.jpg` contains several owner brands; only the standalone HARDY mark was deterministically cropped, then assigned to the `HARDY` manufacturer record on 2026-08-26. The unrelated automotive site at `hardytools.pl` was not used. |
+
+| KAI | https://www.kai.bg/en/ | Not assigned | Search verification identifies KAI Group as the Bulgarian ceramic-tile manufacturer that corresponds to the catalogue products. The canonical official site returned HTTP 503 in the current environment, so no asset was assigned and the product page retains its text fallback. |
+
+| Premium | Not assigned | Not assigned | The active catalogue spans many unrelated product types under the generic “Premium” label. The only existing image reference is a legacy Joan asset, which is not treated as proof of an official source. No canonical manufacturer site was established from first-party evidence, so the product page retains its text fallback. |
+
+| Kraft | https://kraftpaints.com/bg | Not assigned | Official product pages confirm that KRAFT Paints produces the Master, Brilliant and White Primer products in the active catalogue. The official site is CAPTCHA-protected in the current environment and did not expose a retrievable first-party logo asset, so no asset was assigned and the product page retains its text fallback. |
+
+| Cerva | https://www.cerva.com/int/en/ | Not assigned | The official CERVA Group site was reached and confirmed as the relevant PPE manufacturer, but the browser session became unavailable before a first-party header logo asset could be captured. No third-party logo was substituted; the product page retains its text fallback. |
+
+| Motip | https://www.motip.com/en-en/ | Not assigned | The official MOTIP site confirms the brand identity, but currently requires visitor verification before it exposes page assets. No third-party logo was substituted; the product page retains its text fallback pending a directly verifiable first-party asset. |
+
+| Anura | https://www.anuraelectric.com/ | `/manus-storage/anura-official-logo_6730b625.svg` | The official Anura Electrical Systems homepage header exposes `https://www.anuraelectric.com/Content/img/anura-logo.svg`; the asset was downloaded and assigned to the `Anura` manufacturer record on 2026-08-26. |
+
+| Plantella | https://unichem.si/en/brands/plantella | `/manus-storage/plantella-official-logo_5e12b056.svg` | The manufacturer Unichem’s official Plantella brand page exposes `https://cms.unichem.si/api/media/file/plantella-logo.svg`; the asset was downloaded and assigned to the `Plantella` manufacturer record on 2026-08-26. |
+
+| Panda | https://pandasafety.com/company/ | `/manus-storage/panda-official-logo_eca368c5.png` | The official Panda Safety company page identifies the Italian safety-footwear manufacturer and exposes `https://pandasafety.com/wp-content/uploads/2023/01/logo-panda.png` in its header; the asset was downloaded and assigned to the `Panda` manufacturer record on 2026-08-26. |
+
+| CetaForm | https://www.cetaform.com/Home/IndexEn | `/manus-storage/cetaform-official-logo_6ea19675.jpg` | The official Ceta Form manufacturer homepage exposes `https://www.cetaform.com/assets/img/logo.jpg` in its header; the asset was downloaded and assigned to the `CetaForm` manufacturer record on 2026-08-26. |
+
+| DRABEST | https://drabest.com/ | `/manus-storage/drabest-official-logo_15e9693d.png` | The official Drabest manufacturer homepage exposes `https://drabest.com/wp-content/uploads/2024/07/logo_ramka.png` in its header; the asset was downloaded and assigned to the `DRABEST` manufacturer record on 2026-08-26. |
+
 ## Migration rule
 
 Only a logo obtained from the relevant manufacturer’s official public website or official media/brand resource may replace a manufacturer record’s `imageUrl`. The product page retains the manufacturer name as an accessible fallback whenever no verified logo exists or an asset fails to load.
