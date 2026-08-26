@@ -30,6 +30,7 @@ export type ManagedProduct = Product & {
   metaDescription?: string;
   canonicalUrl?: string;
   metaRobots?: string;
+  brandLogo?: string;
 };
 
 const staticCategories = fallbackCategories.map((category) => ({ ...category, subcategories: categoryTreeFor(category.slug, category.subcategories) })) as CatalogueCategory[];

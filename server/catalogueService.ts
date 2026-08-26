@@ -1,7 +1,7 @@
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequests, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 
@@ -212,7 +212,7 @@ function publicCategory(category: typeof catalogueCategories.$inferSelect, engli
   };
 }
 
-function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg") {
+function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null) {
   const translated = language === "en" ? english : undefined;
   return {
     id: product.id,
@@ -220,6 +220,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     legacyPublicSlug: product.legacyPublicSlug ?? undefined,
     sku: product.sku ?? undefined,
     brand: translated?.brand ?? product.brand ?? undefined,
+    brandLogo: brandLogo ?? undefined,
     name: translated?.name ?? product.name,
     image: product.imageUrl,
     gallery: parseJsonArray(product.galleryJson),
@@ -426,10 +427,10 @@ export async function getPublicBestSellers(limit = 8, language: CatalogueLanguag
 export async function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).limit(1);
+  const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).limit(1);
   if (!row) return null;
-  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(eq(catalogueProducts.categoryId, row.product.categoryId), eq(catalogueProducts.isActive, true))).orderBy(desc(catalogueProducts.updatedAt)).limit(4);
-  return { product: publicProduct(row.product, row.category, row.english, language), related: relatedRows.filter((candidate) => candidate.product.id !== row.product.id).slice(0, 3).map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language)) };
+  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
+  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.imageUrl), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language)) };
 }
 
 export async function getPublicProductsBySlugs(slugs: string[], language: CatalogueLanguage = "bg") {

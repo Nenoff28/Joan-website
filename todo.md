@@ -364,3 +364,8 @@
 - [x] Verify the homepage and “За нас” desktop/mobile layouts, TypeScript, tests and production build after the visual revisions.
 - [x] Replace the duplicate public category image so “За дома” and “Баня” use visually distinct assets in desktop and mobile category cards.
 - [x] Increase the brightness and colour richness of category cards with grey/dark imagery while keeping their overlay labels readable on desktop and mobile.
+- [x] Show the primary product image in full with contain-based sizing, without cropping the item or breaking gallery zoom on desktop and mobile.
+- [x] Replace the related-products grid with a compact four-item carousel that can rotate through additional real catalogue products using accessible controls.
+- [x] Replace the textual brand label above a product with the manufacturer logo when an approved logo asset is available, while retaining an accessible text fallback.
+- [x] Verify product detail image, brand logo and related-product carousel flows on desktop/mobile with regression coverage, TypeScript, tests and production build.
+- [ ] Source and validate available manufacturer logo assets from the respective official manufacturer websites before using them in product detail presentation.
