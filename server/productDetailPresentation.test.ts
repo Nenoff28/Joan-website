@@ -23,6 +23,8 @@ describe("product detail presentation", () => {
   it("passes a matching manufacturer logo to the product detail with text fallback", () => {
     expect(catalogueService).toContain('catalogueManufacturers');
     expect(catalogueService).toContain('brandLogo: brandLogo ?? undefined');
+    expect(catalogueService).toContain('row.manufacturer?.officialLogoUrl');
+    expect(catalogueService).not.toContain('row.manufacturer?.imageUrl');
     expect(productPage).toContain('className="product-brand-logo"');
     expect(productPage).toContain('setFailedBrandLogo(product.brandLogo)');
   });

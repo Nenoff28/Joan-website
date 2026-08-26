@@ -5,7 +5,9 @@
 | Manufacturer | Official source | Stored website asset | Verification |
 | --- | --- | --- | --- |
 | Bosch | https://www.bosch.com/ | `/manus-storage/bosch-official-logo_b237cd78.svg` | The Bosch Global header embeds the corporate vector mark; the extracted SVG was stored as a managed website asset and assigned to the `Bosch` manufacturer record on 2026-08-26. |
-| Stenso | https://stenso.net/ | Pending download from `https://stenso.net/img/stensonet-logo-1689152895.jpg` | The official Stenso site header exposes this logo image with the alt text “Работно облекло Stenso.net”; it is queued for managed-storage download and verification. |
+| Stenso | https://stenso.net/ | `/manus-storage/stenso-official-logo_0a9dd11b.jpg` | The official Stenso site header exposes `https://stenso.net/img/stensonet-logo-1689152895.jpg` with the alt text “Работно облекло Stenso.net”; the image was downloaded and assigned to the `Stenso` manufacturer record on 2026-08-26. |
+| Tesy | https://tesy.com/ | `/manus-storage/tesy-official-logo_2156aa8b.svg` | The official Tesy homepage header exposes `https://tesy.com/web/images/logo_180px.svg` with the alt text “TESY”; the SVG was downloaded and assigned to the `Tesy` manufacturer record on 2026-08-26. |
+| Raider | https://www.raider.bg/ | `/manus-storage/raider-official-logo_3cc1d215.png` | The official Raider homepage exposes `https://www.raider.bg/assets/img/logo.png` as “Raider Power Tools”; the image was downloaded and assigned to the `Raider` manufacturer record on 2026-08-26. |
 
 ## Migration rule
 
