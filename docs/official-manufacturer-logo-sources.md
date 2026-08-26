@@ -14,6 +14,7 @@
 | ЕЛДОМ | https://eldominvest.com/ | `/manus-storage/eldom-official-logo_cdeb1b9c.svg` | The official Елдоминвест homepage header exposes `https://eldominvest.com/media/logo/logo_bg_slogan_r.svg` with the company description as alt text; the asset was downloaded and assigned to the `ЕЛДОМ` manufacturer record on 2026-08-26. |
 | Roto | https://ftt.roto-frank.com/int-en/ | `/manus-storage/roto-official-logo_dffca1b9.svg` | The official Roto FTT International header exposes `https://ftt.roto-frank.com/_assets/46878c2199192703d227192bc8e34ba5/Images/logo.svg` as its “international logo”; the asset was downloaded and assigned to the `Roto` manufacturer record on 2026-08-26. |
 | Vormann | https://www.vormann.com/ | `/manus-storage/vormann-official-logo_8767428b.svg` | The official August Vormann site exposes `https://www.vormann.com/_Resources/Static/Packages/AugustVormann.Site/Images/logo_footer.svg` as “August Vormann Logo”; the asset was downloaded and assigned to the `Vormann` manufacturer record on 2026-08-26. |
+| Sika | https://bgr.sika.com/ | `/manus-storage/sika-official-logo_6d952009.png` | The official Sika Bulgaria homepage header exposes `https://sika.scene7.com/is/image/sika/Sika_NoClaim_pos_rgb_mobile?wid=160&hei=138&fit=crop%2C1` as “Logo”; the asset was downloaded and assigned to the `Sika` manufacturer record on 2026-08-26. |
 
 ## Migration rule
 
