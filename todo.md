@@ -371,5 +371,6 @@
 - [x] Source and validate available manufacturer logo assets from the respective official manufacturer websites before using them in product detail presentation.
 - [x] Continue official-logo source verification for remaining brands in descending active-product volume, beginning with Premium, HARDY, Генковски, Kittfort, ЛЕКО, KAI, Dr Fresh, BSafe and Inter Ceramic.
 - [x] Store verified official logo URL, source URL and verification timestamp separately from legacy manufacturer image data, and render only verified official assets as product-page logos.
-- [ ] Inventory the user-supplied logo archive, map its variants to exact catalogue manufacturers, and select only appropriate official assets.
-- [ ] Verify provenance, upload approved supplied logo assets, update official metadata and audit trail, then run regression validation.
+- [x] Inventory the user-supplied logo archive, map its variants to exact catalogue manufacturers, and select only appropriate official assets.
+- [x] Verify provenance, upload approved supplied logo assets, update official metadata and audit trail, then run regression validation.
+- [x] Publish every user-supplied logo asset to its exact matching catalogue manufacturer, using the best supplied variant when a folder contains alternatives.
