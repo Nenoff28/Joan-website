@@ -362,3 +362,4 @@
 - [x] Brighten and colour-balance the homepage generated category imagery while preserving readable overlay text and responsive crop behaviour.
 - [x] Remove category sequence numbers and remove the homepage “Планирате ремонт?” guide plus the two-image company statistic section shown in the supplied reference.
 - [x] Verify the homepage and “За нас” desktop/mobile layouts, TypeScript, tests and production build after the visual revisions.
+- [x] Replace the duplicate public category image so “За дома” and “Баня” use visually distinct assets in desktop and mobile category cards.
