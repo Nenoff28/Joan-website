@@ -8,6 +8,7 @@
 | Stenso | https://stenso.net/ | `/manus-storage/stenso-official-logo_0a9dd11b.jpg` | The official Stenso site header exposes `https://stenso.net/img/stensonet-logo-1689152895.jpg` with the alt text “Работно облекло Stenso.net”; the image was downloaded and assigned to the `Stenso` manufacturer record on 2026-08-26. |
 | Tesy | https://tesy.com/ | `/manus-storage/tesy-official-logo_2156aa8b.svg` | The official Tesy homepage header exposes `https://tesy.com/web/images/logo_180px.svg` with the alt text “TESY”; the SVG was downloaded and assigned to the `Tesy` manufacturer record on 2026-08-26. |
 | Raider | https://www.raider.bg/ | `/manus-storage/raider-official-logo_3cc1d215.png` | The official Raider homepage exposes `https://www.raider.bg/assets/img/logo.png` as “Raider Power Tools”; the image was downloaded and assigned to the `Raider` manufacturer record on 2026-08-26. |
+| Vivalux | https://vivalux.bg/bg | `/manus-storage/vivalux-official-logo_510649d3.png` | The official Vivalux homepage header exposes its visual “Logo” asset as an embedded image; it was saved directly from the official page header, uploaded and assigned to the `Vivalux` manufacturer record on 2026-08-26. |
 
 ## Migration rule
 
