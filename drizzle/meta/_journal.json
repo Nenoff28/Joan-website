@@ -71,6 +71,20 @@
       "when": 1787438299970,
       "tag": "0009_violet_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787682775460,
+      "tag": "0010_hesitant_randall",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1787682939194,
+      "tag": "0011_loving_electro",
+      "breakpoints": true
     }
   ]
 }

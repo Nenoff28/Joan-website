@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { categories as fallbackCategories, products as fallbackProducts, type Product } from "@/lib/storeData";
 import { categoryTreeFor, type CategoryNode } from "@/lib/categoryHierarchy";
 
@@ -52,22 +53,26 @@ export type CataloguePageInput = {
 };
 
 export function useCatalogue() {
-  const query = trpc.catalogue.metadata.useQuery(undefined, { staleTime: 300_000, retry: 1 });
+  const { language } = useLanguage();
+  const query = trpc.catalogue.metadata.useQuery({ language }, { staleTime: 300_000, retry: 1 });
   return { categories: publicCategories(query.data), products: staticProducts, isLoading: query.isLoading, isDatabaseCatalogue: Boolean(query.data), error: query.error };
 }
 
 export function useCataloguePage(input: CataloguePageInput) {
-  const query = trpc.catalogue.page.useQuery(input, { staleTime: 60_000, retry: 1 });
+  const { language } = useLanguage();
+  const query = trpc.catalogue.page.useQuery({ ...input, language }, { staleTime: 60_000, retry: 1 });
   return { ...query, products: (query.data?.products ?? []) as ManagedProduct[], total: query.data?.total ?? 0, brands: query.data?.brands ?? [], page: query.data?.page ?? input.page, pageSize: query.data?.pageSize ?? input.pageSize };
 }
 
 export function useCatalogueProduct(slug: string | undefined) {
-  const query = trpc.catalogue.product.useQuery({ slug: slug ?? "missing-product" }, { enabled: Boolean(slug), staleTime: 60_000, retry: 1 });
+  const { language } = useLanguage();
+  const query = trpc.catalogue.product.useQuery({ slug: slug ?? "missing-product", language }, { enabled: Boolean(slug), staleTime: 60_000, retry: 1 });
   return { ...query, product: query.data?.product as ManagedProduct | undefined, related: (query.data?.related ?? []) as ManagedProduct[] };
 }
 
 export function useCatalogueProducts(slugs: string[]) {
+  const { language } = useLanguage();
   const stableSlugs = Array.from(new Set(slugs)).sort();
-  const query = trpc.catalogue.productsBySlugs.useQuery({ slugs: stableSlugs.length ? stableSlugs : ["missing-product"] }, { enabled: stableSlugs.length > 0, staleTime: 60_000, retry: 1 });
+  const query = trpc.catalogue.productsBySlugs.useQuery({ slugs: stableSlugs.length ? stableSlugs : ["missing-product"], language }, { enabled: stableSlugs.length > 0, staleTime: 60_000, retry: 1 });
   return { ...query, products: (query.data ?? []) as ManagedProduct[] };
 }

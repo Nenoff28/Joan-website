@@ -170,6 +170,38 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("products_category_active_idx").on(table.categoryId, table.isActive), index("products_active_updated_idx").on(table.isActive, table.updatedAt)]);
 
+/** English customer-facing content is stored separately so imported Bulgarian source data remains immutable. */
+export const catalogueProductEnglish = mysqlTable("catalogue_product_english", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull().unique().references(() => catalogueProducts.id),
+  brand: varchar("brand", { length: 160 }),
+  name: varchar("name", { length: 500 }).notNull(),
+  description: text("description").notNull(),
+  imageAlt: text("imageAlt").notNull(),
+  featuresJson: text("featuresJson").notNull(),
+  seoKeywords: varchar("seoKeywords", { length: 255 }),
+  seoTitle: varchar("seoTitle", { length: 500 }),
+  seoDescription: text("seoDescription"),
+  sourceContentHash: varchar("sourceContentHash", { length: 64 }).notNull(),
+  translatedAt: timestamp("translatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** English root-category labels, descriptions and nested navigation trees remain independent from Bulgarian import data. */
+export const catalogueCategoryEnglish = mysqlTable("catalogue_category_english", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull().unique().references(() => catalogueCategories.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  subcategoriesJson: text("subcategoriesJson").notNull(),
+  seoKeywords: varchar("seoKeywords", { length: 255 }),
+  seoTitle: varchar("seoTitle", { length: 500 }),
+  seoDescription: text("seoDescription"),
+  sourceContentHash: varchar("sourceContentHash", { length: 64 }).notNull(),
+  translatedAt: timestamp("translatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /** Imported OpenCart manufacturer records retain their original identity and public metadata. */
 export const catalogueManufacturers = mysqlTable("catalogue_manufacturers", {
   id: int("id").autoincrement().primaryKey(),
@@ -268,6 +300,8 @@ export type LegacyCustomerOrder = typeof legacyCustomerOrders.$inferSelect;
 export type LegacyCustomerOrderLine = typeof legacyCustomerOrderLines.$inferSelect;
 export type CatalogueCategory = typeof catalogueCategories.$inferSelect;
 export type CatalogueProduct = typeof catalogueProducts.$inferSelect;
+export type CatalogueProductEnglish = typeof catalogueProductEnglish.$inferSelect;
+export type CatalogueCategoryEnglish = typeof catalogueCategoryEnglish.$inferSelect;
 export type CatalogueManufacturer = typeof catalogueManufacturers.$inferSelect;
 export type CatalogueProductCategoryLink = typeof catalogueProductCategoryLinks.$inferSelect;
 export type OrderRequest = typeof orderRequests.$inferSelect;

@@ -50,8 +50,9 @@ describe("3D brochure viewer", () => {
     expect(homeSource).toContain("Строителни материали");
     expect(homeSource).not.toContain("style={{fontSize: '55px'}}");
     expect(styleSource).toContain(".brochure-heading-meta b { font-size: .9375rem;");
-    expect(styleSource).toContain('.hero-content h1::before { content: "Строителни материали"; }');
-    expect(styleSource).toContain('.hero-content h1::after { color: #f2c9c8; content: "и инструменти"; }');
+    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}</h1>');
+    expect(homeSource).not.toContain('и инструменти</span>');
+    expect(styleSource).toContain('.home-hero .hero-content h1::before, .home-hero .hero-content h1::after { content: none !important; display: none !important; }');
   });
 
   it("advances every seven seconds without presenting a pause control", () => {

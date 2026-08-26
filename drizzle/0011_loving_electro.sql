@@ -1,0 +1,1 @@
+ALTER TABLE `catalogue_product_english` ADD `brand` varchar(160);

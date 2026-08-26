@@ -353,3 +353,12 @@
 - [x] Create complete DATABASE_MIGRATION.md with backup, restore, validation queries, record counts and zero-data-loss cutover procedure.
 - [x] Create complete DISASTER_RECOVERY.md with backup retention, incident escalation, DNS rollback and recovery verification procedure.
 - [x] Prepare portable SuperHosting deployment, rollback, and cPanel staging materials for both Node.js App and no-Node scenarios before cPanel access is available.
+- [ ] Audit every public catalogue category, product name, product description, feature and SEO field that remains Bulgarian when the English language mode is selected.
+- [ ] Add a reversible English catalogue-content model and generate reviewed English translations without modifying Bulgarian source data, prices, SKU values or product IDs.
+- [ ] Render English category, product-listing and product-detail content from the English catalogue fields while preserving Bulgarian output in BG mode.
+- [ ] Verify no Bulgarian catalogue copy remains in the English storefront through automated coverage, representative browser QA, TypeScript, tests and production build.
+- [x] Move the homepage hero video into the public “За нас” page and remove the video hero from the homepage without changing the media asset itself.
+- [x] Simplify the homepage hero headline to “Строителни материали” / “Building materials” and remove the second line about tools.
+- [x] Brighten and colour-balance the homepage generated category imagery while preserving readable overlay text and responsive crop behaviour.
+- [x] Remove category sequence numbers and remove the homepage “Планирате ремонт?” guide plus the two-image company statistic section shown in the supplied reference.
+- [x] Verify the homepage and “За нас” desktop/mobile layouts, TypeScript, tests and production build after the visual revisions.

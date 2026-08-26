@@ -71,8 +71,9 @@ describe("public English localization", () => {
   });
 
   it("keeps the visually rendered homepage hero heading in English after the toggle", () => {
-    expect(stylesheetSource).toContain('html[lang="en"] .hero-content h1::before { content: "Building materials"; }');
-    expect(stylesheetSource).toContain('html[lang="en"] .hero-content h1::after { content: "and tools"; }');
+    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}</h1>');
+    expect(homeSource).not.toContain('and tools</span>');
+    expect(stylesheetSource).toContain('.home-hero .hero-content h1::before, .home-hero .hero-content h1::after { content: none !important; display: none !important; }');
   });
 
   it("keeps CSS-generated Product and Favorites labels in English after the toggle", () => {
@@ -84,7 +85,7 @@ describe("public English localization", () => {
   it("presents the Joan address in English without changing the underlying business record", () => {
     expect(contactSource).toContain('en ? "Silistra, 22 Tutrakan St." : store.address');
     expect(storefrontSource).toContain('language === "en" ? "Silistra, 22 Tutrakan St." : store.address');
-    expect(homeSource).toContain('en ? "22 Tutrakan St." : store.address');
+    expect(homeSource).not.toContain('en ? "22 Tutrakan St." : store.address');
     expect(returnsSource).toContain('en ? "Silistra, 22 Tutrakan St." : store.address');
   });
 });

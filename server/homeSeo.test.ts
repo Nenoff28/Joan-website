@@ -9,9 +9,9 @@ const htmlTemplate = readFileSync(resolve(process.cwd(), "client/index.html"), "
 
 describe("homepage SEO audit regressions", () => {
   it("uses the same relevant construction-material keywords in title, description, and H1", () => {
-    expect(homeSource).toContain('title={en ? "Building materials and tools" : "Строителни материали и инструменти"}');
-    expect(homeSource).toContain("ЖОАН в Силистра: строителни материали, инструменти");
-    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}<br /><span>{en ? "and tools" : "и инструменти"}</span></h1>');
+    expect(homeSource).toContain('title={en ? "Building materials" : "Строителни материали"}');
+    expect(homeSource).toContain("ЖОАН в Силистра: строителни материали, продукти за дома и градината.");
+    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}</h1>');
     expect(prefetchSource).toContain("HOME_TITLE");
     expect(prefetchSource).toContain("HOME_DESCRIPTION");
   });
@@ -32,12 +32,21 @@ describe("homepage SEO audit regressions", () => {
     expect(prefetchSource).toContain("const headerSearchPromise = prefetch.page(headerSearch)");
   });
 
-  it("includes useful catalogue guidance, a textual label for the icon-only link, and an Apple touch icon", () => {
-    expect(homeSource).toContain("<HomeCatalogueGuide />");
-    expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Изберете материали и инструменти според задачата.");
-    expect(readFileSync(resolve(process.cwd(), "client/src/components/HomeCatalogueGuide.tsx"), "utf8")).toContain("Building materials for renovation");
-    expect(homeSource).toContain('<span className="sr-only">{en ? "Go to product search" : "Към продуктовото търсене"}</span>');
+  it("keeps the homepage focused after removing the guide and company-statistic blocks", () => {
+    expect(homeSource).not.toContain("<HomeCatalogueGuide />");
+    expect(homeSource).not.toContain('className="project-bay"');
+    expect(homeSource).not.toContain('className="page-frame company-split"');
     expect(htmlTemplate).toContain('rel="apple-touch-icon"');
+  });
+
+  it("moves the Joan video to About and keeps category cards unnumbered and colour-treated", () => {
+    const aboutSource = readFileSync(resolve(process.cwd(), "client/src/pages/About.tsx"), "utf8");
+    const stylesheet = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+    expect(homeSource).not.toContain('className="hero-video"');
+    expect(aboutSource).toContain('className="about-video"');
+    expect(aboutSource).toContain('src="/manus-storage/joan-hero_0c2a067a.mp4"');
+    expect(stylesheet).toContain('.feature-category-card::before, .feature-category-card::after, .all-category-grid .feature-category-card::before, .all-category-grid .feature-category-card::after { content: none !important; }');
+    expect(stylesheet).toContain('filter: saturate(1.48) brightness(1.22) contrast(1.05) !important;');
   });
 
   it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {

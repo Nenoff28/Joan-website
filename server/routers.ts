@@ -49,7 +49,10 @@ const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
 const contactEnquiryStatusSchema = z.enum(["new", "contacted", "closed"]);
 const catalogueSortSchema = z.enum(["relevance", "price-asc", "price-desc", "name-asc", "name-desc"]);
+const catalogueLanguageSchema = z.enum(["bg", "en"]);
+const publicCatalogueLanguageInput = z.object({ language: catalogueLanguageSchema }).optional();
 const publicCataloguePageSchema = z.object({
+  language: catalogueLanguageSchema.optional(),
   page: z.number().int().min(1).max(10_000),
   pageSize: z.number().int().min(1).max(48),
   categorySlug: z.string().trim().min(3).max(128).regex(/^[a-z0-9-]+$/).optional(),
@@ -112,12 +115,12 @@ export const appRouter = router({
     }),
   }),
   catalogue: router({
-    list: publicProcedure.query(() => getPublicCatalogue()),
-    metadata: publicProcedure.query(() => getPublicCatalogueMetadata()),
+    list: publicProcedure.input(publicCatalogueLanguageInput).query(({ input }) => getPublicCatalogue(input?.language)),
+    metadata: publicProcedure.input(publicCatalogueLanguageInput).query(({ input }) => getPublicCatalogueMetadata(input?.language)),
     page: publicProcedure.input(publicCataloguePageSchema).query(({ input }) => getPublicCataloguePage(input)),
-    bestSellers: publicProcedure.query(() => getPublicBestSellers(8)),
-    product: publicProcedure.input(z.object({ slug: z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/) })).query(({ input }) => getPublicProductBySlug(input.slug)),
-    productsBySlugs: publicProcedure.input(z.object({ slugs: z.array(z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/)).min(1).max(99) })).query(({ input }) => getPublicProductsBySlugs(input.slugs)),
+    bestSellers: publicProcedure.input(publicCatalogueLanguageInput).query(({ input }) => getPublicBestSellers(8, input?.language)),
+    product: publicProcedure.input(z.object({ slug: z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/), language: catalogueLanguageSchema.optional() })).query(({ input }) => getPublicProductBySlug(input.slug, input.language)),
+    productsBySlugs: publicProcedure.input(z.object({ slugs: z.array(z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/)).min(1).max(99), language: catalogueLanguageSchema.optional() })).query(({ input }) => getPublicProductsBySlugs(input.slugs, input.language)),
     brochure: publicProcedure.query(() => getPublicBrochure()),
     createOrderRequest: publicProcedure.input(z.object({
       productSlug: z.string().trim().min(3).max(160),

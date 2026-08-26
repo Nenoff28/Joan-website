@@ -10,10 +10,11 @@ describe("public catalogue availability ordering", () => {
   });
 
   it("applies the out-of-stock priority before relevance, price, and name sorting", () => {
-    expect(catalogueService).toContain('return [outOfStockLast, asc(catalogueProducts.priceEur), asc(catalogueProducts.name)]');
-    expect(catalogueService).toContain('return [outOfStockLast, desc(catalogueProducts.priceEur), asc(catalogueProducts.name)]');
-    expect(catalogueService).toContain('return [outOfStockLast, asc(catalogueProducts.name)]');
-    expect(catalogueService).toContain('return [outOfStockLast, desc(catalogueProducts.name)]');
-    expect(catalogueService).toContain('return [outOfStockLast, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)]');
+    expect(catalogueService).toContain('const name = language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.name}, ${catalogueProducts.name})` : catalogueProducts.name;');
+    expect(catalogueService).toContain('return [outOfStockLast, asc(catalogueProducts.priceEur), asc(name)]');
+    expect(catalogueService).toContain('return [outOfStockLast, desc(catalogueProducts.priceEur), asc(name)]');
+    expect(catalogueService).toContain('return [outOfStockLast, asc(name)]');
+    expect(catalogueService).toContain('return [outOfStockLast, desc(name)]');
+    expect(catalogueService).toContain('return [outOfStockLast, desc(catalogueProducts.updatedAt), asc(name)]');
   });
 });
