@@ -369,4 +369,5 @@
 - [x] Replace the textual brand label above a product with the manufacturer logo when an approved logo asset is available, while retaining an accessible text fallback.
 - [x] Verify product detail image, brand logo and related-product carousel flows on desktop/mobile with regression coverage, TypeScript, tests and production build.
 - [ ] Source and validate available manufacturer logo assets from the respective official manufacturer websites before using them in product detail presentation.
+- [ ] Continue official-logo source verification for remaining brands in descending active-product volume, beginning with Premium, HARDY, Генковски, Kittfort, ЛЕКО, KAI, Dr Fresh, BSafe and Inter Ceramic.
 - [x] Store verified official logo URL, source URL and verification timestamp separately from legacy manufacturer image data, and render only verified official assets as product-page logos.
