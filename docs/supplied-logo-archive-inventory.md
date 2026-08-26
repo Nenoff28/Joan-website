@@ -33,3 +33,5 @@ The Premium asset was deterministically trimmed and its standard catalogue card 
 The product-detail review for structured technical data identified a conservative parser edge case: short packaging or quantity values such as “Туба 5 кг” and “280 мл” can appear without a key/value colon. The presentation parser now labels these deterministic units without modifying source descriptions, while longer prose remains in the Description section.
 
 Desktop and mobile checks confirm the desired presentation: descriptive prose remains in the Description area, while labelled pairs, concise bullet characteristics, quantities, packaging values and model fields render as alternating Technical data rows. A product whose copy is entirely a concise list of characteristics shows a full-width Technical data block rather than duplicating those lines as free text.
+
+The About page video is now the leading page section. Desktop and mobile visual checks confirm that the former homepage presentation copy — the “Строителни материали” heading, Joan hypermarket kicker and supporting line — overlays the video with readable contrast before the company story starts.
