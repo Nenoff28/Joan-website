@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 const productPage = readFileSync(resolve(process.cwd(), "client/src/pages/Product.tsx"), "utf8");
 const catalogueService = readFileSync(resolve(process.cwd(), "server/catalogueService.ts"), "utf8");
 const stylesheet = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+const storefront = readFileSync(resolve(process.cwd(), "client/src/components/Storefront.tsx"), "utf8");
+const cardLogoStylesheet = readFileSync(resolve(process.cwd(), "client/src/components/productCardBrandLogo.css"), "utf8");
 
 describe("product detail presentation", () => {
   it("keeps the full primary image inside a contain-based gallery stage", () => {
@@ -27,5 +29,15 @@ describe("product detail presentation", () => {
     expect(catalogueService).not.toContain('row.manufacturer?.imageUrl');
     expect(productPage).toContain('className="product-brand-logo"');
     expect(productPage).toContain('setFailedBrandLogo(product.brandLogo)');
+  });
+
+  it("passes verified manufacturer logos to catalogue cards with a text fallback", () => {
+    expect(catalogueService).toContain('leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name))');
+    expect(catalogueService).toContain('row.manufacturer?.officialLogoUrl');
+    expect(catalogueService).not.toContain('manufacturer?.imageUrl');
+    expect(storefront).toContain('className="product-card-brand-logo"');
+    expect(storefront).toContain('product.brandLogo && !failedBrandLogo');
+    expect(storefront).toContain('setFailedBrandLogo(true)');
+    expect(cardLogoStylesheet).toContain('.product-card .product-card-brand-logo');
   });
 });

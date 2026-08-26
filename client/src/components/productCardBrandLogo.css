@@ -1,0 +1,33 @@
+.product-card .product-card-brand {
+  align-items: center;
+  display: flex;
+  height: 17px;
+  margin-bottom: 0.34rem;
+}
+
+.product-card .product-card-brand-logo {
+  display: block;
+  max-height: 17px;
+  max-width: 94px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.product-card .product-card-brand.is-light-wordmark {
+  background: linear-gradient(135deg, #eef2ee 0%, #d9e0da 100%);
+  border: 1px solid rgba(25, 45, 42, 0.24);
+  border-radius: 3px;
+  box-shadow: 0 2px 5px rgba(15, 31, 28, 0.1);
+  min-height: 21px;
+  padding: 0.12rem 0.28rem;
+  width: fit-content;
+}
+
+.product-card .product-card-brand.is-light-wordmark .product-card-brand-logo {
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.98)) drop-shadow(0 1px 1px rgba(14, 29, 31, 0.86));
+}
+
+.product-card-compact .product-card-brand-logo {
+  max-height: 15px;
+  max-width: 80px;
+}

@@ -45,6 +45,9 @@ import {
 } from "lucide-react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import "./productCardBrandLogo.css";
+
+const lightWordmarkBrands = new Set(["Ceresit", "FAYANS", "GRONE", "Legrand", "SPIRIT", "Vormann", "Zvezda"]);
 
 const categoryIcons = {
   drill: Drill,
@@ -354,8 +357,10 @@ export function ProductCard({ product, compact = false }: { product: Product; co
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addItem } = useCart();
   const [, setLocation] = useLocation();
+  const [failedBrandLogo, setFailedBrandLogo] = useState(false);
   const favorite = isFavorite(product.slug);
   const isOutOfStock = product.availabilityCode === "out_of_stock";
+  const productBrand = product.brand || "ЖОАН";
   function handleFavorite() {
     toggleFavorite(product.slug);
     toast(favorite ? t("removedFromFavorites") : t("addedToFavorites"));
@@ -368,7 +373,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         <Link href={`/product/${product.slug}`}><img src={product.image} alt={product.imageAlt || product.name} loading={compact ? "lazy" : "eager"} /></Link>
       </div>
       <div className="product-card-body">
-        <p className="product-brand">{product.brand || "ЖОАН"}</p>
+        <p className={`product-brand product-card-brand${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{product.brandLogo && !failedBrandLogo ? <img className="product-card-brand-logo" src={product.brandLogo} alt="" onError={() => setFailedBrandLogo(true)} /> : <span>{productBrand}</span>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></p>
         <Link href={`/product/${product.slug}`} className="product-title">{product.name}</Link>
         {!compact && <p className="product-features">{product.features.slice(0, 2).join(" · ")}</p>}
         <div className="product-buy-row">

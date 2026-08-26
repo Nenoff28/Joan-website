@@ -259,9 +259,9 @@ export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
   const db = await requireDb();
   const [categoryRows, productRows] = await Promise.all([
     db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(eq(catalogueCategories.isActive, true)).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(desc(catalogueProducts.updatedAt)),
+    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(desc(catalogueProducts.updatedAt)),
   ]);
-  return { categories: categoryRows.map((row) => publicCategory(row.category, row.english, language)), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language)) };
+  return { categories: categoryRows.map((row) => publicCategory(row.category, row.english, language)), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)) };
 }
 
 export type PublicCataloguePageInput = {
@@ -389,8 +389,8 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
   const order = publicCatalogueOrder(input.sort, language);
   const withPath = pathCategoryIds.length > 0;
   const selectProducts = withPath
-    ? db.selectDistinct({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
-    : db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...conditions)).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize);
+    ? db.selectDistinct({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
+    : db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(...conditions)).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize);
   const countRows = withPath
     ? await db.select({ total: countDistinct(catalogueProducts.id) }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
     : await db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...conditions));
@@ -398,7 +398,7 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
     selectProducts,
     db.select({ brand: language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...publicCatalogueConditions({ ...input, language, brand: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand).orderBy(asc(language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand)),
   ]);
-  return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language)), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
+  return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
 }
 
 /** Aggregated historical quantities are used only for transparent public popularity ordering. */
@@ -413,15 +413,16 @@ export async function getPublicBestSellers(limit = 8, language: CatalogueLanguag
     .groupBy(legacyCustomerOrderLines.legacyProductId)
     .as("historical_product_quantities");
   const rows = await db
-    .select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, units: quantityTotals.units })
+    .select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers, units: quantityTotals.units })
     .from(quantityTotals)
     .innerJoin(catalogueProducts, eq(catalogueProducts.legacyProductId, quantityTotals.legacyProductId))
     .innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id))
     .leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id))
+    .leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name))
     .where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)))
     .orderBy(desc(quantityTotals.units), desc(catalogueProducts.updatedAt), asc(catalogueProducts.name))
     .limit(cappedLimit);
-  return rows.map((row) => publicProduct(row.product, row.category, row.english, language));
+  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl));
 }
 
 export async function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
@@ -429,16 +430,16 @@ export async function getPublicProductBySlug(slug: string, language: CatalogueLa
   const db = await requireDb();
   const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).limit(1);
   if (!row) return null;
-  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
-  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language)) };
+  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
+  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl)) };
 }
 
 export async function getPublicProductsBySlugs(slugs: string[], language: CatalogueLanguage = "bg") {
   if (!slugs.length) return [];
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)));
-  return rows.map((row) => publicProduct(row.product, row.category, row.english, language));
+  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)));
+  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl));
 }
 
 export async function getPublicSitemapEntries() {

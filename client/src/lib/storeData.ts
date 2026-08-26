@@ -3,6 +3,7 @@ import { categoryTreeFor } from "./categoryHierarchy";
 export type Product = {
   slug: string;
   brand?: string;
+  brandLogo?: string;
   name: string;
   image: string;
   gallery: string[];
