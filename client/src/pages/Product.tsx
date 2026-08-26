@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Link, useLocation, useRoute } from "wouter";
 import "./productLogoContrast.css";
+import "./productTechnicalSpecs.css";
 
 const lightWordmarkBrands = new Set(["Ceresit", "FAYANS", "GRONE", "Legrand", "SPIRIT", "Vormann", "Zvezda"]);
 
@@ -48,6 +49,7 @@ export default function Product() {
   const carouselProducts = carouselSize ? Array.from({ length: carouselSize }, (_, offset) => related[(relatedStart + offset) % related.length]) : [];
   const rotateRecommendations = (direction: 1 | -1) => setRelatedStart((current) => related.length ? (current + direction + related.length) % related.length : 0);
   const productBrand = product.brand || "ЖОАН";
+  const technicalSpecs = product.technicalSpecs?.length ? product.technicalSpecs : product.features.map((value) => ({ label: t("characteristic"), value }));
 
   return <Layout>
     <PageMeta title={product.metaTitle || product.name} description={product.metaDescription || product.description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}/product/${product.slug}`} metaRobots={product.metaRobots || "index,follow"} />
@@ -56,7 +58,7 @@ export default function Product() {
       <div className="page-frame">
         <Breadcrumbs items={[{ label: category?.label || (language === "en" ? "Catalogue" : "Каталог"), href: `/category/${product.category}` }, { label: product.name }]} />
         <section className="product-detail">
-          <div className="product-gallery">
+          <div className="product-gallery" style={{ background: "#ffffff" }}>
             <div className="gallery-accent">{product.discount ? `${t("promo")} ${product.discount}` : availabilityLabel}</div>
             <button type="button" className="gallery-stage" onClick={() => setIsZoomed(true)} aria-label={language === "en" ? "Zoom product image" : "Приближете снимката на продукта"}><img src={activeImage} alt={product.imageAlt || product.name} /><span><ZoomIn size={16} /> {language === "en" ? "Zoom" : "Приближи"}</span></button>
             <div className="gallery-thumbs" aria-label={language === "en" ? "Product gallery" : "Галерия на продукта"}>{product.gallery.map((image, index) => <button type="button" key={`${image}-${index}`} onClick={() => setSelectedImage(index)} className={selectedImage === index ? "is-active" : ""} aria-label={language === "en" ? `Image ${index + 1} of ${product.gallery.length}` : `Снимка ${index + 1} от ${product.gallery.length}`} aria-pressed={selectedImage === index}><img src={image} alt={`${product.name} — ${language === "en" ? `image ${index + 1}` : `снимка ${index + 1}`}`} /><span>{String(index + 1).padStart(2, "0")}</span></button>)}</div>
@@ -72,7 +74,7 @@ export default function Product() {
             <div className="detail-assurances"><p><Truck size={18} /><span><b>{t("deliveryAfterConfirmation")}</b>{t("deliveryDetails")}</span></p><p><ShieldCheck size={18} /><span><b>{t("exactTeamInfo")}</b>{t("exactTeamInfoDetail")}</span></p></div>
           </div>
         </section>
-        <section className="product-information"><div><p className="eyebrow">{t("description")}</p><h2>{t("aboutProduct")}</h2><p>{product.description}</p></div><div className="spec-table"><p className="eyebrow">{t("availableInfo")}</p><h2>{t("technicalData")}</h2>{product.features.map((feature) => <div key={feature}><span>{t("characteristic")}</span><b>{feature}</b></div>)}<div><span>{t("category")}</span><Link href={`/category/${product.category}`}>{category?.label}</Link></div></div></section>
+        <section className={`product-information${product.description ? "" : " product-information-specs-only"}`}>{product.description ? <div><p className="eyebrow">{t("description")}</p><h2>{t("aboutProduct")}</h2><p>{product.description}</p></div> : null}<div className="spec-table"><p className="eyebrow">{t("availableInfo")}</p><h2>{t("technicalData")}</h2>{technicalSpecs.map((specification, index) => <div className={`specification-row ${index % 2 === 0 ? "is-muted" : ""}`} key={`${specification.label}-${specification.value}`}><span>{specification.label}</span><b>{specification.value}</b></div>)}<div className="specification-row"><span>{t("category")}</span><Link href={`/category/${product.category}`}>{category?.label}</Link></div></div></section>
         <section className="reviews-section"><SectionHeading eyebrow={t("reviewsEyebrow")} title={t("reviewsTitle")} text={t("verifiedFeedback")} /><div className="reviews-empty-state"><div className="review-state-icon"><MessageSquareText size={25} /></div><div><p className="eyebrow">{t("verifiedFeedback")}</p><h3>{t("noReviews")}</h3><p>{t("noReviewsDetail")}</p><button type="button" onClick={() => toast(t("reviewActionToast"))}>{t("reviewAction")} <ChevronRight size={16} /></button></div></div></section>
         <section className="related-section"><SectionHeading eyebrow={t("catalogue")} title={t("recommendations")} text={t("recommendationsText")} /><div className="related-carousel"><div className="related-carousel-track" aria-live="polite">{carouselProducts.map((item) => <ProductCard key={item.slug} product={item} compact />)}</div>{related.length > 4 && <div className="related-carousel-controls"><button type="button" onClick={() => rotateRecommendations(-1)} aria-label={language === "en" ? "Show previous recommendations" : "Покажи предишни препоръчани продукти"}><ChevronLeft size={18} /></button><span>{language === "en" ? `Showing ${relatedStart + 1}–${Math.min(relatedStart + 4, related.length)} of ${related.length}` : `Показани ${relatedStart + 1}–${Math.min(relatedStart + 4, related.length)} от ${related.length}`}</span><button type="button" onClick={() => rotateRecommendations(1)} aria-label={language === "en" ? "Show next recommendations" : "Покажи следващи препоръчани продукти"}><ChevronRight size={18} /></button></div>}</div></section>
       </div>

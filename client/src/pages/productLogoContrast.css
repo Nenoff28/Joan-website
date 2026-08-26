@@ -18,3 +18,9 @@
     padding: 0.28rem 0.48rem;
   }
 }
+
+.product-gallery {
+  background: #ffffff !important;
+  background-image: none !important;
+  background-size: auto !important;
+}

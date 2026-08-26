@@ -1,14 +1,14 @@
 .product-card .product-card-brand {
   align-items: center;
   display: flex;
-  height: 17px;
+  height: 30px;
   margin-bottom: 0.34rem;
 }
 
 .product-card .product-card-brand-logo {
   display: block;
-  max-height: 17px;
-  max-width: 94px;
+  max-height: 30px;
+  max-width: 144px;
   object-fit: contain;
   object-position: left center;
 }

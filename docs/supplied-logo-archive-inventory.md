@@ -25,3 +25,11 @@ After the owner explicitly approved publishing every supplied asset, representat
 The subsequent product-detail contrast refinement was verified on a Ceresit product with a white manufacturer mark. The neutral panel and layered shadow keep the white letters visibly separated from the page background while preserving the original logo file unchanged.
 
 Following user feedback, the contrast wrapper was restricted to the visually white-wordmark set: Ceresit, FAYANS, GRONE, Legrand, SPIRIT, Vormann and Zvezda. Public representative checks confirm that Legrand keeps the discreet contrast treatment while the colored Moment mark is rendered without a background panel.
+
+Catalogue card review after initial logo sizing found that the Premium asset has substantial white canvas padding, making the actual mark appear smaller than its CSS slot. The main product gallery review also confirmed that the legacy grid background needs a stronger presentation override to ensure a clean image-only area.
+
+The Premium asset was deterministically trimmed and its standard catalogue card slot was enlarged. A subsequent desktop visual check confirms that the Premium wordmark is now readable at catalogue-card scale, and that the primary product image area is plain white with the legacy grid removed.
+
+The product-detail review for structured technical data identified a conservative parser edge case: short packaging or quantity values such as “Туба 5 кг” and “280 мл” can appear without a key/value colon. The presentation parser now labels these deterministic units without modifying source descriptions, while longer prose remains in the Description section.
+
+Desktop and mobile checks confirm the desired presentation: descriptive prose remains in the Description area, while labelled pairs, concise bullet characteristics, quantities, packaging values and model fields render as alternating Technical data rows. A product whose copy is entirely a concise list of characteristics shows a full-width Technical data block rather than duplicating those lines as free text.

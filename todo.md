@@ -377,3 +377,6 @@
 - [x] Improve contrast and legibility for Makena, Legrand, HARDY, GRONE, FAYANS, CetaForm, Cerva, Ceresit, Генковски, Zvezda, York, Yaparlar, Vormann, SPIRIT and Moment logos in product-detail presentation.
 - [x] Remove the global logo background panel and apply contrast treatment only to manufacturer assets with white wordmarks.
 - [x] Render available verified manufacturer logos instead of brand text on all catalogue product cards, with accessible text fallback on missing or failed assets.
+- [x] Review manufacturer logo legibility on catalogue product cards and selectively enlarge marks that are too small to read.
+- [x] Remove the visible grid background from the primary product image area so only the product image remains on a clean background.
+- [x] Split recognised technical characteristics from product descriptions into structured technical-data rows across the active catalogue, while retaining the original source descriptions.

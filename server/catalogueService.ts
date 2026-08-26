@@ -4,6 +4,7 @@ import { categories as seedCategories, products as seedProducts } from "../clien
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
+import { splitProductDescription } from "./technicalSpecifications";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
@@ -214,6 +215,9 @@ function publicCategory(category: typeof catalogueCategories.$inferSelect, engli
 
 function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null) {
   const translated = language === "en" ? english : undefined;
+  const sourceDescription = translated?.description ?? product.description;
+  const features = publicProductFeatures(translated?.featuresJson ?? product.featuresJson);
+  const presentation = splitProductDescription(sourceDescription, features);
   return {
     id: product.id,
     slug: product.slug,
@@ -232,8 +236,9 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     availability: availabilityLabels[product.availability],
     availabilityCode: product.availability,
     stockQuantity: product.stockQuantity,
-    features: publicProductFeatures(translated?.featuresJson ?? product.featuresJson),
-    description: translated?.description ?? product.description,
+    features,
+    description: presentation.description,
+    technicalSpecs: presentation.technicalSpecs,
     isActive: product.isActive,
     metaTitle: translated?.seoTitle ?? product.legacyMetaTitleBg ?? undefined,
     metaDescription: translated?.seoDescription ?? product.legacyMetaDescriptionBg ?? undefined,

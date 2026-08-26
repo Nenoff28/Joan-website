@@ -4,6 +4,7 @@ export type Product = {
   slug: string;
   brand?: string;
   brandLogo?: string;
+  technicalSpecs?: Array<{ label: string; value: string }>;
   name: string;
   image: string;
   gallery: string[];
