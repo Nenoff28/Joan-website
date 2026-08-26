@@ -88,6 +88,16 @@
 
 | Cascada | Not assigned | Not assigned | Active catalogue products span Cascada Life faucets and Cascada-branded electric water-heater taps. Public results identify reseller listings but do not establish one canonical manufacturer-owned source for both product lines, so no logo asset was assigned and the product page retains its text fallback. |
 
+| Ceresit | https://www.ceresit.com/ | `/manus-storage/ceresit-official-logo_a7007aaa.png` | The official Ceresit website exposes its header logo through Henkel’s first-party asset endpoint (`https://dm.henkel-dam.com/is/image/henkel/ceresit-logo_638x148`). The asset was downloaded and assigned to the `Ceresit` manufacturer record on 2026-08-26. |
+
+| FAYANS | https://fayans.bg/ | `/manus-storage/fayans-official-logo_2d6ccd96.png` | The official FAYANS manufacturer homepage, operated by Roca Bulgaria, exposes `https://fayans.bg/templates/fayans/images/logo.png` in its header; the asset was downloaded and assigned to the `FAYANS` manufacturer record on 2026-08-26. |
+
+| Makena | https://makena.bg/ | `/manus-storage/makena-official-logo_d3d2cad0.png` | The official Makena bathroom-furniture manufacturer homepage exposes `http://vanillawebs.com/makena.bg/wp-content/uploads/2014/07/LOGO-MAKENA-Q-22.png` in its header; the asset was downloaded and assigned to the `Makena` manufacturer record on 2026-08-26. |
+
+| KARCHER | https://www.kaercher.com/bg/ | `/manus-storage/karcher-official-logo_ac0661db.svg` | The official Kärcher Bulgaria website exposes `https://s1.kaercher-media.com/versions/2026.3.0/static/img/kaercher_logo.svg` in its header; the asset was downloaded and assigned to the `KARCHER` manufacturer record on 2026-08-26. |
+
+| Bispol | https://www.bispol.pl/en | `/manus-storage/bispol-official-logo_ac1c9e25.svg` | The official Bispol manufacturer homepage exposes `https://www.bispol.pl/build/assets/company-logo.52746138.svg` as its header CSS background asset; the asset was downloaded and assigned to the `Bispol` manufacturer record on 2026-08-26. |
+
 ## Migration rule
 
 Only a logo obtained from the relevant manufacturer’s official public website or official media/brand resource may replace a manufacturer record’s `imageUrl`. The product page retains the manufacturer name as an accessible fallback whenever no verified logo exists or an asset fails to load.
