@@ -36,7 +36,7 @@ describe("product detail presentation", () => {
     expect(catalogueService).toContain('row.manufacturer?.officialLogoUrl');
     expect(catalogueService).not.toContain('manufacturer?.imageUrl');
     expect(storefront).toContain('className="product-card-brand-logo"');
-    expect(storefront).toContain('product.brandLogo && !failedBrandLogo');
+    expect(storefront).toContain('brandLogo && !failedBrandLogo');
     expect(storefront).toContain('setFailedBrandLogo(true)');
     expect(cardLogoStylesheet).toContain('.product-card .product-card-brand-logo');
   });

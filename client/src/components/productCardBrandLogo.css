@@ -13,6 +13,20 @@
   object-position: left center;
 }
 
+.product-card.has-refined-catalogue-logo .product-card-brand {
+  height: 38px;
+}
+
+.product-card.has-refined-catalogue-logo .product-card-brand-logo {
+  max-height: 38px;
+  max-width: 166px;
+}
+
+.product-card.has-refined-catalogue-logo .product-card-brand.is-light-wordmark {
+  min-height: 36px;
+  padding: 0.18rem 0.42rem;
+}
+
 .product-card .product-card-brand.is-light-wordmark {
   background: linear-gradient(135deg, #eef2ee 0%, #d9e0da 100%);
   border: 1px solid rgba(25, 45, 42, 0.24);

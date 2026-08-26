@@ -381,3 +381,5 @@
 - [x] Remove the visible grid background from the primary product image area so only the product image remains on a clean background.
 - [x] Split recognised technical characteristics from product descriptions into structured technical-data rows across the active catalogue, while retaining the original source descriptions.
 - [x] Move the About page video to the top of the page and restore the former homepage video headline as an overlay.
+- [x] Fix catalogue logo contrast, sizing or supplied variants for Bertani, Cerva, CetaForm, Dupli-Color, Effect, Elite, Makena, Moment, Motip, Orient, Payper, Timmer, Vents, Yaparlar, York and Генковски.
+- [x] Render the official Joan logo for catalogue products with the exact brand value „ЖОАН“.
