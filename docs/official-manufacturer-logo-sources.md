@@ -66,6 +66,20 @@
 
 | INTEX | https://intexcompany.bg/en/ | `/manus-storage/intex-official-logo_c7242339.png` | The official INTEX Bulgaria homepage exposes `https://intexcompany.bg/wp-content/themes/intexcompany/assets/img/logo_intex.png` in its header; the asset was downloaded and assigned to the `INTEX` manufacturer record on 2026-08-26. |
 
+| Elematic | https://www.itw-elematic.com/en/ | Not assigned | The official ITW Elematic site confirms the relevant cable ties, cable protection and fastening product range. It did not expose a distinct first-party Elematic logo in loaded image or resource entries during the current validation, so no asset was assigned and the product page retains its text fallback. |
+
+| Baumit | https://baumit.bg/ | `/manus-storage/baumit-official-logo_bb14f571.svg` | The official Baumit Bulgaria homepage renders the Baumit mark as an inline header SVG (`#baumit-logo`). The exact serialised official SVG was captured from the loaded first-party DOM and assigned to the `Baumit` manufacturer record on 2026-08-26. |
+
+| KRAUSE | https://www.krause-systems.bg/ | `/manus-storage/krause-official-logo_65738020.svg` | The official KRAUSE Bulgaria homepage exposes `https://www.krause-systems.bg/_assets/f6f3c6acdae71a47be877b28cd6e6538/Images/logo.svg` in its header; the asset was downloaded and assigned to the `KRAUSE` manufacturer record on 2026-08-26. |
+
+| MMotors | https://mmotors-europe.com/ | `/manus-storage/mmotors-official-logo_2e299b81.png` | The official MMotors Europe manufacturer homepage exposes `https://mmotors-europe.com/wp-content/uploads/2020/11/Logo-MMotors-JSC-1-1.png` in its header; the asset was downloaded and assigned to the `MMotors` manufacturer record on 2026-08-26. |
+
+| Bio Plantella | https://unichem.si/en/brands/bio-plantella | `/manus-storage/bio-plantella-official-logo_52792650.svg` | The manufacturer Unichem’s official Bio Plantella brand page exposes `https://cms.unichem.si/api/media/file/bio-plantella-logo.svg`; the asset was downloaded and assigned to the `Bio Plantella` manufacturer record on 2026-08-26. |
+
+| Vents | https://ventilation-system.com/ | Not assigned | The official Vents Global site confirms the relevant ventilation-equipment manufacturer. It did not expose a distinct first-party Vents logo in its loaded image, header markup, or resource entries during the current validation, so no asset was assigned and the product page retains its text fallback. |
+
+| Rubino | https://www.rubinoshop.com/page/3/za-nas.html | `/manus-storage/rubino-official-logo_dc58d028.jpg` | The official Rubino Shop “About” page states that manufacturer Eurotrade produces the relevant electrical household appliances and owns the RUBINOGIP trademark. Its header exposes `https://www.rubinoshop.com/userfiles/logo/Logo%20rubinoshop.jpg`; that official Rubino GIP logo was downloaded and assigned to the `Rubino` manufacturer record on 2026-08-26. |
+
 ## Migration rule
 
 Only a logo obtained from the relevant manufacturer’s official public website or official media/brand resource may replace a manufacturer record’s `imageUrl`. The product page retains the manufacturer name as an accessible fallback whenever no verified logo exists or an asset fails to load.
