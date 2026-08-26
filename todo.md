@@ -374,3 +374,4 @@
 - [x] Inventory the user-supplied logo archive, map its variants to exact catalogue manufacturers, and select only appropriate official assets.
 - [x] Verify provenance, upload approved supplied logo assets, update official metadata and audit trail, then run regression validation.
 - [x] Publish every user-supplied logo asset to its exact matching catalogue manufacturer, using the best supplied variant when a folder contains alternatives.
+- [x] Improve contrast and legibility for Makena, Legrand, HARDY, GRONE, FAYANS, CetaForm, Cerva, Ceresit, Генковски, Zvezda, York, Yaparlar, Vormann, SPIRIT and Moment logos in product-detail presentation.

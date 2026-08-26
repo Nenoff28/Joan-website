@@ -8,6 +8,7 @@ import { Check, ChevronLeft, ChevronRight, Heart, MessageSquareText, Minus, Plus
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Link, useLocation, useRoute } from "wouter";
+import "./productLogoContrast.css";
 
 export default function Product() {
   const { language, t } = useLanguage();
