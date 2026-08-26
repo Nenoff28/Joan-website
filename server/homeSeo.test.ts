@@ -46,7 +46,8 @@ describe("homepage SEO audit regressions", () => {
     expect(aboutSource).toContain('className="about-video"');
     expect(aboutSource).toContain('src="/manus-storage/joan-hero_0c2a067a.mp4"');
     expect(stylesheet).toContain('.feature-category-card::before, .feature-category-card::after, .all-category-grid .feature-category-card::before, .all-category-grid .feature-category-card::after { content: none !important; }');
-    expect(stylesheet).toContain('filter: saturate(1.48) brightness(1.22) contrast(1.05) !important;');
+    expect(stylesheet).toContain('filter: saturate(1.95) brightness(1.42) contrast(1.02) !important;');
+    expect(stylesheet).toContain('background: linear-gradient(0deg, rgba(16,28,27,.42), rgba(16,28,27,0) 78%) !important;');
   });
 
   it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {
