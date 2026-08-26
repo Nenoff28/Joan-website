@@ -80,6 +80,14 @@
 
 | Rubino | https://www.rubinoshop.com/page/3/za-nas.html | `/manus-storage/rubino-official-logo_dc58d028.jpg` | The official Rubino Shop “About” page states that manufacturer Eurotrade produces the relevant electrical household appliances and owns the RUBINOGIP trademark. Its header exposes `https://www.rubinoshop.com/userfiles/logo/Logo%20rubinoshop.jpg`; that official Rubino GIP logo was downloaded and assigned to the `Rubino` manufacturer record on 2026-08-26. |
 
+| Mefisto | https://corporate.orgachim.bg/en/za-nas/ | Not assigned | The official Orgachim corporate page identifies Mefisto as an established Orgachim brand. No distinct first-party Mefisto logo asset was exposed by the manufacturer source, so no asset was assigned and the product page retains its text fallback. |
+
+| SPIRIT | https://www.spiritpaints.bg/en/ | `/manus-storage/spirit-official-logo_b24d9c6b.png` | The official SPIRIT Fine Paints homepage exposes `https://www.spiritpaints.bg/wp-content/themes/spiritpaints/assets/images/spirit-logo.png`; the asset was downloaded and assigned to the `SPIRIT` manufacturer record on 2026-08-26. |
+
+| York | https://york.global/ | `/manus-storage/york-official-logo_1e8c04b3.svg` | The official YORK PL manufacturer homepage exposes `https://york.global/wp-content/themes/york/img/york-logo.svg` in its header; the asset was downloaded and assigned to the `York` manufacturer record on 2026-08-26. |
+
+| Cascada | Not assigned | Not assigned | Active catalogue products span Cascada Life faucets and Cascada-branded electric water-heater taps. Public results identify reseller listings but do not establish one canonical manufacturer-owned source for both product lines, so no logo asset was assigned and the product page retains its text fallback. |
+
 ## Migration rule
 
 Only a logo obtained from the relevant manufacturer’s official public website or official media/brand resource may replace a manufacturer record’s `imageUrl`. The product page retains the manufacturer name as an accessible fallback whenever no verified logo exists or an asset fails to load.
