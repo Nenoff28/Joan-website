@@ -52,6 +52,20 @@
 
 | DRABEST | https://drabest.com/ | `/manus-storage/drabest-official-logo_15e9693d.png` | The official Drabest manufacturer homepage exposes `https://drabest.com/wp-content/uploads/2024/07/logo_ramka.png` in its header; the asset was downloaded and assigned to the `DRABEST` manufacturer record on 2026-08-26. |
 
+| Moment | https://www.henkel.com/our-businesses/moment-690992 | `/manus-storage/moment-official-logo_591c9584.webp` | The official Henkel Moment brand page identifies Moment as the relevant adhesive and sealant manufacturer and exposes the first-party `moment-logo-png.webp` asset; it was downloaded and assigned to the `Moment` manufacturer record on 2026-08-26. |
+
+| Protecta | https://protecta.bg/ | `/manus-storage/protecta-official-logo_e96b30be.png` | The official Protecta brand site identifies Protecta as a registered Orgachim brand and exposes `https://protecta.bg/wp-content/uploads/2020/07/cropped-tl-1-e1597038821208.png` in its header; the asset was downloaded and assigned to the `Protecta` manufacturer record on 2026-08-26. |
+
+| Оргахим | https://corporate.orgachim.bg/en/za-nas/ | `/manus-storage/orgachim-official-logo_20e94793.png` | The official Orgachim corporate homepage exposes `https://corporate.orgachim.bg/wp-content/themes/orgahim/images/logos/logo-en.png` in its header; the asset was downloaded and assigned to the `Оргахим` manufacturer record on 2026-08-26. |
+
+| Yaparlar | https://yaparlar.com/en/ | `/manus-storage/yaparlar-official-logo_9287b9b2.svg` | The official Yaparlar manufacturer homepage exposes `https://yaparlar.com/wp-content/uploads/2020/05/yaparlar_logo2.svg` in its header; the asset was downloaded and assigned to the `Yaparlar` manufacturer record on 2026-08-26. |
+
+| Марисан | https://en.marisanbg.com/ | `/manus-storage/marisan-official-logo_e2dc3848.svg` | The official Marisan manufacturer homepage exposes `https://en.marisanbg.com/frontend/images/logo.svg` in its header; the asset was downloaded and assigned to the `Марисан` manufacturer record on 2026-08-26. |
+
+| Casa Bella | https://policolor.ro/en/brands/casa-bella/ | Not assigned | Official group sources identify Casa Bella as an Orgachim/Policolor brand and show the matching active product family. The official Casa Bella brand page did not expose a distinct first-party logo asset in its loaded image or resource entries, so no asset was assigned and the product page retains its text fallback. |
+
+| INTEX | https://intexcompany.bg/en/ | `/manus-storage/intex-official-logo_c7242339.png` | The official INTEX Bulgaria homepage exposes `https://intexcompany.bg/wp-content/themes/intexcompany/assets/img/logo_intex.png` in its header; the asset was downloaded and assigned to the `INTEX` manufacturer record on 2026-08-26. |
+
 ## Migration rule
 
 Only a logo obtained from the relevant manufacturer’s official public website or official media/brand resource may replace a manufacturer record’s `imageUrl`. The product page retains the manufacturer name as an accessible fallback whenever no verified logo exists or an asset fails to load.
