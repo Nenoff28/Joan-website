@@ -10,6 +10,9 @@
 | Raider | https://www.raider.bg/ | `/manus-storage/raider-official-logo_3cc1d215.png` | The official Raider homepage exposes `https://www.raider.bg/assets/img/logo.png` as “Raider Power Tools”; the image was downloaded and assigned to the `Raider` manufacturer record on 2026-08-26. |
 | Vivalux | https://vivalux.bg/bg | `/manus-storage/vivalux-official-logo_510649d3.png` | The official Vivalux homepage header exposes its visual “Logo” asset as an embedded image; it was saved directly from the official page header, uploaded and assigned to the `Vivalux` manufacturer record on 2026-08-26. |
 | Бултекс 99 | https://bultex99.com/ | `/manus-storage/bultex99-official-logo_ea90ff05.png` | The official Bultex 99 homepage header exposes `https://bultex99.com/wp-content/uploads/2026/06/logo-bultex.png` with the alt text “БУЛТЕКС 99”; the asset was downloaded and assigned to the `Бултекс 99` manufacturer record on 2026-08-26. |
+| Нинахим | https://ninachim.bg/ | `/manus-storage/ninachim-official-logo_2ddd921b.png` | The official Нинахим homepage header exposes `https://ninachim.bg/wp-content/uploads/2017/02/ninachim-logo-1-5.png` with the title “ninachim.bg”; the asset was downloaded and assigned to the `Нинахим` manufacturer record on 2026-08-26. |
+| ЕЛДОМ | https://eldominvest.com/ | `/manus-storage/eldom-official-logo_cdeb1b9c.svg` | The official Елдоминвест homepage header exposes `https://eldominvest.com/media/logo/logo_bg_slogan_r.svg` with the company description as alt text; the asset was downloaded and assigned to the `ЕЛДОМ` manufacturer record on 2026-08-26. |
+| Roto | https://ftt.roto-frank.com/int-en/ | `/manus-storage/roto-official-logo_dffca1b9.svg` | The official Roto FTT International header exposes `https://ftt.roto-frank.com/_assets/46878c2199192703d227192bc8e34ba5/Images/logo.svg` as its “international logo”; the asset was downloaded and assigned to the `Roto` manufacturer record on 2026-08-26. |
 
 ## Migration rule
 
