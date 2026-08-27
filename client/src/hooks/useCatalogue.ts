@@ -47,6 +47,7 @@ export type CataloguePageInput = {
   path?: string[];
   query?: string;
   brand?: string;
+  brands?: string[];
   availability?: Array<"in_stock" | "on_request" | "out_of_stock">;
   minPrice?: number;
   maxPrice?: number;

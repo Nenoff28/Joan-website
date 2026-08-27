@@ -59,6 +59,7 @@ const publicCataloguePageSchema = z.object({
   path: z.array(z.string().trim().min(1).max(160)).max(4).optional(),
   query: z.string().trim().min(1).max(160).optional(),
   brand: z.string().trim().min(1).max(160).optional(),
+  brands: z.array(z.string().trim().min(1).max(160)).min(1).max(30).optional(),
   availability: z.array(availabilitySchema).max(3).optional(),
   minPrice: z.number().nonnegative().max(1_000_000).optional(),
   maxPrice: z.number().nonnegative().max(1_000_000).optional(),

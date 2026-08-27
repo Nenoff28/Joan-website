@@ -1,0 +1,57 @@
+.manufacturer-filter summary b {
+  align-items: center;
+  background: var(--red);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.62rem;
+  height: 1.2rem;
+  justify-content: center;
+  margin-left: auto;
+  min-width: 1.2rem;
+  padding: 0 0.25rem;
+}
+
+.manufacturer-filter-actions {
+  align-items: center;
+  color: var(--slate);
+  display: flex;
+  font-size: 0.67rem;
+  font-weight: 700;
+  justify-content: space-between;
+  margin: 0.6rem 0 0.35rem;
+}
+
+.manufacturer-filter-actions button {
+  color: var(--red);
+  font: inherit;
+  font-weight: 800;
+  padding: 0.18rem 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.manufacturer-filter-options {
+  max-height: 18.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+  scrollbar-color: var(--red) #edf0ec;
+  scrollbar-width: thin;
+}
+
+.manufacturer-filter-options::-webkit-scrollbar { width: 6px; }
+.manufacturer-filter-options::-webkit-scrollbar-thumb { background: var(--red); }
+.manufacturer-filter-options::-webkit-scrollbar-track { background: #edf0ec; }
+.manufacturer-filter-options label { min-height: 1.8rem; }
+.manufacturer-filter-options input { accent-color: var(--red); }
+
+@media (max-width: 760px) {
+  .manufacturer-filter-options {
+    max-height: min(48vh, 22rem);
+  }
+
+  .manufacturer-filter-options label {
+    min-height: 2.35rem;
+  }
+}

@@ -277,6 +277,7 @@ export type PublicCataloguePageInput = {
   path?: string[];
   query?: string;
   brand?: string;
+  brands?: string[];
   availability?: Array<ProductAvailability>;
   minPrice?: number;
   maxPrice?: number;
@@ -347,7 +348,11 @@ async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]
 function publicCatalogueConditions(input: PublicCataloguePageInput, categoryId?: number) {
   const conditions = [eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)];
   if (categoryId) conditions.push(eq(catalogueProducts.categoryId, categoryId));
-  if (input.brand) conditions.push(input.language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand}) = ${input.brand}` : eq(catalogueProducts.brand, input.brand));
+  const selectedBrands = input.brands?.length ? input.brands : input.brand ? [input.brand] : [];
+  if (selectedBrands.length) {
+    const brandConditions = selectedBrands.map((brand) => input.language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand}) = ${brand}` : eq(catalogueProducts.brand, brand));
+    conditions.push(or(...brandConditions)!);
+  }
   if (input.availability?.length) conditions.push(inArray(catalogueProducts.availability, input.availability));
   if (input.minPrice != null) conditions.push(gte(catalogueProducts.priceEur, String(input.minPrice)));
   if (input.maxPrice != null) conditions.push(lte(catalogueProducts.priceEur, String(input.maxPrice)));
@@ -401,7 +406,7 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
     : await db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...conditions));
   const [rows, brandRows] = await Promise.all([
     selectProducts,
-    db.select({ brand: language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...publicCatalogueConditions({ ...input, language, brand: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand).orderBy(asc(language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand)),
+    db.select({ brand: language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...publicCatalogueConditions({ ...input, language, brand: undefined, brands: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand).orderBy(asc(language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand)),
   ]);
   return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
 }

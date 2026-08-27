@@ -8,6 +8,7 @@ import { paginationItems } from "@/lib/pagination";
 import { ArrowRight, ChevronDown, Grid2X2, ListFilter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useRoute, useSearch } from "wouter";
+import "./manufacturerFilter.css";
 
 const pathLink = (slug: string, labels: string[] = []) => `/category/${slug}${labels.length ? `?path=${categoryPathTokens(labels).join("~")}` : ""}`;
 
@@ -49,8 +50,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const selectedPathLabel = selectedPath.join(" › ");
   const [sort, setSort] = useState("relevance");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const allBrands = en ? "All brands" : "Всички марки";
-  const [selectedBrand, setSelectedBrand] = useState("Всички марки");
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [manufacturerQuery, setManufacturerQuery] = useState("");
   const [query, setQuery] = useState("");
   const [inStock, setInStock] = useState(false);
@@ -59,7 +59,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [maxPrice, setMaxPrice] = useState("");
   const [page, setPage] = useState(1);
   const [pageInput, setPageInput] = useState("");
-  const resetFilters = () => { setSelectedBrand("Всички марки"); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); setPage(1); };
+  const resetFilters = () => { setSelectedBrands([]); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); setPage(1); };
 
   useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(1); }, [category?.slug, selectedPathLabel, showAll]);
   useEffect(() => {
@@ -75,16 +75,17 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
     categorySlug: showAll ? undefined : category?.slug,
     path: selectedPathTokens.length ? selectedPathTokens : undefined,
     query: query || undefined,
-    brand: selectedBrand === "Всички марки" ? undefined : selectedBrand,
+    brands: selectedBrands.length ? selectedBrands : undefined,
     availability: [inStock ? "in_stock" : null, enquiry ? "on_request" : null].filter((value): value is "in_stock" | "on_request" => Boolean(value)),
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     sort: sort as "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc",
-  }), [category?.slug, enquiry, inStock, maxPrice, minPrice, page, pageSize, query, selectedBrand, selectedPathLabel, showAll, sort]);
+  }), [category?.slug, enquiry, inStock, maxPrice, minPrice, page, pageSize, query, selectedBrands, selectedPathLabel, showAll, sort]);
   const cataloguePage = useCataloguePage(catalogueInput);
-  const brands = ["Всички марки", ...cataloguePage.brands];
+  const brands = cataloguePage.brands;
   const normalizedManufacturerQuery = manufacturerQuery.trim().toLocaleLowerCase("bg-BG");
-  const matchingBrands = brands.filter((brand) => brand === "Всички марки" || !normalizedManufacturerQuery || brand.toLocaleLowerCase("bg-BG").includes(normalizedManufacturerQuery));
+  const matchingBrands = brands.filter((brand) => !normalizedManufacturerQuery || brand.toLocaleLowerCase("bg-BG").includes(normalizedManufacturerQuery));
+  const toggleBrand = (brand: string) => { setSelectedBrands((current) => current.includes(brand) ? current.filter((item) => item !== brand) : [...current, brand]); setPage(1); };
   const totalPages = Math.max(1, Math.ceil(cataloguePage.total / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visiblePages = useMemo(() => paginationItems(totalPages, currentPage), [currentPage, totalPages]);
@@ -131,11 +132,12 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
               <div className="filter-heading"><b>{en ? "Filters" : "Филтри"}</b><button type="button" onClick={() => setFiltersOpen(false)}>{en ? "Close" : "Затвори"}</button></div>
               <label className="filter-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={showAll ? (en ? "Search all products" : "Търсете във всички продукти") : (en ? "Search this category" : "Търсете в категорията")} /></label>
               <details className="manufacturer-filter">
-                <summary>{en ? "Manufacturer" : "Производител"} <ChevronDown size={16} /></summary>
+                <summary>{en ? "Manufacturer" : "Производител"}{selectedBrands.length ? <b>{selectedBrands.length}</b> : null} <ChevronDown size={16} /></summary>
                 <div className="manufacturer-filter-content">
                   <label className="manufacturer-filter-search"><Search size={14} /><span className="sr-only">{en ? "Search manufacturer" : "Търсене на производител"}</span><input value={manufacturerQuery} onChange={(event) => setManufacturerQuery(event.target.value)} placeholder={en ? "Search manufacturer" : "Търсене на производител"} /></label>
-                  <div className="filter-options">{matchingBrands.map((brand) => <label key={brand}><input type="radio" value={brand} checked={selectedBrand === brand} onChange={() => { setSelectedBrand(brand); setPage(1); }} /> <span>{brand === "Всички марки" ? (en ? "All manufacturers" : "Всички производители") : brand}</span></label>)}</div>
-                  {matchingBrands.length === 1 && normalizedManufacturerQuery ? <p className="manufacturer-empty">{en ? "No manufacturer found." : "Няма намерен производител."}</p> : null}
+                  <div className="manufacturer-filter-actions">{selectedBrands.length ? <button type="button" onClick={() => { setSelectedBrands([]); setPage(1); }}>{en ? "Clear selected" : "Изчисти избраните"}</button> : <span>{en ? "Select one or more" : "Изберете един или повече"}</span>}</div>
+                  <div className="filter-options manufacturer-filter-options">{matchingBrands.map((brand) => <label key={brand}><input type="checkbox" value={brand} checked={selectedBrands.includes(brand)} onChange={() => toggleBrand(brand)} /> <span>{brand}</span></label>)}</div>
+                  {matchingBrands.length === 0 && normalizedManufacturerQuery ? <p className="manufacturer-empty">{en ? "No manufacturer found." : "Няма намерен производител."}</p> : null}
                 </div>
               </details>
               <details open><summary>{en ? "Availability" : "Наличност"} <ChevronDown size={16} /></summary><div className="filter-options muted-options"><label><input type="checkbox" checked={inStock} onChange={(event) => setInStock(event.target.checked)} /> <span>{en ? "In stock" : "На склад"}</span></label><label><input type="checkbox" checked={enquiry} onChange={(event) => setEnquiry(event.target.checked)} /> <span>{en ? "On request" : "По запитване"}</span></label></div></details>

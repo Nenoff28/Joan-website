@@ -386,3 +386,4 @@
 - [x] Perform mobile QA across primary customer journeys, including catalogue product cards, filters, product detail, navigation and checkout.
 - [x] Correct all confirmed mobile layout and interaction issues found during the responsive QA review.
 - [x] Diagnose and fix desktop product and catalogue image loading failures without regressing the mobile layout.
+- [x] Replace the single manufacturer filter with a scrollable multi-select control that exposes roughly ten brands at a time.
