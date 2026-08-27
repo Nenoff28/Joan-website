@@ -50,6 +50,16 @@ describe("homepage SEO audit regressions", () => {
     expect(stylesheet).toContain('background: linear-gradient(0deg, rgba(16,28,27,.42), rgba(16,28,27,0) 78%) !important;');
   });
 
+  it("places the company split block immediately before the Joan Today section", () => {
+    const aboutSource = readFileSync(resolve(process.cwd(), "client/src/pages/About.tsx"), "utf8");
+    const companyBlock = aboutSource.indexOf('className="about-hero"');
+    const joanTodayBlock = aboutSource.indexOf('eyebrow={en ? "Joan today" : "Жоан днес"}');
+    const factBand = aboutSource.indexOf('className="fact-band"');
+
+    expect(companyBlock).toBeGreaterThan(factBand);
+    expect(companyBlock).toBeLessThan(joanTodayBlock);
+  });
+
   it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {
     expect(homeSource).toContain('title={en ? "Current offers" : "Актуални предложения"}');
     expect(homeSource).toContain('featuredProducts.products.slice(0, 12)');
