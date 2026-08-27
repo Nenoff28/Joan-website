@@ -14,11 +14,12 @@ describe("returns information and back-to-top interaction", () => {
     expect(returnsSource).toContain('title={en ? "Product returns" : "Връщане на продукти"}');
   });
 
-  it("keeps return information accurate to the original public workflow without claiming a live submission", () => {
+  it("keeps return information accurate without linking to a previous website or claiming a live submission", () => {
     expect(returnsSource).toContain('14 {en ? "days" : "дни"}');
-    expect(returnsSource).toContain("входящ номер за връщане (RMA)");
+    expect(returnsSource).toContain("За заявките за връщане се използва входящ номер (RMA)");
     expect(returnsSource).toContain("This is an information page");
-    expect(returnsSource).toContain("originalTermsUrl");
+    expect(returnsSource).not.toContain("originalTermsUrl");
+    expect(returnsSource).not.toContain("https://joan.bg/");
   });
 
   it("adds an accessible back-to-top control with smooth user-initiated motion and reduced-motion support", () => {

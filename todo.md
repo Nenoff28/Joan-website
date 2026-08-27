@@ -387,3 +387,4 @@
 - [x] Correct all confirmed mobile layout and interaction issues found during the responsive QA review.
 - [x] Diagnose and fix desktop product and catalogue image loading failures without regressing the mobile layout.
 - [x] Replace the single manufacturer filter with a scrollable multi-select control that exposes roughly ten brands at a time.
+- [x] Audit and remove public links, copy and metadata that reference the former or original Joan website while retaining necessary internal migration documentation.

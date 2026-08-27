@@ -23,10 +23,10 @@ describe("customer-support pages", () => {
     expect(contactSource).not.toContain("Формата е готова за интеграция");
   });
 
-  it("presents owner-authorized original Joan terms as readable sections with a source link", () => {
-    expect(termsSource).toContain("https://joan.bg/index.php?route=information/information/agree&information_id=5");
+  it("presents the current Joan terms as readable standalone sections", () => {
+    expect(termsSource).not.toContain("https://joan.bg/index.php?route=information/information/agree&information_id=5");
     expect(termsSource).toContain("Право на отказ и гаранция");
     expect(termsSource).toContain("Лични данни и бисквитки");
-    expect(termsSource).toContain("Пълна оригинална версия");
+    expect(termsSource).toContain("Въпроси за условията?");
   });
 });
