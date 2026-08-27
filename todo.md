@@ -385,3 +385,4 @@
 - [x] Render the official Joan logo for catalogue products with the exact brand value „ЖОАН“.
 - [x] Perform mobile QA across primary customer journeys, including catalogue product cards, filters, product detail, navigation and checkout.
 - [x] Correct all confirmed mobile layout and interaction issues found during the responsive QA review.
+- [x] Diagnose and fix desktop product and catalogue image loading failures without regressing the mobile layout.

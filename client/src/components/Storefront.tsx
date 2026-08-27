@@ -374,7 +374,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
       <div className="product-image-box">
         {product.discount && <span className="discount-tag">{t("promo")} {product.discount}</span>}
         <button type="button" aria-label={`${t("favorites")}: ${product.name}`} aria-pressed={favorite} className={`product-icon-button ${favorite ? "is-favorite" : ""}`} onClick={handleFavorite}><Heart size={18} fill={favorite ? "currentColor" : "none"} /></button>
-        <Link href={`/product/${product.slug}`}><img src={product.image} alt={product.imageAlt || product.name} loading={compact ? "lazy" : "eager"} /></Link>
+        <Link href={`/product/${product.slug}`}><img src={product.image} alt={product.imageAlt || product.name} loading="lazy" decoding="async" /></Link>
       </div>
       <div className="product-card-body">
         <p className={`product-brand product-card-brand${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{brandLogo && !failedBrandLogo ? <img className="product-card-brand-logo" src={brandLogo} alt="" onError={() => setFailedBrandLogo(true)} /> : <span>{productBrand}</span>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></p>
