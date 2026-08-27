@@ -45,3 +45,88 @@
   max-height: 15px;
   max-width: 80px;
 }
+
+@media (max-width: 640px) {
+  .product-grid,
+  .catalogue-workbench .listing-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.78rem !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact),
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) {
+    display: grid !important;
+    grid-template-columns: 124px minmax(0, 1fr) !important;
+    min-height: 174px !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-image-box,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-image-box {
+    aspect-ratio: auto !important;
+    border-bottom: 0 !important;
+    border-right: 1px solid #e8ebe6 !important;
+    min-height: 174px !important;
+    padding: 0.7rem !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-image-box img,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-image-box img {
+    object-fit: contain !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-card-body,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-card-body {
+    min-height: 174px !important;
+    padding: 0.7rem 0.78rem !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-title,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-title {
+    font-size: 0.83rem !important;
+    line-height: 1.26 !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-brand,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-brand {
+    height: 28px !important;
+    margin-bottom: 0.2rem !important;
+  }
+
+  .product-grid .product-card.has-refined-catalogue-logo:not(.product-card-compact) .product-brand,
+  .catalogue-workbench .listing-grid .product-card.has-refined-catalogue-logo:not(.product-card-compact) .product-brand {
+    height: 31px !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-card-brand-logo,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-card-brand-logo {
+    max-height: 28px !important;
+    max-width: 136px !important;
+  }
+
+  .product-grid .product-card.has-refined-catalogue-logo:not(.product-card-compact) .product-card-brand-logo,
+  .catalogue-workbench .listing-grid .product-card.has-refined-catalogue-logo:not(.product-card-compact) .product-card-brand-logo {
+    max-height: 31px !important;
+    max-width: 146px !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-features,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-features {
+    display: none !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .product-price b,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .product-price b {
+    font-size: 1.1rem !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .cart-square,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .cart-square {
+    height: 38px !important;
+    width: 38px !important;
+  }
+
+  .product-grid .product-card:not(.product-card-compact) .availability,
+  .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .availability {
+    font-size: 0.62rem !important;
+  }
+}
