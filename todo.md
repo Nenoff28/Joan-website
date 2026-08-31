@@ -389,3 +389,5 @@
 - [x] Replace the single manufacturer filter with a scrollable multi-select control that exposes roughly ten brands at a time.
 - [x] Audit and remove public links, copy and metadata that reference the former or original Joan website while retaining necessary internal migration documentation.
 - [x] Move the "От метали до всичко необходимо за ремонта." company split block to immediately precede the "Жоан днес" section on the About page while preserving the responsive layout.
+
+- [x] Grant admin-panel access to the existing user account ddeye32@gmail.com and verify the resulting role without changing other users.
