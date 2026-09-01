@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { PageMeta } from "@/components/Storefront";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Home } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -11,8 +12,13 @@ export default function NotFound() {
   const handleGoHome = () => {
     setLocation("/");
   };
+  const handleGoCatalogue = () => {
+    setLocation("/products");
+  };
 
   return (
+    <>
+    <PageMeta title={language === "en" ? "Page not found" : "Страницата не е намерена"} description={language === "en" ? "The requested Joan page could not be found." : "Заявената страница в сайта на ЖОАН не е намерена."} metaRobots="noindex,follow" />
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
       <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="pt-8 pb-8 text-center">
@@ -39,16 +45,17 @@ export default function NotFound() {
             id="not-found-button-group"
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
+            <Button onClick={handleGoHome} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
               <Home className="w-4 h-4 mr-2" />
               {language === "en" ? "Go home" : "Към началото"}
+            </Button>
+            <Button onClick={handleGoCatalogue} variant="outline" className="px-6 py-2.5 rounded-lg">
+              {language === "en" ? "Browse catalogue" : "Разгледайте каталога"}
             </Button>
           </div>
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

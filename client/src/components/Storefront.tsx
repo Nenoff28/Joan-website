@@ -7,6 +7,7 @@ import { store, type Product } from "@/lib/storeData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
+import CookieConsent from "@/components/CookieConsent";
 import { useCatalogue, useCataloguePage, useCatalogueProducts } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { categoryPathTokens } from "@/lib/categoryHierarchy";
@@ -65,27 +66,37 @@ const categoryIcons = {
   "hard-hat": HardHat,
 };
 
-function usePageTitle(title: string, description: string, canonicalUrl?: string, metaRobots?: string) {
+function usePageTitle(title: string, description: string, canonicalUrl?: string, metaRobots?: string, ogImage?: string, ogImageAlt?: string) {
   useEffect(() => {
-    document.title = title.endsWith("| ЖОАН") || title === "ЖОАН" ? title : `${title} | ЖОАН`;
-    let descriptionTag = document.querySelector('meta[name="description"]');
-    if (!descriptionTag) {
-      descriptionTag = document.createElement("meta");
-      descriptionTag.setAttribute("name", "description");
-      document.head.appendChild(descriptionTag);
-    }
-    descriptionTag.setAttribute("content", description);
+    const resolvedTitle = title.endsWith("| ЖОАН") || title === "ЖОАН" ? title : `${title} | ЖОАН`;
+    const resolvedCanonical = canonicalUrl || `${window.location.origin}${window.location.pathname}`;
+    document.title = resolvedTitle;
+    const setMeta = (selector: string, attribute: "name" | "property", key: string, value: string) => {
+      let tag = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!tag) { tag = document.createElement("meta"); tag.setAttribute(attribute, key); document.head.appendChild(tag); }
+      tag.setAttribute("content", value);
+    };
+    setMeta('meta[name="description"]', "name", "description", description);
+    setMeta('meta[name="robots"]', "name", "robots", metaRobots || "index,follow");
+    setMeta('meta[property="og:title"]', "property", "og:title", resolvedTitle);
+    setMeta('meta[property="og:description"]', "property", "og:description", description);
+    setMeta('meta[property="og:url"]', "property", "og:url", resolvedCanonical);
+    setMeta('meta[property="og:site_name"]', "property", "og:site_name", "ЖОАН");
+    setMeta('meta[name="twitter:title"]', "name", "twitter:title", resolvedTitle);
+    setMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
+    setMeta('meta[name="twitter:card"]', "name", "twitter:card", ogImage ? "summary_large_image" : "summary");
+    const resolvedImage = ogImage || `${window.location.origin}/manus-storage/joan-existing-logo_61725b9d.webp`;
+    setMeta('meta[property="og:image"]', "property", "og:image", resolvedImage);
+    setMeta('meta[property="og:image:alt"]', "property", "og:image:alt", ogImageAlt || "Лого на строителен хипермаркет ЖОАН");
+    setMeta('meta[name="twitter:image"]', "name", "twitter:image", resolvedImage);
     let canonicalTag = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonicalTag) { canonicalTag = document.createElement("link"); canonicalTag.setAttribute("rel", "canonical"); document.head.appendChild(canonicalTag); }
-    canonicalTag.setAttribute("href", canonicalUrl || `${window.location.origin}${window.location.pathname}`);
-    let robotsTag = document.querySelector('meta[name="robots"]');
-    if (!robotsTag) { robotsTag = document.createElement("meta"); robotsTag.setAttribute("name", "robots"); document.head.appendChild(robotsTag); }
-    robotsTag.setAttribute("content", metaRobots || "index,follow");
-  }, [title, description, canonicalUrl, metaRobots]);
+    canonicalTag.setAttribute("href", resolvedCanonical);
+  }, [title, description, canonicalUrl, metaRobots, ogImage, ogImageAlt]);
 }
 
-export function PageMeta({ title, description, canonicalUrl, metaRobots }: { title: string; description: string; canonicalUrl?: string; metaRobots?: string }) {
-  usePageTitle(title, description, canonicalUrl, metaRobots);
+export function PageMeta({ title, description, canonicalUrl, metaRobots, ogImage, ogImageAlt }: { title: string; description: string; canonicalUrl?: string; metaRobots?: string; ogImage?: string; ogImageAlt?: string }) {
+  usePageTitle(title, description, canonicalUrl, metaRobots, ogImage, ogImageAlt);
   return null;
 }
 
@@ -296,7 +307,7 @@ function Header() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-[#f7f7f4] text-[#1e262c]"><Header />{children}<Footer /><BackToTop /></div>;
+  return <div className="min-h-screen bg-[#f7f7f4] text-[#1e262c]"><Header />{children}<Footer /><BackToTop /><CookieConsent /></div>;
 }
 
 type MiniCartProps = { id: string; rows: { product: Product; quantity: number }[]; total: number; copy: { heading: string; empty: string; browse: string; remove: string; review: string; count: string; total: string }; onClose: () => void; onIncrement: (slug: string) => void; onDecrement: (slug: string, quantity: number) => void; onRemove: (slug: string) => void };
@@ -338,7 +349,7 @@ function Footer() {
           <div className="footer-social-row" aria-label={language === "en" ? "Social media" : "Социални мрежи"}><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Joan on Facebook" title="Joan on Facebook"><img src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png" alt="Joan on Facebook" /></a><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on Instagram — profile coming soon" : "Instagram на ЖОАН — профилът предстои"} title={language === "en" ? "Instagram — coming soon" : "Instagram — скоро"}><img src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram" /></span><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on TikTok — profile coming soon" : "TikTok на ЖОАН — профилът предстои"} title={language === "en" ? "TikTok — coming soon" : "TikTok — скоро"}><img src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok" /></span></div>
         </div>
         <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/faq">{language === "en" ? "FAQ" : "ЧЗВ"}</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
+        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/privacy">{language === "en" ? "Privacy Policy" : "Политика за поверителност"}</Link><Link href="/faq">{language === "en" ? "FAQ" : "ЧЗВ"}</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
       </div>
       <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. {language === "en" ? "All rights reserved." : "Всички права запазени."}</span><span>{language === "en" ? "Online catalogue with availability and delivery confirmed by the Joan team." : "Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан."}</span></div></div>
     </footer>

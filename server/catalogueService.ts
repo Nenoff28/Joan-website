@@ -4,6 +4,7 @@ import { categories as seedCategories, products as seedProducts } from "../clien
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
+import { notifyOwner } from "./_core/notification";
 import { splitProductDescription } from "./technicalSpecifications";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
@@ -714,6 +715,11 @@ export async function createContactEnquiry(input: { fullName: string; email: str
   const db = await requireDb();
   const referenceNumber = `C-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 5).toUpperCase()}`;
   await db.insert(contactEnquiries).values({ referenceNumber, fullName: input.fullName, email: input.email, phone: input.phone?.trim() || null, subject: input.subject, message: input.message, status: "new", adminNote: null });
+  try {
+    await notifyOwner({ title: `Ново контактно запитване ${referenceNumber}`, content: `${input.fullName} (${input.email})${input.phone ? `, ${input.phone}` : ""}: ${input.subject}\n${input.message}` });
+  } catch (error) {
+    console.warn("[Contact] Owner notification unavailable; enquiry remains stored:", error);
+  }
   return { referenceNumber };
 }
 

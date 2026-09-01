@@ -391,3 +391,47 @@
 - [x] Move the "От метали до всичко необходимо за ремонта." company split block to immediately precede the "Жоан днес" section on the About page while preserving the responsive layout.
 
 - [x] Grant admin-panel access to the existing user account ddeye32@gmail.com and verify the resulting role without changing other users.
+
+# Launch Readiness Audit — 20 точки
+- [x] Audit and complete the Privacy Policy for the actual data collected by the site.
+- [x] Audit and complete the Terms & Conditions page.
+- [x] Verify a clear visible CTA exists on every key customer-facing page and add missing CTAs.
+- [x] Audit and complete the standalone FAQ section/page.
+- [x] Create or correct robots.txt without blocking important public pages.
+- [x] Generate and expose sitemap.xml with all intended indexable public routes.
+- [x] Audit and complete the custom 404 page and correct 404 response behavior.
+- [x] Audit all customer-facing images and add meaningful alt text where missing.
+- [x] Audit analytics and connect a privacy-compatible analytics solution or document the configured alternative.
+- [x] Add unique meta titles for every public route.
+- [x] Add unique meta descriptions for every public route.
+- [x] Configure Open Graph and Twitter Card social preview metadata with title, description, URL, and image.
+- [x] Verify favicon and related browser icon declarations.
+- [x] Configure canonical URLs for public pages and parameterized catalogue views.
+- [x] Add a GDPR-aware cookie consent banner and gate non-essential analytics until consent.
+- [x] Test and correct mobile responsive layouts at representative phone, tablet, and desktop widths.
+- [x] Audit accessibility including contrast, keyboard navigation, focus states, and ARIA labels.
+- [x] Test all public forms and document or implement real delivery behavior for enquiries and account flows.
+- [x] Crawl and verify internal and external links, correcting broken destinations.
+- [x] Audit and improve performance, caching, image loading, and document the PageSpeed validation limitation or result.
+
+# Launch Readiness Audit — 20 точки
+- [x] Audit and complete the Privacy Policy for the actual data collected by the site.
+- [x] Audit and complete the Terms & Conditions page.
+- [x] Verify a clear visible CTA exists on every key customer-facing page and add missing CTAs.
+- [x] Audit and complete the standalone FAQ section/page.
+- [x] Create or correct robots.txt without blocking important public pages.
+- [x] Generate and expose sitemap.xml with all intended indexable public routes.
+- [x] Audit and complete the custom 404 page and correct 404 response behavior.
+- [x] Audit all customer-facing images and add meaningful alt text where missing.
+- [x] Audit analytics and connect a privacy-compatible analytics solution or document the configured alternative.
+- [x] Add unique meta titles for every public route.
+- [x] Add unique meta descriptions for every public route.
+- [x] Configure Open Graph and Twitter Card social preview metadata with title, description, URL, and image.
+- [x] Verify favicon and related browser icon declarations.
+- [x] Configure canonical URLs for public pages and parameterized catalogue views.
+- [x] Add a GDPR-aware cookie consent banner and gate non-essential analytics until consent.
+- [x] Test and correct mobile responsive layouts at representative phone, tablet, and desktop widths.
+- [x] Audit accessibility including contrast, keyboard navigation, focus states, and ARIA labels.
+- [x] Test all public forms and document or implement real delivery behavior for enquiries and account flows.
+- [x] Crawl and verify internal and external links, correcting broken destinations.
+- [x] Audit and improve performance, caching, image loading, and document the PageSpeed validation limitation or result.

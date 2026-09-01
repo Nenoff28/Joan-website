@@ -19,9 +19,10 @@ function headTags(head: HeadMeta) {
   const title = escapeHtml(compact(head.title || siteName, 70));
   const description = escapeHtml(compact(head.description, 200));
   const canonical = head.canonicalPath && canonicalOrigin ? `${canonicalOrigin}${head.canonicalPath}` : "";
-  const image = head.ogImage?.startsWith("/") && canonicalOrigin ? `${canonicalOrigin}${head.ogImage}` : head.ogImage;
+  const resolvedImage = head.ogImage || "/manus-storage/joan-existing-logo_61725b9d.webp";
+  const image = resolvedImage.startsWith("/") && canonicalOrigin ? `${canonicalOrigin}${resolvedImage}` : resolvedImage;
   return [
-    `<title>${title}</title>`, `<meta name="description" content="${description}" />`, `<meta property="og:type" content="${head.ogType === "product" ? "product" : "website"}" />`, `<meta property="og:title" content="${title}" />`, `<meta property="og:description" content="${description}" />`, `<meta property="og:locale" content="bg_BG" />`, `<meta property="og:site_name" content="${escapeHtml(siteName)}" />`, `<meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}" />`, `<meta name="twitter:title" content="${title}" />`, `<meta name="twitter:description" content="${description}" />`,
+    `<title>${title}</title>`, `<meta name="description" content="${description}" />`, `<meta property="og:type" content="${head.ogType === "product" ? "product" : "website"}" />`, `<meta property="og:title" content="${title}" />`, `<meta property="og:description" content="${description}" />`, `<meta property="og:locale" content="bg_BG" />`, `<meta property="og:site_name" content="${escapeHtml(siteName)}" />`, `<meta name="twitter:card" content="summary_large_image" />`, `<meta name="twitter:title" content="${title}" />`, `<meta name="twitter:description" content="${description}" />`,
     canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}" /><meta property="og:url" content="${escapeHtml(canonical)}" />` : "",
     image ? `<meta property="og:image" content="${escapeHtml(image)}" /><meta name="twitter:image" content="${escapeHtml(image)}" />${head.ogImageAlt ? `<meta property="og:image:alt" content="${escapeHtml(head.ogImageAlt)}" />` : ""}` : "",
     head.noindex || head.notFound ? `<meta name="robots" content="noindex, follow" />` : `<meta name="robots" content="index, follow, max-image-preview:large" />`,
@@ -64,14 +65,14 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const distPath = process.env.NODE_ENV === "development" ? path.resolve(import.meta.dirname, "../..", "dist", "public") : path.resolve(import.meta.dirname, "public");
-  app.get("/robots.txt", (_req, res) => res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /favorites\nSitemap: ${canonicalOrigin}/sitemap.xml\n`));
+  app.get("/robots.txt", (_req, res) => res.set("Cache-Control", "public, max-age=3600").type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /favorites\nSitemap: ${canonicalOrigin}/sitemap.xml\n`));
   app.get("/sitemap.xml", async (_req, res, next) => {
     try {
       const entries = await getPublicSitemapEntries();
-      const fixed = ["/", "/products", "/about", "/contact", "/delivery", "/terms", "/faq", "/returns"];
+      const fixed = ["/", "/products", "/about", "/contact", "/delivery", "/terms", "/privacy", "/faq", "/returns"];
       const urls = [...fixed.map((path) => ({ path, updatedAt: new Date() })), ...entries.categories.map((entry) => ({ path: `/category/${entry.slug}`, updatedAt: entry.updatedAt })), ...entries.products.map((entry) => ({ path: `/product/${entry.slug}`, updatedAt: entry.updatedAt }))];
       const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((entry) => `<url><loc>${escapeHtml(`${canonicalOrigin}${entry.path}`)}</loc><lastmod>${new Date(entry.updatedAt).toISOString().slice(0, 10)}</lastmod></url>`).join("")}</urlset>`;
-      res.type("application/xml").send(xml);
+      res.set("Cache-Control", "public, max-age=3600").type("application/xml").send(xml);
     } catch (error) { next(error); }
   });
   app.use((req, res, next) => {
@@ -79,7 +80,7 @@ export function serveStatic(app: Express) {
     if (req.path !== "/" && /\/+$/ .test(req.path)) return res.redirect(301, normalizePath(req.path, req.originalUrl));
     next();
   });
-  app.use(express.static(distPath, { index: false, redirect: false }));
+  app.use(express.static(distPath, { index: false, redirect: false, etag: true, setHeaders: (res, filePath) => { if (/\.(?:css|js|mjs|woff2?|png|jpe?g|webp|svg|ico)$/i.test(filePath)) res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800"); } }));
   app.use("*", async (req, res) => {
     if (await canonicalProductRedirect(req, res)) return;
     const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");

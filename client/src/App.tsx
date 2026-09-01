@@ -17,6 +17,7 @@ import Delivery from "./pages/Delivery";
 import Terms from "./pages/Terms";
 import FAQ from "./pages/FAQ";
 import Returns from "./pages/Returns";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
 import Favorites from "./pages/Favorites";
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="/contact" component={Contact} />
         <Route path="/delivery" component={Delivery} />
         <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
         <Route path={"/faq"} component={FAQ} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/favorites" component={Favorites} />

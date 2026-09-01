@@ -851,7 +851,7 @@ export default function ComponentsShowcase() {
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
-                        <BreadcrumbLink href="/components">
+                        <BreadcrumbLink href="/products">
                           Components
                         </BreadcrumbLink>
                       </BreadcrumbItem>

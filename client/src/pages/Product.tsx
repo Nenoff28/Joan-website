@@ -52,7 +52,7 @@ export default function Product() {
   const technicalSpecs = product.technicalSpecs?.length ? product.technicalSpecs : product.features.map((value) => ({ label: t("characteristic"), value }));
 
   return <Layout>
-    <PageMeta title={product.metaTitle || product.name} description={product.metaDescription || product.description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}/product/${product.slug}`} metaRobots={product.metaRobots || "index,follow"} />
+    <PageMeta title={product.metaTitle || product.name} description={product.metaDescription || product.description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}/product/${product.slug}`} metaRobots={product.metaRobots || "index,follow"} ogImage={product.image} ogImageAlt={product.imageAlt || product.name} />
     <JsonLd product={product} />
     <main className="product-page">
       <div className="page-frame">
