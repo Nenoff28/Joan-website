@@ -14,6 +14,15 @@ describe("SSR public-route hydration", () => {
     expect(fs.existsSync(path.resolve(import.meta.dirname, "../client/src/SsrApp.tsx"))).toBe(false);
   });
 
+  it("keeps browser URL parsing out of SSR render paths", () => {
+    const checkout = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/pages/Checkout.tsx"), "utf8");
+    const account = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/pages/CustomerAccount.tsx"), "utf8");
+    expect(checkout).toContain("useSearch");
+    expect(checkout).not.toContain("window.location.search");
+    expect(account).toContain("useSearch");
+    expect(account).not.toContain("window.location.search");
+  });
+
   it("keeps homepage, catalogue, product, and support routes eager in the client app", () => {
     const source = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/App.tsx"), "utf8");
     for (const route of ["Home", "Category", "Product", "About", "Contact", "Delivery", "Terms", "FAQ", "Returns", "Checkout", "Favorites", "CustomerAccount"]) {

@@ -435,3 +435,8 @@
 - [x] Test all public forms and document or implement real delivery behavior for enquiries and account flows.
 - [x] Crawl and verify internal and external links, correcting broken destinations.
 - [x] Audit and improve performance, caching, image loading, and document the PageSpeed validation limitation or result.
+
+# Launch hardening follow-up
+- [x] Make Checkout and CustomerActivation URL parameter reads SSR-safe without hydration mismatch.
+- [x] Replace per-line order requests with one atomic multi-item order request and preserve admin compatibility.
+- [x] Increase brochure page presentation scale responsively while keeping controls and full-page content usable.

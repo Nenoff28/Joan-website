@@ -2,9 +2,9 @@ import { JsonLd, Layout, PageMeta } from "@/components/Storefront";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CheckCircle2, KeyRound, Loader2, LogIn, LogOut, MapPin, ShieldCheck } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 
 function AccountShell({ children, title, description }: { children: React.ReactNode; title: string; description: string }) {
   return <Layout><PageMeta title={title} description={description} /><JsonLd /><main className="account-page"><section className="page-frame account-frame">{children}</section></main></Layout>;
@@ -48,10 +48,12 @@ export default function CustomerAccount() {
 export function CustomerActivation() {
   const { language } = useLanguage();
   const [, setLocation] = useLocation();
-  const initialToken = useMemo(() => new URLSearchParams(window.location.search).get("token") ?? "", []);
-  const [token, setToken] = useState(initialToken);
+  const search = useSearch();
+  const initialToken = useMemo(() => new URLSearchParams(search).get("token") ?? "", [search]);
+  const [token, setToken] = useState("");
+  useEffect(() => setToken(initialToken), [initialToken]);
   const [message, setMessage] = useState("");
-  const activation = trpc.customer.activate.useMutation({ onSuccess: () => { setMessage(language === "en" ? "Your password was set successfully. Signing you in…" : "Паролата е зададена успешно. Влизате в профила си…"); window.setTimeout(() => setLocation("/account"), 850); }, onError: (error) => setMessage(error.message || (language === "en" ? "The activation link is not valid." : "Линкът за активиране не е валиден.")) });
+  const activation = trpc.customer.activate.useMutation({ onSuccess: () => { setMessage(language === "en" ? "Your password was set successfully. Signing you in…" : "Паролата е зададена успешно. Влизате в профила си…"); setTimeout(() => setLocation("/account"), 850); }, onError: (error) => setMessage(error.message || (language === "en" ? "The activation link is not valid." : "Линкът за активиране не е валиден.")) });
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); const password = String(form.get("password") ?? ""); const confirmation = String(form.get("confirmation") ?? ""); if (password !== confirmation) { setMessage(language === "en" ? "The two passwords do not match." : "Двете пароли не съвпадат."); return; } setMessage(""); activation.mutate({ token: token.trim(), password }); }
   return <AccountShell title={language === "en" ? "Activate your account" : "Активирайте профила си"} description={language === "en" ? "Set a new secure password for your customer account." : "Задайте нова защитена парола за своя клиентски профил."}><div className="account-activation"><section className="account-hero"><p className="eyebrow">{language === "en" ? "ACCOUNT ACTIVATION" : "АКТИВИРАНЕ НА ПРОФИЛ"}</p><h1>{language === "en" ? "Set a new password." : "Задайте нова парола."}</h1><p>{language === "en" ? "This link can be used once. Existing password details are not used after successful activation." : "Този линк е еднократен. След успешно активиране предишните данни за парола не се използват."}</p></section><form className="account-card account-login-form" onSubmit={submit}><label>{language === "en" ? "Code from the link" : "Код от линка"}<input value={token} onChange={(event) => setToken(event.target.value)} required minLength={32} maxLength={160} autoComplete="off" disabled={activation.isPending} /></label><label>{language === "en" ? "New password" : "Нова парола"}<input name="password" type="password" required minLength={12} autoComplete="new-password" placeholder={language === "en" ? "At least 12 characters" : "Поне 12 символа"} disabled={activation.isPending} /></label><label>{language === "en" ? "Repeat password" : "Повторете паролата"}<input name="confirmation" type="password" required minLength={12} autoComplete="new-password" disabled={activation.isPending} /></label>{message && <p className={activation.isSuccess ? "account-success" : "account-error"} role="status">{activation.isSuccess && <CheckCircle2 size={18} />}{message}</p>}<button type="submit" className="button-solid" disabled={activation.isPending}>{activation.isPending ? <><Loader2 className="animate-spin" size={18} /> {language === "en" ? "Activating…" : "Активиране…"}</> : <><KeyRound size={18} /> {language === "en" ? "Save new password" : "Запази новата парола"}</>}</button></form></div></AccountShell>;
 }

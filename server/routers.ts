@@ -124,15 +124,16 @@ export const appRouter = router({
     productsBySlugs: publicProcedure.input(z.object({ slugs: z.array(z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/)).min(1).max(99), language: catalogueLanguageSchema.optional() })).query(({ input }) => getPublicProductsBySlugs(input.slugs, input.language)),
     brochure: publicProcedure.query(() => getPublicBrochure()),
     createOrderRequest: publicProcedure.input(z.object({
-      productSlug: z.string().trim().min(3).max(160),
-      quantity: z.number().int().min(1).max(99),
+      items: z.array(z.object({ productSlug: z.string().trim().min(3).max(160), quantity: z.number().int().min(1).max(99) })).min(1).max(99).optional(),
+      productSlug: z.string().trim().min(3).max(160).optional(),
+      quantity: z.number().int().min(1).max(99).optional(),
       fullName: z.string().trim().min(3).max(255),
       email: z.string().trim().email().max(320),
       phone: z.string().trim().min(7).max(64),
       address: z.string().trim().min(6).max(1200),
       city: z.string().trim().min(2).max(160),
       postcode: z.string().trim().min(4).max(20),
-    })).mutation(({ input }) => createOrderRequest(input)),
+    }).refine((input) => Boolean(input.items?.length || (input.productSlug && input.quantity)), { message: "At least one product is required", path: ["items"] })).mutation(({ input }) => createOrderRequest(input)),
   }),
   contact: router({
     createEnquiry: publicProcedure.input(z.object({

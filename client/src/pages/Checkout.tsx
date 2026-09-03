@@ -6,14 +6,14 @@ import { useCatalogueProducts, type ManagedProduct } from "@/hooks/useCatalogue"
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, CheckCircle2, ChevronLeft, ClipboardCheck, LockKeyhole, Minus, PackageCheck, Plus, ShieldAlert, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { toast } from "sonner";
 
 type FormValues = { fullName: string; email: string; phone: string; address: string; city: string; postcode: string; consent: boolean };
 type FormErrors = Partial<Record<keyof FormValues, string>>;
 
-function getCheckoutProduct(products: ManagedProduct[]) {
-  const query = new URLSearchParams(window.location.search);
+function getCheckoutProduct(products: ManagedProduct[], search: string) {
+  const query = new URLSearchParams(search);
   const product = products.find((item) => item.slug === query.get("product")) ?? products[0];
   const requestedQuantity = Number(query.get("qty"));
   return { product, quantity: Number.isFinite(requestedQuantity) && requestedQuantity > 0 ? Math.min(requestedQuantity, 99) : 1 };
@@ -22,12 +22,14 @@ function getCheckoutProduct(products: ManagedProduct[]) {
 export default function Checkout() {
   const { language, t } = useLanguage();
   const { items, setQuantity, removeItem, normalizeSlugs, clearCart } = useCart();
-  const requestedSlug = new URLSearchParams(window.location.search).get("product") ?? undefined;
+  const search = useSearch();
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const requestedSlug = searchParams.get("product") ?? undefined;
   const lookupSlugs = useMemo(() => Array.from(new Set([...items.map((item) => item.slug), ...(requestedSlug ? [requestedSlug] : [])])), [items, requestedSlug]);
   const { products } = useCatalogueProducts(lookupSlugs);
   useEffect(() => normalizeSlugs(products.flatMap((product) => product.legacyPublicSlug ? [{ from: product.legacyPublicSlug, to: product.slug }] : [])), [products, normalizeSlugs]);
-  const { product, quantity } = useMemo(() => getCheckoutProduct(products), [products]);
-  const hasRequestedProduct = new URLSearchParams(window.location.search).has("product");
+  const { product, quantity } = useMemo(() => getCheckoutProduct(products, search), [products, search]);
+  const hasRequestedProduct = searchParams.has("product");
   const checkoutRows = useMemo(() => {
     const cartRows = items.flatMap((item) => {
       const cartProduct = products.find((candidate) => candidate.slug === item.slug || candidate.legacyPublicSlug === item.slug);
@@ -62,8 +64,8 @@ export default function Checkout() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!validate()) return;
-    const results = await Promise.all(checkoutRows.map((row) => createOrderRequest.mutateAsync({ productSlug: row.product.slug, quantity: row.quantity, fullName: values.fullName.trim(), email: values.email.trim(), phone: values.phone.trim(), address: values.address.trim(), city: values.city.trim(), postcode: values.postcode.trim() })));
-    setRequestNumbers(results.map((result) => result.requestNumber));
+    const result = await createOrderRequest.mutateAsync({ items: checkoutRows.map((row) => ({ productSlug: row.product.slug, quantity: row.quantity })), fullName: values.fullName.trim(), email: values.email.trim(), phone: values.phone.trim(), address: values.address.trim(), city: values.city.trim(), postcode: values.postcode.trim() });
+    setRequestNumbers([result.requestNumber]);
     clearCart();
   }
 

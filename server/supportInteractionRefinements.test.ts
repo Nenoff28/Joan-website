@@ -59,7 +59,8 @@ describe("support interaction refinements", () => {
   it("renders every persisted cart line in checkout with its own editable quantity", () => {
     expect(checkoutSource).toContain("const checkoutRows = useMemo");
     expect(checkoutSource).toContain('className="checkout-cart-controls"');
-    expect(checkoutSource).toContain("Promise.all(checkoutRows.map");
+    expect(checkoutSource).toContain("items: checkoutRows.map");
+    expect(checkoutSource).not.toContain("Promise.all(checkoutRows.map");
     expect(checkoutSource).toContain('checkoutRows.length === 0');
   });
 

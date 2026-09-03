@@ -1,7 +1,7 @@
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequests, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequestItems, orderRequests, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
@@ -486,7 +486,10 @@ export async function getAdminProducts() {
 
 export async function getAdminOrders() {
   const db = await requireDb();
-  return db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt));
+  const orders = await db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt));
+  if (!orders.length) return orders.map((order) => ({ ...order, items: [] as Array<typeof orderRequestItems.$inferSelect> }));
+  const items = await db.select().from(orderRequestItems).where(inArray(orderRequestItems.orderRequestId, orders.map((order) => order.id)));
+  return orders.map((order) => ({ ...order, items: items.filter((item) => item.orderRequestId === order.id) }));
 }
 
 export async function getAdminContactEnquiries() {
@@ -697,18 +700,34 @@ export async function updateContactEnquiry(id: number, status: ContactEnquirySta
   await logAdminActivity(adminUserId, "contact_enquiry.updated", "contact_enquiry", id, { status });
 }
 
-export async function createOrderRequest(input: { productSlug: string; quantity: number; fullName: string; email: string; phone: string; address: string; city: string; postcode: string }) {
+export type OrderRequestItemInput = { productSlug: string; quantity: number };
+export type OrderRequestInput = { items?: OrderRequestItemInput[]; productSlug?: string; quantity?: number; fullName: string; email: string; phone: string; address: string; city: string; postcode: string };
+
+export async function createOrderRequest(input: OrderRequestInput) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const [product] = await db.select().from(catalogueProducts).where(and(eq(catalogueProducts.slug, input.productSlug), eq(catalogueProducts.isActive, true), ne(catalogueProducts.availability, "out_of_stock"))).limit(1);
-  if (!product) throw new Error("Product is unavailable");
-  const price = product.priceEur ? Number(product.priceEur) : null;
-  const total = price === null ? null : price * input.quantity;
+  const requestedItems = input.items?.length ? input.items : input.productSlug && input.quantity ? [{ productSlug: input.productSlug, quantity: input.quantity }] : [];
+  if (!requestedItems.length) throw new Error("At least one product is required");
   const requestNumber = `J-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 5).toUpperCase()}`;
-  await db.insert(orderRequests).values({
-    requestNumber, productId: product.id, productName: product.name, productSku: product.sku, productImageUrl: product.imageUrl, quantity: input.quantity, priceEur: asDecimal(price), totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, city: input.city, postcode: input.postcode, status: "new", adminNote: null,
+  return db.transaction(async (tx) => {
+    const products = await tx.select().from(catalogueProducts).where(and(inArray(catalogueProducts.slug, requestedItems.map((item) => item.productSlug)), eq(catalogueProducts.isActive, true), ne(catalogueProducts.availability, "out_of_stock")));
+    const productBySlug = new Map(products.map((product) => [product.slug, product]));
+    const resolvedItems = requestedItems.map((item) => {
+      const product = productBySlug.get(item.productSlug);
+      if (!product) throw new Error("One or more products are unavailable");
+      const price = product.priceEur ? Number(product.priceEur) : null;
+      return { product, quantity: item.quantity, price, total: price === null ? null : price * item.quantity };
+    });
+    const totalQuantity = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const total = resolvedItems.every((item) => item.total !== null) ? resolvedItems.reduce((sum, item) => sum + (item.total ?? 0), 0) : null;
+    const first = resolvedItems[0];
+    const [header] = await tx.insert(orderRequests).values({
+      requestNumber, productId: first.product.id, productName: resolvedItems.length > 1 ? `${first.product.name} + още ${resolvedItems.length - 1}` : first.product.name, productSku: first.product.sku, productImageUrl: first.product.imageUrl, quantity: totalQuantity, priceEur: resolvedItems.length === 1 ? asDecimal(first.price) : null, totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, city: input.city, postcode: input.postcode, status: "new", adminNote: null,
+    });
+    const orderRequestId = Number(header.insertId);
+    await tx.insert(orderRequestItems).values(resolvedItems.map((item) => ({ orderRequestId, productId: item.product.id, productName: item.product.name, productSku: item.product.sku, productImageUrl: item.product.imageUrl, quantity: item.quantity, priceEur: asDecimal(item.price), totalEur: asDecimal(item.total) })));
+    return { requestNumber, itemCount: resolvedItems.length };
   });
-  return { requestNumber };
 }
 
 export async function createContactEnquiry(input: { fullName: string; email: string; phone?: string | null; subject: string; message: string }) {

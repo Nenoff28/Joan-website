@@ -365,3 +365,15 @@ html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }
 .home-catalogue-guide { background: #e9ece6; border-block: 1px solid var(--line); padding: clamp(3rem, 6vw, 5.5rem) 0; }.home-catalogue-guide-grid { align-items: start; display: grid; gap: clamp(1.5rem, 5vw, 5rem); grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); }.home-catalogue-guide h2 { color: var(--charcoal); font-family: Manrope, sans-serif; font-size: clamp(1.9rem, 3vw, 3rem); letter-spacing: -.045em; line-height: 1.04; margin: .45rem 0 1rem; max-width: 760px; }.home-catalogue-guide p:not(.eyebrow) { color: var(--slate); line-height: 1.75; max-width: 760px; }.home-catalogue-guide-links { background: #fff; border: 1px solid var(--line); display: grid; padding: .55rem 1.1rem; }.home-catalogue-guide-links > p { color: var(--charcoal); font-size: .76rem; font-weight: 800; letter-spacing: .08em; margin: .6rem 0 .3rem; text-transform: uppercase; }.home-catalogue-guide-links a { align-items: center; border-top: 1px solid #e7e9e5; color: var(--charcoal); display: flex; font-size: .95rem; font-weight: 700; gap: .75rem; justify-content: space-between; padding: .85rem 0; }.home-catalogue-guide-links a:hover { color: var(--red); }.home-catalogue-guide-links svg { color: var(--red); flex: 0 0 auto; }.home-catalogue-guide-links a:focus-visible { outline: 3px solid rgba(215,25,32,.28); outline-offset: 4px; }
  .homepage-product-shelf, .homepage-best-sellers { padding: clamp(3rem, 6vw, 5.5rem) 0; }.homepage-best-sellers { background: var(--mineral); border-block: 1px solid var(--line); }.homepage-product-shelf .product-grid, .homepage-best-sellers .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 760px) { .home-catalogue-guide-grid { grid-template-columns: 1fr; }.home-catalogue-guide-links { padding-inline: .95rem; } }
+
+/* Brochure readability refinement: enlarge the active sheet slightly while preserving responsive and fullscreen fit. */
+.brochure-active-page { width: min(100%, 440px); }
+.brochure-page-preview { height: 300px; }
+.brochure-page-preview img { width: 185px; }
+.brochure-viewer-shell:fullscreen .brochure-active-page { width: min(100%, 54vh, 540px); }
+@media (max-width: 760px) {
+  .brochure-active-page { width: min(100%, calc(100vw - 2rem), 430px); }
+  .brochure-page-preview { height: 230px; }
+  .brochure-page-preview img { width: 140px; }
+  .brochure-viewer-shell:fullscreen .brochure-active-page { width: min(100%, 360px); }
+}
