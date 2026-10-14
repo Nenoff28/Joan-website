@@ -440,3 +440,5 @@
 - [x] Make Checkout and CustomerActivation URL parameter reads SSR-safe without hydration mismatch.
 - [x] Replace per-line order requests with one atomic multi-item order request and preserve admin compatibility.
 - [x] Increase brochure page presentation scale responsively while keeping controls and full-page content usable.
+
+- [ ] Add the supplied Ideal Standard promotional banner as a homepage slideshow test slide; build a left category rail and right promotional carousel layout, then verify desktop/mobile and save a checkpoint.
