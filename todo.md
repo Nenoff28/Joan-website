@@ -441,4 +441,6 @@
 - [x] Replace per-line order requests with one atomic multi-item order request and preserve admin compatibility.
 - [x] Increase brochure page presentation scale responsively while keeping controls and full-page content usable.
 
-- [ ] Add the supplied Ideal Standard promotional banner as a homepage slideshow test slide; build a left category rail and right promotional carousel layout, then verify desktop/mobile and save a checkpoint.
+- [x] Add the supplied Ideal Standard promotional banner as a homepage slideshow test slide; build a left category rail and right promotional carousel layout, then verify desktop/mobile and save a checkpoint.
+
+- [ ] Replace the homepage opening with the supplied reference structure: remove the hero/promo copy panel, use a full clickable promotional banner on the right, add brand-colour category rail on the left, and show hover subcategory flyouts for every category.

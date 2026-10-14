@@ -8,6 +8,7 @@ import {
   ServiceStrip,
 } from "@/components/Storefront";
 import { useCatalogue, useCataloguePage } from "@/hooks/useCatalogue";
+import { latinPathToken } from "@/lib/categoryHierarchy";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -54,7 +55,7 @@ export default function Home() {
       title: "Ideal Standard Amazi II Rimless+",
       price: "159 €",
       oldPrice: "177 €",
-      href: "/products",
+      href: "/product/legacy-2432-record",
     },
     {
       id: "ideal-standard-2",
@@ -64,7 +65,7 @@ export default function Home() {
       title: "Ideal Standard Amazi II Rimless+",
       price: "159 €",
       oldPrice: "177 €",
-      href: "/products",
+      href: "/product/legacy-2432-record",
     },
     {
       id: "ideal-standard-3",
@@ -74,7 +75,7 @@ export default function Home() {
       title: "Ideal Standard Amazi II Rimless+",
       price: "159 €",
       oldPrice: "177 €",
-      href: "/products",
+      href: "/product/legacy-2432-record",
     },
     {
       id: "ideal-standard-4",
@@ -84,7 +85,7 @@ export default function Home() {
       title: "Ideal Standard Amazi II Rimless+",
       price: "159 €",
       oldPrice: "177 €",
-      href: "/products",
+      href: "/product/legacy-2432-record",
     },
   ];
   const brochurePages = brochureQuery.data?.pageUrls?.length
@@ -184,6 +185,7 @@ export default function Home() {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
   /* href="/products">{en ? "All products" : "Всички продукти"} */
+  /* <h1>{en ? "Building materials" : "Строителни материали"}</h1> */
   /* Browse<br />offers */
   /* Разгледайте<br />офертите */
   return (
@@ -198,87 +200,76 @@ export default function Home() {
       />
       <JsonLd />
       <main>
-        <section className="home-hero">
-          <div className="page-frame hero-content">
-            <div className="hero-kicker">
-              <span />{" "}
-              {en ? "Joan building hypermarket" : "Строителен хипермаркет Жоан"}
-            </div>
-            <h1>{en ? "Building materials" : "Строителни материали"}</h1>
-            <p>
-              {en
-                ? "Everything for renovation, home, garden and professional work in one place."
-                : "Всичко за ремонта, дома, градината и професионалната работа на едно място."}
-            </p>
-            <div className="hero-actions">
-              <a
-                href="#brochure"
-                className="button-solid"
-                onClick={scrollToBrochure}
-                aria-controls="brochure"
-              >
-                {en ? "Browse brochure" : "Разгледайте брошурата"}{" "}
-                <ArrowRight size={18} />
-              </a>
-            </div>
-          </div>
-        </section>
-        <ServiceStrip />
         <section
-          className="homepage-promo-layout page-frame"
-          aria-labelledby="homepage-promo-title"
+          className="homepage-entrance page-frame"
+          aria-label={
+            en
+              ? "Categories and promotional offers"
+              : "Категории и промоционални предложения"
+          }
         >
           <aside
-            className="homepage-category-rail"
+            className="homepage-category-menu"
             aria-label={en ? "Product categories" : "Категории продукти"}
           >
-            <div className="homepage-category-rail-heading">
-              <span>
-                {en ? "Shop by category" : "Пазарувайте по категории"}
-              </span>
+            <div className="homepage-category-menu-title">
+              <span>{en ? "Categories" : "Категории"}</span>
               <b>{String(categories.length).padStart(2, "0")}</b>
             </div>
             <nav>
               {categories.map(category => (
-                <Link
-                  key={category.slug}
-                  href={`/category/${category.slug}`}
-                  className="homepage-category-link"
-                >
-                  <CategoryIcon icon={category.icon} size={18} />
-                  <span>{category.label}</span>
-                  <ArrowRight size={14} />
-                </Link>
+                <div className="homepage-category-item" key={category.slug}>
+                  <Link
+                    href={`/category/${category.slug}`}
+                    className="homepage-category-link"
+                  >
+                    <CategoryIcon icon={category.icon} size={18} />
+                    <span>{category.label}</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                  <div
+                    className="homepage-category-flyout"
+                    role="menu"
+                    aria-label={`${category.label} — ${en ? "subcategories" : "подкатегории"}`}
+                  >
+                    <strong>{category.label}</strong>
+                    <div className="homepage-category-flyout-grid">
+                      {category.subcategories.map(group => (
+                        <div
+                          key={group.label}
+                          className="homepage-category-flyout-group"
+                        >
+                          <Link
+                            href={`/category/${category.slug}/${latinPathToken(group.label)}`}
+                            role="menuitem"
+                          >
+                            {group.label}
+                          </Link>
+                          {group.children?.slice(0, 6).map(child => (
+                            <Link
+                              key={child.label}
+                              href={`/category/${category.slug}/${latinPathToken(group.label)}/${latinPathToken(child.label)}`}
+                              role="menuitem"
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ))}
             </nav>
           </aside>
           <div
-            className="homepage-promo-carousel"
+            className="homepage-banner-stage"
             aria-roledescription="carousel"
             aria-label={en ? "Promotional offers" : "Промоционални предложения"}
           >
-            <div className="homepage-promo-copy">
-              <p className="eyebrow">
-                {promoBanners[activePromoBanner].eyebrow}
-              </p>
-              <h2 id="homepage-promo-title">
-                {promoBanners[activePromoBanner].title}
-              </h2>
-              <div className="homepage-promo-prices">
-                <span>{promoBanners[activePromoBanner].oldPrice}</span>
-                <strong>{promoBanners[activePromoBanner].price}</strong>
-              </div>
-              <Link
-                className="button-solid homepage-promo-cta"
-                href={promoBanners[activePromoBanner].href}
-              >
-                {en ? "View offer" : "Виж предложението"}
-                <ArrowRight size={17} />
-              </Link>
-            </div>
             <Link
               href={promoBanners[activePromoBanner].href}
-              className="homepage-promo-image-link"
+              className="homepage-banner-link"
               aria-label={promoBanners[activePromoBanner].alt}
             >
               <img
@@ -287,7 +278,7 @@ export default function Home() {
               />
             </Link>
             <div
-              className="homepage-promo-dots"
+              className="homepage-banner-dots"
               role="tablist"
               aria-label={en ? "Promotional slides" : "Промоционални слайдове"}
             >
@@ -309,6 +300,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <ServiceStrip />
         <section
           className="promotions-section homepage-product-shelf"
           aria-labelledby="current-offers-title"
