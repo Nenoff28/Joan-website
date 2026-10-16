@@ -8,7 +8,7 @@ import {
   ServiceStrip,
 } from "@/components/Storefront";
 import { useCatalogue, useCataloguePage } from "@/hooks/useCatalogue";
-import { latinPathToken } from "@/lib/categoryHierarchy";
+import { categoryPathTokens } from "@/lib/categoryHierarchy";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -34,6 +34,11 @@ const fallbackBrochurePages = [
   "/manus-storage/page-8_d10987e1.jpg",
 ];
 
+const homepageCategoryPath = (slug: string, labels: string[] = []) => {
+  const path = categoryPathTokens(labels).join("~");
+  return `/category/${slug}${path ? `?path=${path}` : ""}`;
+};
+
 export default function Home() {
   const { language } = useLanguage();
   const en = language === "en";
@@ -46,6 +51,7 @@ export default function Home() {
   const bestSellersQuery = trpc.catalogue.bestSellers.useQuery({ language });
   const brochureQuery = trpc.catalogue.brochure.useQuery();
   const [activePromoBanner, setActivePromoBanner] = useState(0);
+  const [openCategorySlug, setOpenCategorySlug] = useState<string | null>(null);
   const promoBanners = [
     {
       id: "ideal-standard-1",
@@ -88,6 +94,14 @@ export default function Home() {
       href: "/product/legacy-2432-record",
     },
   ];
+  useEffect(() => {
+    const timer = window.setInterval(
+      () =>
+        setActivePromoBanner(current => (current + 1) % promoBanners.length),
+      7000
+    );
+    return () => window.clearInterval(timer);
+  }, [promoBanners.length]);
   const brochurePages = brochureQuery.data?.pageUrls?.length
     ? brochureQuery.data.pageUrls
     : fallbackBrochurePages;
@@ -219,20 +233,38 @@ export default function Home() {
             <nav>
               {categories.map(category => (
                 <div className="homepage-category-item" key={category.slug}>
-                  <Link
-                    href={`/category/${category.slug}`}
-                    className="homepage-category-link"
+                  <button
+                    type="button"
+                    className={`homepage-category-link homepage-category-trigger ${openCategorySlug === category.slug ? "is-open" : ""}`}
+                    onClick={() =>
+                      setOpenCategorySlug(current =>
+                        current === category.slug ? null : category.slug
+                      )
+                    }
+                    aria-expanded={openCategorySlug === category.slug}
+                    aria-controls={`homepage-category-flyout-${category.slug}`}
                   >
                     <CategoryIcon icon={category.icon} size={18} />
                     <span>{category.label}</span>
                     <ArrowRight size={14} />
-                  </Link>
+                  </button>
                   <div
+                    id={`homepage-category-flyout-${category.slug}`}
                     className="homepage-category-flyout"
                     role="menu"
                     aria-label={`${category.label} — ${en ? "subcategories" : "подкатегории"}`}
+                    hidden={openCategorySlug !== category.slug}
                   >
                     <strong>{category.label}</strong>
+                    <Link
+                      href={homepageCategoryPath(category.slug)}
+                      className="homepage-category-flyout-all"
+                      role="menuitem"
+                      onClick={() => setOpenCategorySlug(null)}
+                    >
+                      {en ? "All in" : "Всички в"} {category.label}{" "}
+                      <ArrowRight size={14} />
+                    </Link>
                     <div className="homepage-category-flyout-grid">
                       {category.subcategories.map(group => (
                         <div
@@ -240,16 +272,23 @@ export default function Home() {
                           className="homepage-category-flyout-group"
                         >
                           <Link
-                            href={`/category/${category.slug}/${latinPathToken(group.label)}`}
+                            href={homepageCategoryPath(category.slug, [
+                              group.label,
+                            ])}
                             role="menuitem"
+                            onClick={() => setOpenCategorySlug(null)}
                           >
                             {group.label}
                           </Link>
                           {group.children?.slice(0, 6).map(child => (
                             <Link
                               key={child.label}
-                              href={`/category/${category.slug}/${latinPathToken(group.label)}/${latinPathToken(child.label)}`}
+                              href={homepageCategoryPath(category.slug, [
+                                group.label,
+                                child.label,
+                              ])}
                               role="menuitem"
+                              onClick={() => setOpenCategorySlug(null)}
                             >
                               {child.label}
                             </Link>
@@ -268,8 +307,9 @@ export default function Home() {
             aria-label={en ? "Promotional offers" : "Промоционални предложения"}
           >
             <Link
+              key={promoBanners[activePromoBanner].id}
               href={promoBanners[activePromoBanner].href}
-              className="homepage-banner-link"
+              className="homepage-banner-link homepage-banner-slide-in"
               aria-label={promoBanners[activePromoBanner].alt}
             >
               <img

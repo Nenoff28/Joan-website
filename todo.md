@@ -393,6 +393,7 @@
 - [x] Grant admin-panel access to the existing user account ddeye32@gmail.com and verify the resulting role without changing other users.
 
 # Launch Readiness Audit — 20 точки
+
 - [x] Audit and complete the Privacy Policy for the actual data collected by the site.
 - [x] Audit and complete the Terms & Conditions page.
 - [x] Verify a clear visible CTA exists on every key customer-facing page and add missing CTAs.
@@ -415,6 +416,7 @@
 - [x] Audit and improve performance, caching, image loading, and document the PageSpeed validation limitation or result.
 
 # Launch Readiness Audit — 20 точки
+
 - [x] Audit and complete the Privacy Policy for the actual data collected by the site.
 - [x] Audit and complete the Terms & Conditions page.
 - [x] Verify a clear visible CTA exists on every key customer-facing page and add missing CTAs.
@@ -437,10 +439,15 @@
 - [x] Audit and improve performance, caching, image loading, and document the PageSpeed validation limitation or result.
 
 # Launch hardening follow-up
+
 - [x] Make Checkout and CustomerActivation URL parameter reads SSR-safe without hydration mismatch.
 - [x] Replace per-line order requests with one atomic multi-item order request and preserve admin compatibility.
 - [x] Increase brochure page presentation scale responsively while keeping controls and full-page content usable.
 
 - [x] Add the supplied Ideal Standard promotional banner as a homepage slideshow test slide; build a left category rail and right promotional carousel layout, then verify desktop/mobile and save a checkpoint.
 
-- [ ] Replace the homepage opening with the supplied reference structure: remove the hero/promo copy panel, use a full clickable promotional banner on the right, add brand-colour category rail on the left, and show hover subcategory flyouts for every category.
+- [x] Replace the homepage opening with the supplied reference structure: remove the hero/promo copy panel, use a full clickable promotional banner on the right, add a Joan-red category rail on the left, and show click-open subcategory flyouts for every category.
+- [x] Round the homepage category rail and promotional slideshow containers to match the requested visual treatment.
+- [x] Replace hover-only category opening with accessible click-to-open controls and repair all category, subgroup, and child-subcategory links.
+- [x] Correct homepage subgroup links to the catalogue's canonical `?path=` route format and verify that first-level subcategory navigation no longer returns 404.
+- [x] Add automatic seven-second promotional rotation and a reduced-motion-safe transition effect when homepage slides change.

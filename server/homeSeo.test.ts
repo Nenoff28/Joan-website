@@ -68,4 +68,18 @@ describe("homepage SEO audit regressions", () => {
     expect(homeSource.indexOf('title={en ? "Current offers" : "Актуални предложения"}')).toBeLessThan(homeSource.indexOf('id="brochure"'));
     expect(homeSource.indexOf('title={en ? "Best sellers" : "Най-продавани"}')).toBeLessThan(homeSource.indexOf('id="brochure"'));
   });
+
+  it("uses click-open category flyouts and an animated, automatically rotating homepage banner", () => {
+    const stylesheet = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+    expect(homeSource).toContain("const [openCategorySlug, setOpenCategorySlug] = useState<string | null>(null);");
+    expect(homeSource).toContain("const homepageCategoryPath = (slug: string, labels: string[] = []) =>");
+    expect(homeSource).toContain("href={homepageCategoryPath(category.slug, [");
+    expect(homeSource).toContain("aria-expanded={openCategorySlug === category.slug}");
+    expect(homeSource).toContain('className="homepage-category-flyout-all"');
+    expect(homeSource).toContain('className="homepage-banner-link homepage-banner-slide-in"');
+    expect(homeSource).toContain("setActivePromoBanner(current => (current + 1) % promoBanners.length)");
+    expect(stylesheet).toContain("background: var(--red); border-radius: .8rem;");
+    expect(stylesheet).toContain("@keyframes homepage-banner-enter");
+    expect(stylesheet).not.toContain(".homepage-category-item:hover .homepage-category-flyout");
+  });
 });

@@ -634,34 +634,37 @@ html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }
   }
 }
 
-/* Reference-style homepage entrance: Joan category rail + full clickable promotional artwork. */
+/* Reference-style homepage entrance: Joan red category rail + full clickable promotional artwork. */
 .homepage-entrance { align-items: stretch; display: grid; gap: 1rem; grid-template-columns: minmax(235px, 275px) minmax(0, 1fr); margin-top: 1.25rem; position: relative; z-index: 3; }
-.homepage-category-menu { background: #0a6aa8; color: white; padding: 1rem .7rem .75rem; position: relative; z-index: 5; }
+.homepage-category-menu { background: var(--red); border-radius: .8rem; color: white; padding: 1rem .7rem .75rem; position: relative; z-index: 5; }
 .homepage-category-menu-title { align-items: center; border-bottom: 1px solid rgba(255,255,255,.3); display: flex; font-family: "Manrope", sans-serif; font-size: .7rem; font-weight: 800; justify-content: space-between; letter-spacing: .11em; padding: 0 .55rem .85rem; text-transform: uppercase; }
 .homepage-category-menu-title b { color: #d6efff; font-size: .62rem; }
 .homepage-category-menu nav { display: grid; gap: .18rem; margin-top: .65rem; }
 .homepage-category-item { position: relative; }
-.homepage-category-item > .homepage-category-link { align-items: center; color: white; display: grid; gap: .58rem; grid-template-columns: 20px 1fr auto; min-height: 39px; padding: .55rem .5rem; transition: background-color 180ms ease, transform 180ms ease; }
+.homepage-category-item > .homepage-category-link { align-items: center; background: transparent; border: 0; border-radius: .45rem; color: white; cursor: pointer; display: grid; font: inherit; gap: .58rem; grid-template-columns: 20px 1fr auto; min-height: 39px; padding: .55rem .5rem; text-align: left; transition: background-color 180ms ease; width: 100%; }
 .homepage-category-item > .homepage-category-link span { font-family: "Manrope", sans-serif; font-size: .74rem; font-weight: 800; line-height: 1.15; }
 .homepage-category-item > .homepage-category-link svg:first-child { color: #d9f0ff; }
 .homepage-category-item > .homepage-category-link svg:last-child { opacity: .75; }
-.homepage-category-item:hover > .homepage-category-link, .homepage-category-item:focus-within > .homepage-category-link { background: #075887; transform: translateX(3px); }
-.homepage-category-flyout { background: #fff; box-shadow: 0 16px 35px rgba(18,29,35,.22); color: var(--charcoal); display: none; left: calc(100% + .75rem); min-width: 430px; padding: 1rem 1.15rem 1.1rem; position: absolute; top: -.55rem; z-index: 20; }
+.homepage-category-trigger.is-open, .homepage-category-trigger:focus-visible { background: var(--red-deep); }
+.homepage-category-flyout { background: #fff; border-radius: .65rem; box-shadow: 0 16px 35px rgba(18,29,35,.22); color: var(--charcoal); left: calc(100% + .75rem); min-width: 430px; padding: 1rem 1.15rem 1.1rem; position: absolute; top: -.55rem; z-index: 20; }
 .homepage-category-flyout::before { border-bottom: 9px solid transparent; border-right: 9px solid #fff; border-top: 9px solid transparent; content: ""; left: -9px; position: absolute; top: 18px; }
-.homepage-category-item:hover .homepage-category-flyout, .homepage-category-item:focus-within .homepage-category-flyout { display: block; }
 .homepage-category-flyout > strong { border-bottom: 2px solid var(--red); display: block; font-family: "Manrope", sans-serif; font-size: .9rem; margin-bottom: .75rem; padding-bottom: .55rem; }
+.homepage-category-flyout-all { align-items: center; color: var(--red); display: flex; font-family: "Manrope", sans-serif; font-size: .74rem; font-weight: 800; gap: .35rem; justify-content: space-between; margin: -.15rem 0 .85rem; }
 .homepage-category-flyout-grid { display: grid; gap: .75rem 1rem; grid-template-columns: repeat(2, minmax(0,1fr)); max-height: 310px; overflow: auto; }
 .homepage-category-flyout-group { display: grid; gap: .28rem; align-content: start; }
 .homepage-category-flyout-group a { color: var(--slate); font-size: .72rem; line-height: 1.25; }
 .homepage-category-flyout-group a:first-child { color: var(--charcoal); font-family: "Manrope", sans-serif; font-size: .75rem; font-weight: 800; }
 .homepage-category-flyout-group a:hover, .homepage-category-flyout-group a:focus-visible { color: var(--red); }
-.homepage-banner-stage { background: #fff; min-width: 0; overflow: visible; position: relative; }
-.homepage-banner-link { background: #fff; display: block; line-height: 0; overflow: hidden; }
+.homepage-banner-stage { background: #fff; border-radius: .8rem; min-width: 0; overflow: hidden; position: relative; }
+.homepage-banner-link { background: #fff; border-radius: .8rem; display: block; line-height: 0; overflow: hidden; }
 .homepage-banner-link img { aspect-ratio: 640 / 426; display: block; height: auto; object-fit: cover; transition: transform 500ms cubic-bezier(.23,1,.32,1); width: 100%; }
+.homepage-banner-slide-in img { animation: homepage-banner-enter 420ms var(--ease-out) both; }
 .homepage-banner-link:hover img, .homepage-banner-link:focus-visible img { transform: scale(1.015); }
 .homepage-banner-link:focus-visible { outline: 4px solid var(--red); outline-offset: -4px; }
 .homepage-banner-dots { bottom: .8rem; display: flex; gap: .42rem; left: 50%; position: absolute; transform: translateX(-50%); z-index: 3; }
 .homepage-banner-dots button { background: rgba(255,255,255,.85); border: 2px solid rgba(33,39,39,.38); border-radius: 50%; height: 11px; padding: 0; width: 11px; }
 .homepage-banner-dots button.is-active { background: var(--red); border-color: white; transform: scale(1.18); }
+@keyframes homepage-banner-enter { from { opacity: .35; transform: scale(1.025) translateX(1.2%); } to { opacity: 1; transform: scale(1) translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .homepage-banner-slide-in img { animation: none; } }
 @media (max-width: 820px) { .homepage-entrance { grid-template-columns: 205px minmax(0, 1fr); }.homepage-category-item > .homepage-category-link span { font-size: .68rem; }.homepage-category-flyout { min-width: 360px; } }
-@media (max-width: 640px) { .homepage-entrance { display: block; margin-top: .8rem; }.homepage-category-menu { padding: .75rem; }.homepage-category-menu nav { display: flex; gap: .35rem; overflow-x: auto; padding-bottom: .2rem; scrollbar-width: thin; }.homepage-category-item { flex: 0 0 auto; }.homepage-category-item > .homepage-category-link { background: rgba(0,0,0,.13); grid-template-columns: 18px auto; min-height: 42px; padding: .55rem .7rem; }.homepage-category-item > .homepage-category-link span { font-size: .66rem; white-space: nowrap; }.homepage-category-item > .homepage-category-link svg:last-child { display: none; }.homepage-category-flyout { left: 0; min-width: min(340px, calc(100vw - 2rem)); top: calc(100% + .45rem); }.homepage-category-flyout::before { border-bottom: 9px solid #fff; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 0; left: 1.3rem; top: -9px; }.homepage-category-flyout-grid { grid-template-columns: 1fr 1fr; max-height: 280px; }.homepage-banner-stage { margin-top: .7rem; }.homepage-banner-link img { aspect-ratio: 640 / 426; } }
+@media (max-width: 640px) { .homepage-entrance { display: block; margin-top: .8rem; }.homepage-category-menu { padding: .75rem; }.homepage-category-menu nav { display: flex; gap: .35rem; overflow-x: auto; padding-bottom: .2rem; scrollbar-width: thin; }.homepage-category-item { flex: 0 0 auto; }.homepage-category-item > .homepage-category-link { background: rgba(0,0,0,.13); grid-template-columns: 18px auto; min-height: 42px; padding: .55rem .7rem; width: auto; }.homepage-category-item > .homepage-category-link span { font-size: .66rem; white-space: nowrap; }.homepage-category-item > .homepage-category-link svg:last-child { display: none; }.homepage-category-flyout { left: 0; min-width: min(340px, calc(100vw - 2rem)); top: calc(100% + .45rem); }.homepage-category-flyout::before { border-bottom: 9px solid #fff; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 0; left: 1.3rem; top: -9px; }.homepage-category-flyout-grid { grid-template-columns: 1fr 1fr; max-height: 280px; }.homepage-banner-stage { border-radius: .8rem; margin-top: .7rem; }.homepage-banner-link, .homepage-banner-link img { border-radius: .8rem; }.homepage-banner-link img { aspect-ratio: 640 / 426; } }
