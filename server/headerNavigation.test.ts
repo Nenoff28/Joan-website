@@ -38,6 +38,13 @@ describe("streamlined storefront header navigation", () => {
     expect(headerSource).toContain('mobile-category-branch ${groupActive ? "is-active" : ""}');
   });
 
+  it("links express delivery to the delivery page and store to Google Maps", () => {
+    expect(headerSource).toContain('href="/delivery" className="utility-delivery"');
+    expect(headerSource).toContain('"Експресна доставка" : "Express delivery"');
+    expect(headerSource).toContain('href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8"');
+    expect(headerSource).toContain('language === "bg" ? "Магазин" : "Store"');
+  });
+
   it("derives active category and subcategory states from the current route", () => {
     expect(headerSource).toContain("function activeCategoryPath(location: string, slug: string)");
     expect(headerSource).toContain('className={`mega-category-heading ${activePath ? "is-active" : ""}`}');

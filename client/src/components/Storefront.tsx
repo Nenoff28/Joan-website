@@ -194,9 +194,9 @@ function Header() {
     <header className="site-header">
       <div className="utility-rail">
         <div className="page-frame utility-inner">
-          <p><Truck size={14} /> {language === "bg" ? "Експресна доставка" : "Express delivery"}</p>
+          <Link href="/delivery" className="utility-delivery"><Truck size={14} /> {language === "bg" ? "Експресна доставка" : "Express delivery"}</Link>
           <div className="utility-actions">
-            <Link href="/delivery">{t("delivery")}</Link>
+            <a href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer">{language === "bg" ? "Магазин" : "Store"}</a>
             <Link href="/contact">{t("contacts")}</Link>
             <a href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={13} /> {store.phones[2]}</a>
           </div>
