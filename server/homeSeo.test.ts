@@ -163,8 +163,8 @@ describe("homepage SEO audit regressions", () => {
     );
     expect(stylesheet).toContain("grid-template-rows: auto auto;");
     expect(stylesheet).toContain("grid-row: 1 / span 2;");
-    expect(stylesheet).toContain("height: clamp(280px, 29vw, 360px);");
-    expect(stylesheet).toContain(".homepage-entrance-cta { align-items: center;");
+    expect(stylesheet).toContain("height: clamp(340px, 34vw, 440px);");
+    expect(stylesheet).toContain("min-height: 44px; padding: .45rem .8rem;");
     expect(stylesheet).toContain("@keyframes homepage-banner-enter");
     expect(stylesheet).not.toContain(
       ".homepage-category-item:hover .homepage-category-flyout"
