@@ -359,7 +359,6 @@ function Footer() {
           <h3 id="footer-joan-title">Жоан</h3>
           <Link href="/about">{language === "en" ? "About us" : "За нас"}</Link>
           <Link href="/contact">{language === "en" ? "Contact" : "Контакти"}</Link>
-          <Link href="/contact?topic=careers">{language === "en" ? "Careers" : "Кариери"}</Link>
         </nav>
         <nav className="footer-column" aria-labelledby="footer-information-title">
           <h3 id="footer-information-title">{language === "en" ? "General information" : "Обща информация"}</h3>

@@ -52,6 +52,8 @@ describe("returns FAQ and footer refinements", () => {
     expect(storefrontSource).toContain('aria-labelledby="footer-information-title"');
     expect(storefrontSource).toContain('За клиенти');
     expect(storefrontSource).toContain('Обща информация');
+    expect(storefrontSource).not.toContain('Кариери');
+    expect(storefrontSource).not.toContain('Careers');
     expect(storefrontSource).toContain('className="footer-link-button"');
     expect(storefrontSource).not.toContain('Подредени категории за ремонт, дом, градина и професионална работа.');
     expect(storefrontSource).not.toContain('Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.');
