@@ -451,3 +451,4 @@
 - [x] Replace hover-only category opening with accessible click-to-open controls and repair all category, subgroup, and child-subcategory links.
 - [x] Correct homepage subgroup links to the catalogue's canonical `?path=` route format and verify that first-level subcategory navigation no longer returns 404.
 - [x] Add automatic seven-second promotional rotation and a reduced-motion-safe transition effect when homepage slides change.
+- [x] Remove the homepage service-information strip below the promotional banner as requested.

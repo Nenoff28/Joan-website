@@ -5,7 +5,6 @@ import {
   PageMeta,
   ProductCard,
   SectionHeading,
-  ServiceStrip,
 } from "@/components/Storefront";
 import { useCatalogue, useCataloguePage } from "@/hooks/useCatalogue";
 import { categoryPathTokens } from "@/lib/categoryHierarchy";
@@ -340,7 +339,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <ServiceStrip />
         <section
           className="promotions-section homepage-product-shelf"
           aria-labelledby="current-offers-title"
