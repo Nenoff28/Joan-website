@@ -40,9 +40,9 @@
 - [x] Отстранени са откритите при browser QA mobile overflow и SSR lazy/Suspense recoverable error на admin entry routes. Хедърът използва lean identity за „Профил“ след собствен вход. Privacy страницата отразява регистрацията, Google идентификаторите и служебните роли.
 - [x] Преминаха 58 Vitest файла / 220 теста, TypeScript, production client+SSR build и git diff --check. Изолираният browser QA с mock API потвърди създаване на custom роля, назначаване, операторски allowlist, пренасочване, отказ на забранен URL, read-only контролите и 375px mobile layout без page errors. Реалните анонимни admin заявки връщат 403. Тестови профили/поръчки не са записвани в production базата.
 - [x] Целевият production crawler SSR verifier премина за home, catalogue page 1, profile loading shell, privacy, admin entry routes, index redirect и реални 404. Документирани са употребата на роли, собственият admin преход и Google настройването в docs/users-roles.md и docs/google-login-setup.md.
-- [ ] Активиране и live проверка на Google OAuth след предоставяне на GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET и разрешен callback; към момента configured=false и бутонът е явно неактивен.
-- [ ] IP allowlist след предоставяне на точните разрешени IP адреси и проверка на доверения reverse proxy, без риск от admin lockout.
-- [ ] Отделен SEO follow-up: съществуващият SSR canonical на /products?page=2 сочи към /products. Не е променян в задачата за роли и вход.
+- [deferred] Активиране и live проверка на Google OAuth след предоставяне на GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET и разрешен callback; към момента configured=false и бутонът е явно неактивен.
+- [deferred] IP allowlist след предоставяне на точните разрешени IP адреси и проверка на доверения reverse proxy, без риск от admin lockout.
+- [deferred] Отделен SEO follow-up: съществуващият SSR canonical на /products?page=2 сочи към /products. Не е променян в задачата за роли и вход.
 
 # Заявки: detail страница и история на статусите
 - [x] Добавен е отделен защитен URL `/admin/requests/:id`; списъкът „Заявки“ вече води към него. Detail страницата показва всички артикули със снимка, име, SKU, количество, единична/обща цена и snapshot на наличните технически параметри. Legacy заявки без child артикули остават четими чрез съвместим fallback.
