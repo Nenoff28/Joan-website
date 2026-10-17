@@ -652,8 +652,10 @@ export default function Home() {
                   <span className="feature-icon">
                     <CategoryIcon icon={category.icon} size={20} />
                   </span>
-                  <p>{category.label}</p>
-                  <small>{category.description}</small>
+                  <div className="feature-category-copy">
+                    <p>{category.label}</p>
+                    <small>{category.description}</small>
+                  </div>
                 </div>
                 <ArrowRight className="feature-arrow" size={19} />
               </Link>

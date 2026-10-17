@@ -720,3 +720,15 @@ html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }
 .related-section .product-image-box img { object-fit: contain !important; }
 /* Checkout address comboboxes: square fields with searchable prefix suggestions. */
 .checkout-combobox { position: relative; }.checkout-combobox > input { min-width: 0; width: 100%; }.checkout-combobox > input:disabled { cursor: not-allowed; opacity: .62; }.checkout-suggestions { background: white; border: 1px solid var(--red); box-shadow: 0 12px 24px rgba(31,38,41,.14); display: grid; left: 0; max-height: 250px; overflow-y: auto; position: absolute; right: 0; top: calc(100% - .15rem); z-index: 20; }.checkout-suggestions button { border-bottom: 1px solid #eceee9; color: var(--ink); cursor: pointer; font-family: "IBM Plex Sans", sans-serif; font-size: .82rem; padding: .62rem .72rem; text-align: left; }.checkout-suggestions button:last-child { border-bottom: 0; }.checkout-suggestions button:hover, .checkout-suggestions button:focus-visible { background: var(--red-wash); color: var(--red); outline: none; }
+
+/* Category captions: readable white copy independently of the photograph underneath. */
+.feature-category-card .feature-category-copy { background: rgba(24, 30, 33, .82); border-radius: 6px; box-shadow: 0 3px 12px rgba(0, 0, 0, .16); padding: .45rem .6rem; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.feature-category-card .feature-category-copy p, .feature-category-card .feature-category-copy small { color: #fff; }
+@media (max-width: 760px) { .feature-category-card .feature-category-copy { padding: .45rem .5rem; } }
+
+/* Newly generated neutral category photography must not inherit the old vivid-photo boosts. */
+a.feature-category-card[href="/category/instrumenti"] img,
+a.feature-category-card[href="/category/banya"] img,
+a.feature-category-card[href="/category/v-i-k"] img,
+a.feature-category-card[href="/category/boi-lakove-mazilki"] img,
+a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !important; }
