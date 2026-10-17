@@ -701,7 +701,7 @@ export async function updateContactEnquiry(id: number, status: ContactEnquirySta
 }
 
 export type OrderRequestItemInput = { productSlug: string; quantity: number };
-export type OrderRequestInput = { items?: OrderRequestItemInput[]; productSlug?: string; quantity?: number; fullName: string; email: string; phone: string; address: string; city: string; postcode: string };
+export type OrderRequestInput = { items?: OrderRequestItemInput[]; productSlug?: string; quantity?: number; fullName: string; email: string; phone: string; address: string; region?: string; city: string; postcode: string };
 
 export async function createOrderRequest(input: OrderRequestInput) {
   await ensureCatalogueSeeded();
@@ -722,7 +722,7 @@ export async function createOrderRequest(input: OrderRequestInput) {
     const total = resolvedItems.every((item) => item.total !== null) ? resolvedItems.reduce((sum, item) => sum + (item.total ?? 0), 0) : null;
     const first = resolvedItems[0];
     const [header] = await tx.insert(orderRequests).values({
-      requestNumber, productId: first.product.id, productName: resolvedItems.length > 1 ? `${first.product.name} + още ${resolvedItems.length - 1}` : first.product.name, productSku: first.product.sku, productImageUrl: first.product.imageUrl, quantity: totalQuantity, priceEur: resolvedItems.length === 1 ? asDecimal(first.price) : null, totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, city: input.city, postcode: input.postcode, status: "new", adminNote: null,
+      requestNumber, productId: first.product.id, productName: resolvedItems.length > 1 ? `${first.product.name} + още ${resolvedItems.length - 1}` : first.product.name, productSku: first.product.sku, productImageUrl: first.product.imageUrl, quantity: totalQuantity, priceEur: resolvedItems.length === 1 ? asDecimal(first.price) : null, totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, region: input.region ?? null, city: input.city, postcode: input.postcode, status: "new", adminNote: null,
     });
     const orderRequestId = Number(header.insertId);
     await tx.insert(orderRequestItems).values(resolvedItems.map((item) => ({ orderRequestId, productId: item.product.id, productName: item.product.name, productSku: item.product.sku, productImageUrl: item.product.imageUrl, quantity: item.quantity, priceEur: asDecimal(item.price), totalEur: asDecimal(item.total) })));

@@ -131,6 +131,7 @@ export const appRouter = router({
       email: z.string().trim().email().max(320),
       phone: z.string().trim().min(7).max(64),
       address: z.string().trim().min(6).max(1200),
+      region: z.string().trim().min(2).max(160).optional(),
       city: z.string().trim().min(2).max(160),
       postcode: z.string().trim().min(4).max(20),
     }).refine((input) => Boolean(input.items?.length || (input.productSlug && input.quantity)), { message: "At least one product is required", path: ["items"] })).mutation(({ input }) => createOrderRequest(input)),

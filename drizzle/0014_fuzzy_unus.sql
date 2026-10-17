@@ -1,0 +1,1 @@
+ALTER TABLE `order_requests` ADD `region` varchar(160);

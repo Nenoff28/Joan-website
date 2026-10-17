@@ -245,6 +245,7 @@ export const orderRequests = mysqlTable("order_requests", {
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 64 }).notNull(),
   address: text("address").notNull(),
+  region: varchar("region", { length: 160 }),
   city: varchar("city", { length: 160 }).notNull(),
   postcode: varchar("postcode", { length: 20 }).notNull(),
   status: mysqlEnum("status", ["new", "contacted", "confirmed", "closed", "cancelled"]).default("new").notNull(),
