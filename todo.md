@@ -453,3 +453,4 @@
 - [x] Add automatic seven-second promotional rotation and a reduced-motion-safe transition effect when homepage slides change.
 - [x] Remove the homepage service-information strip below the promotional banner as requested.
 - [x] Add two rounded homepage CTA buttons below the promotional slideshow: brochure and promotional products.
+- [x] Reduce the homepage slideshow height and align the category menu bottom with the two CTA buttons below it.
