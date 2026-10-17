@@ -257,6 +257,13 @@ html[lang="en"] .product-detail-info::after { content: "AVAILABILITY · PRICE ·
 .home-hero { min-height: 510px; }.home-hero .hero-content { padding-bottom: 5.5rem; }
 .feature-category-grid, .project-links, .company-facts { counter-reset: none !important; }
 .feature-category-card::before, .feature-category-card::after, .all-category-grid .feature-category-card::before, .all-category-grid .feature-category-card::after { content: none !important; }
+/* Softer colour on the six vivid category photos; keep the five approved photos unchanged. */
+a.feature-category-card[href="/category/instrumenti"] img,
+a.feature-category-card[href="/category/gradina"] img,
+a.feature-category-card[href="/category/banya"] img,
+a.feature-category-card[href="/category/v-i-k"] img,
+a.feature-category-card[href="/category/boi-lakove-mazilki"] img,
+a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: saturate(.8) brightness(1.42) contrast(1.02) !important; }
 .feature-category-card img, .feature-category-card:not(.card-1) img { filter: saturate(1.95) brightness(1.42) contrast(1.02) !important; }
 .feature-card-scrim { background: linear-gradient(0deg, rgba(16,28,27,.42), rgba(16,28,27,0) 78%) !important; }
 .feature-category-card > div:last-of-type { text-shadow: 0 2px 12px rgba(9,16,16,.78); }
