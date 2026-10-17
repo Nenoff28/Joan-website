@@ -1,5 +1,6 @@
 
-# Back-to-top and cookie banner refinement
-- [x] Make „Към началото“ a rounded pill button and move it closer to the right edge on desktop and mobile so it covers less content.
-- [x] Remove the persistent „Поверителност“ floating button; after accepting or rejecting the initial cookie choice, the consent window disappears completely.
-- [x] Verify the final behavior visually and in-browser: BackToTop computed styles are fixed, right-aligned and `border-radius: 999px`; no persistent privacy trigger or consent dialog remains after consent.
+# Footer color and layout rollback
+- [x] Restore the previous dark Joan footer color treatment with white/light text.
+- [x] Restore the previous footer layout with the Joan logo, phone number, email, clickable Google Maps address, and social network icons grouped with the contact details.
+- [x] Restore the previous category and customer-information footer link columns and the original bottom footer copy.
+- [x] Validate desktop/mobile presentation, 175 Vitest tests, TypeScript, production client+SSR build, and git diff --check.

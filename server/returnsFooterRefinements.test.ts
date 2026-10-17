@@ -45,18 +45,17 @@ describe("returns FAQ and footer refinements", () => {
     expect(cssSource).toContain(".footer-bottom { color: #dbe3de; }");
   });
 
-  it("uses the requested three-column footer structure and readable light theme", () => {
-    expect(storefrontSource).toContain('aria-labelledby="footer-customers-title"');
-    expect(storefrontSource).toContain('За клиенти');
-    expect(storefrontSource).toContain('aria-labelledby="footer-joan-title"');
-    expect(storefrontSource).toContain('aria-labelledby="footer-information-title"');
-    expect(storefrontSource).toContain('Обща информация');
-    expect(storefrontSource).toContain('Брошура');
-    expect(storefrontSource).toContain('Бисквитки');
-    expect(storefrontSource).not.toContain('Подредени категории за ремонт, дом, градина и професионална работа.');
-    expect(storefrontSource).not.toContain('Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.');
-    expect(cssSource).toContain('.site-footer { background: #f3f4f1;');
-    expect(cssSource).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
-    expect(cssSource).toContain('.footer-link-button');
+  it("restores the previous dark footer structure with the logo, contacts and category links", () => {
+    expect(storefrontSource).toContain('className="footer-brand"');
+    expect(storefrontSource).toContain('t("catalogueIntro")');
+    expect(storefrontSource).toContain('t("categories")');
+    expect(storefrontSource).toContain('t("customerInfo")');
+    expect(storefrontSource).toContain('t("checkoutNav")');
+    expect(storefrontSource).toContain('Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.');
+    expect(storefrontSource).not.toContain('aria-labelledby="footer-customers-title"');
+    expect(storefrontSource).not.toContain('className="footer-link-button"');
+    expect(cssSource).toContain('.footer-main h3 { color: white; }');
+    expect(cssSource).toContain('.footer-main > div:not(.footer-brand) a, .footer-main > div:not(.footer-brand) button { color: #e4ebe7; }');
+    expect(cssSource).not.toContain('.site-footer { background: #f3f4f1;');
   });
 });
