@@ -12,6 +12,7 @@ const service = vi.hoisted(() => ({
   getAdminCategories: vi.fn(),
   getAdminBrochures: vi.fn(),
   getAdminOrders: vi.fn(),
+  getAdminOrderDetail: vi.fn(),
   getAdminProducts: vi.fn(),
   getAdminSummary: vi.fn(),
   getAdminOperations: vi.fn(),
@@ -101,7 +102,7 @@ describe("administrator management procedures", () => {
     service.updateOrderRequest.mockResolvedValueOnce(undefined);
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.updateOrder({ id: 9, status: "contacted", adminNote: "Customer contacted by phone." })).resolves.toBeUndefined();
-    expect(service.updateOrderRequest).toHaveBeenCalledWith(9, "contacted", "Customer contacted by phone.", 17);
+    expect(service.updateOrderRequest).toHaveBeenCalledWith(9, "contacted", "Customer contacted by phone.", 17, "Admin");
   });
 
   it("accepts a public contact enquiry only after validating the caller details and message", async () => {

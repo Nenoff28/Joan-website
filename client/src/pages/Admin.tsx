@@ -47,10 +47,10 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis,
+	YAxis,
 } from "recharts";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 
 type Availability = "in_stock" | "on_request" | "out_of_stock";
 type OrderStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
@@ -1946,20 +1946,8 @@ function AdminCategories({ permissions }: AdminPageProps) {
 }
 
 function AdminOrders({ permissions }: AdminPageProps) {
-  const utils = trpc.useUtils();
   const canReadOrders = can(permissions, "orders.read");
-  const canWriteOrders = can(permissions, "orders.write");
   const orders = trpc.admin.orders.useQuery(undefined, { enabled: canReadOrders });
-  const update = trpc.admin.updateOrder.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        utils.admin.orders.invalidate(),
-        utils.admin.summary.invalidate(),
-        utils.admin.operations.invalidate(),
-      ]);
-      toast("Заявката е актуализирана.");
-    },
-  });
   const [filter, setFilter] = useState<"all" | OrderStatus>("all");
   const filtered = (orders.data ?? []).filter(
     order => filter === "all" || order.status === filter
@@ -1973,8 +1961,7 @@ function AdminOrders({ permissions }: AdminPageProps) {
       <ShellHeading
         section="ЗАЯВКИ"
         title="Заявки за доставка"
-        text="Управлявайте заявките по статут, контакт и вътрешни бележки. Не се съхраняват платежни данни."
-        action={!canWriteOrders ? <ReadOnlyBadge /> : undefined}
+        text="Отворете заявка, за да видите всички артикули и постоянната история на статусите и коментарите. Не се съхраняват платежни данни."
       />
       <section className="admin-order-status-strip">
         {(
@@ -2018,11 +2005,6 @@ function AdminOrders({ permissions }: AdminPageProps) {
               <OrderCard
                 key={order.id}
                 order={order}
-                busy={update.isPending}
-                canWrite={canWriteOrders}
-                onSave={(status, adminNote) => {
-                  if (canWriteOrders) update.mutate({ id: order.id, status, adminNote });
-                }}
               />
             ))}
           </div>
@@ -2808,19 +2790,11 @@ function ActivityLine({
 }
 function OrderCard({
   order,
-  busy,
-  canWrite,
-  onSave,
 }: {
   order: AdminOrder;
-  busy: boolean;
-  canWrite: boolean;
-  onSave: (status: OrderStatus, note: string | null) => void;
 }) {
-  const [status, setStatus] = useState<OrderStatus>(order.status);
-  const [note, setNote] = useState(order.adminNote ?? "");
   return (
-    <article className="admin-order-card">
+    <Link href={`/admin/requests/${order.id}`} className="admin-order-card admin-order-card-link">
       <div className="admin-order-product">
         <img src={order.productImageUrl} alt="" />
         <div>
@@ -2848,8 +2822,8 @@ function OrderCard({
       </div>
       <div className="admin-order-contact">
         <b>{order.fullName}</b>
-        <a href={`mailto:${order.email}`}>{order.email}</a>
-        <a href={`tel:${order.phone.replace(/[^0-9+]/g, "")}`}>{order.phone}</a>
+        <span>{order.email}</span>
+        <span>{order.phone}</span>
         <span>
           {order.address}, {order.region ? `${order.region}, ` : ""}
           {order.postcode} {order.city}
@@ -2857,39 +2831,10 @@ function OrderCard({
         <small>{formatDate(order.createdAt)}</small>
       </div>
       <div className="admin-order-actions">
-        <fieldset disabled={!canWrite}>
-        <label>
-          Статус
-          <select
-            value={status}
-            onChange={event => setStatus(event.target.value as OrderStatus)}
-          >
-            {(Object.keys(statusLabels) as OrderStatus[]).map(item => (
-              <option key={item} value={item}>
-                {statusLabels[item]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Вътрешна бележка
-          <textarea
-            value={note}
-            onChange={event => setNote(event.target.value)}
-            placeholder="видимо само за администратори"
-          />
-        </label>
-        {canWrite ? <button
-          type="button"
-          className="admin-primary"
-          disabled={busy}
-          onClick={() => onSave(status, note.trim() || null)}
-        >
-          <Save size={16} /> Запази
-        </button> : <ReadOnlyBadge text="Само преглед · обработката е недостъпна" />}
-        </fieldset>
+        <span className={`admin-order-status admin-order-status-${order.status}`}>{statusLabels[order.status]}</span>
+        <b>Отвори заявката →</b>
       </div>
-    </article>
+    </Link>
   );
 }
 function ContactEnquiryCard({

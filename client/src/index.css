@@ -754,3 +754,13 @@ a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !im
 .homepage-entrance .homepage-entrance-cta-secondary { background: var(--home-menu-surface); border-color: var(--home-menu-muted); color: var(--home-cta-surface); box-shadow: 0 4px 12px rgba(38, 43, 44, .06); }
 .homepage-entrance .homepage-entrance-cta-secondary:hover, .homepage-entrance .homepage-entrance-cta-secondary:focus-visible { background: #ebe8e3; border-color: var(--home-cta-surface); color: var(--home-cta-surface); }
 .homepage-entrance .homepage-entrance-cta-secondary:focus-visible { outline: 2px solid var(--home-menu-accent); outline-offset: 3px; }
+
+/* Request list now navigates to the immutable order detail record. */
+.admin-order-card-link { color: inherit; text-decoration: none; transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out), transform 160ms var(--ease-out); }
+.admin-order-card-link:hover { border-color: #b9c1ba; border-left-color: var(--charcoal); box-shadow: 0 10px 22px rgba(30,38,44,.08); transform: translateY(-1px); }
+.admin-order-card-link:focus-visible { box-shadow: 0 0 0 3px rgba(215,25,32,.22); outline: 0; }
+.admin-order-card-link .admin-order-actions { align-content: space-between; justify-items: start; }
+.admin-order-card-link .admin-order-actions > b { color: var(--red); font-family: "Manrope",sans-serif; font-size: .68rem; font-weight: 800; }
+.admin-order-status { border-radius: 999px; font-size: .63rem; font-weight: 800; padding: .34rem .52rem; white-space: nowrap; }
+.admin-order-status-new { background: #edf0ed; color: #52605c; }.admin-order-status-contacted { background: #fff2dc; color: #8c5b0e; }.admin-order-status-confirmed { background: #e8f4ed; color: #276b4d; }.admin-order-status-closed { background: #e7edf5; color: #31577d; }.admin-order-status-cancelled { background: #fff0ef; color: #a4292e; }
+@media (max-width: 700px) { .admin-order-card-link .admin-order-actions { align-items: center; display: flex; justify-content: space-between; } }

@@ -24,6 +24,7 @@ import Favorites from "./pages/Favorites";
 import CustomerAccount, { CustomerActivation } from "./pages/CustomerAccount";
 
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminOrderDetail = lazy(() => import("./pages/AdminOrderDetail"));
 
 // Gated admin pages are client-rendered: renderToString must never enter a lazy
 // boundary on the server. The initial client render matches this same shell.
@@ -33,6 +34,14 @@ function AdminClientRoute() {
   useEffect(() => { setReady(true); }, []);
   if (!ready) return <main className="page-frame"><p className="py-12 text-sm text-slate-600">{language === "en" ? "Loading…" : "Зареждане…"}</p></main>;
   return <Admin />;
+}
+
+function AdminOrderDetailClientRoute() {
+  const [ready, setReady] = useState(false);
+  const { language } = useLanguage();
+  useEffect(() => { setReady(true); }, []);
+  if (!ready) return <main className="page-frame"><p className="py-12 text-sm text-slate-600">{language === "en" ? "Loading…" : "Зареждане…"}</p></main>;
+  return <AdminOrderDetail />;
 }
 
 function ScrollToTop() {
@@ -79,6 +88,7 @@ function AppRoutes() {
         <Route path={"/returns"} component={Returns} />
         <Route path="/account/activate" component={CustomerActivation} />
         <Route path="/account" component={CustomerAccount} />
+        <Route path="/admin/requests/:id" component={AdminOrderDetailClientRoute} />
         <Route path={"/admin/:section"} component={AdminClientRoute} />
         <Route path="/admin" component={AdminClientRoute} />
         <Route path="/404" component={NotFound} />

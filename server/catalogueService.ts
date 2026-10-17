@@ -1,7 +1,7 @@
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequestItems, orderRequests, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
@@ -492,6 +492,26 @@ export async function getAdminOrders() {
   return orders.map((order) => ({ ...order, items: items.filter((item) => item.orderRequestId === order.id) }));
 }
 
+function orderParameters(parametersJson: string | null | undefined, fallbackFeaturesJson?: string | null) {
+  const parameters = parametersJson ? parseJsonArray(parametersJson) : [];
+  return parameters.length ? parameters : publicProductFeatures(fallbackFeaturesJson ?? "");
+}
+
+export async function getAdminOrderDetail(id: number) {
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Поръчката не е намерена.");
+  const db = await requireDb();
+  const [headerRow] = await db.select({ order: orderRequests, productFeaturesJson: catalogueProducts.featuresJson }).from(orderRequests).leftJoin(catalogueProducts, eq(orderRequests.productId, catalogueProducts.id)).where(eq(orderRequests.id, id)).limit(1);
+  if (!headerRow) throw new Error("Поръчката не е намерена.");
+  const [itemRows, history] = await Promise.all([
+    db.select({ item: orderRequestItems, productFeaturesJson: catalogueProducts.featuresJson }).from(orderRequestItems).leftJoin(catalogueProducts, eq(orderRequestItems.productId, catalogueProducts.id)).where(eq(orderRequestItems.orderRequestId, id)),
+    db.select({ id: orderStatusHistory.id, status: orderStatusHistory.status, comment: orderStatusHistory.comment, authorId: orderStatusHistory.authorId, authorName: orderStatusHistory.authorName, createdAt: orderStatusHistory.createdAt }).from(orderStatusHistory).where(eq(orderStatusHistory.orderRequestId, id)).orderBy(desc(orderStatusHistory.createdAt), desc(orderStatusHistory.id)),
+  ]);
+  const items = itemRows.length
+    ? itemRows.map(({ item, productFeaturesJson }) => ({ ...item, parameters: orderParameters(item.parametersJson, productFeaturesJson) }))
+    : [{ id: 0, orderRequestId: headerRow.order.id, productId: headerRow.order.productId, productName: headerRow.order.productName, productSku: headerRow.order.productSku, productImageUrl: headerRow.order.productImageUrl, parametersJson: null, quantity: headerRow.order.quantity, priceEur: headerRow.order.priceEur, totalEur: headerRow.order.totalEur, createdAt: headerRow.order.createdAt, parameters: orderParameters(null, headerRow.productFeaturesJson) }];
+  return { ...headerRow.order, items, history };
+}
+
 export async function getAdminContactEnquiries() {
   const db = await requireDb();
   return db.select().from(contactEnquiries).orderBy(desc(contactEnquiries.createdAt));
@@ -689,10 +709,17 @@ export async function saveAdminCategory(id: number | undefined, payload: Categor
   return categoryId;
 }
 
-export async function updateOrderRequest(id: number, status: OrderRequestStatus, adminNote: string | null, adminUserId: number) {
+export async function updateOrderRequest(id: number, status: OrderRequestStatus, adminNote: string | null, adminUserId: number, adminName: string) {
   const db = await requireDb();
-  await db.update(orderRequests).set({ status, adminNote }).where(eq(orderRequests.id, id));
-  await logAdminActivity(adminUserId, "order.updated", "order_request", id, { status });
+  const comment = adminNote?.trim() || null;
+  const authorName = adminName.trim().slice(0, 255) || "Администратор";
+  await db.transaction(async (tx) => {
+    const [order] = await tx.select({ id: orderRequests.id }).from(orderRequests).where(eq(orderRequests.id, id)).limit(1).for("update");
+    if (!order) throw new Error("Поръчката не е намерена.");
+    await tx.update(orderRequests).set({ status, adminNote: comment }).where(eq(orderRequests.id, id));
+    await tx.insert(orderStatusHistory).values({ orderRequestId: id, status, comment, authorId: adminUserId, authorName });
+    await tx.insert(adminActivities).values({ adminUserId, action: "order.updated", entityType: "order_request", entityId: id, metadataJson: JSON.stringify({ status }) });
+  });
 }
 
 export async function updateContactEnquiry(id: number, status: ContactEnquiryStatus, adminNote: string | null, adminUserId: number) {

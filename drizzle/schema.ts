@@ -285,11 +285,23 @@ export const orderRequestItems = mysqlTable("order_request_items", {
   productName: varchar("productName", { length: 500 }).notNull(),
   productSku: varchar("productSku", { length: 96 }),
   productImageUrl: text("productImageUrl").notNull(),
+  parametersJson: text("parametersJson"),
   quantity: int("quantity").notNull(),
   priceEur: decimal("priceEur", { precision: 10, scale: 2 }),
   totalEur: decimal("totalEur", { precision: 10, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [index("order_request_items_request_idx").on(table.orderRequestId), index("order_request_items_product_idx").on(table.productId)]);
+
+/** Immutable status/comment events for order requests; authorName preserves the display name at write time. */
+export const orderStatusHistory = mysqlTable("order_status_history", {
+  id: int("id").autoincrement().primaryKey(),
+  orderRequestId: int("orderRequestId").notNull().references(() => orderRequests.id),
+  status: mysqlEnum("status", ["new", "contacted", "confirmed", "closed", "cancelled"]).notNull(),
+  comment: text("comment"),
+  authorId: int("authorId").references(() => users.id),
+  authorName: varchar("authorName", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("order_status_history_request_created_idx").on(table.orderRequestId, table.createdAt)]);
 
 /** Direct public contact enquiries submitted from the storefront contact form. */
 export const contactEnquiries = mysqlTable("contact_enquiries", {
@@ -347,5 +359,6 @@ export type CatalogueManufacturer = typeof catalogueManufacturers.$inferSelect;
 export type CatalogueProductCategoryLink = typeof catalogueProductCategoryLinks.$inferSelect;
 export type OrderRequest = typeof orderRequests.$inferSelect;
 export type OrderRequestItem = typeof orderRequestItems.$inferSelect;
+export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
 export type CatalogueBrochure = typeof catalogueBrochures.$inferSelect;

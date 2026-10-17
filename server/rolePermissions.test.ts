@@ -47,6 +47,7 @@ const fixtures = vi.hoisted(() => {
     getAdminContactEnquiries: vi.fn(),
     getAdminOperations: vi.fn(),
     getAdminOrders: vi.fn(),
+    getAdminOrderDetail: vi.fn(),
     getAdminProducts: vi.fn(),
     getAdminSummary: vi.fn(),
     getPublicBestSellers: vi.fn(),
