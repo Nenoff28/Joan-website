@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import CookieConsent from "@/components/CookieConsent";
 import { useCatalogue, useCataloguePage, useCatalogueProducts } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
+import { trpc } from "@/lib/trpc";
 import { categoryPathTokens } from "@/lib/categoryHierarchy";
 import { organizationStructuredData, productStructuredData, safeJsonLd } from "@/lib/structuredData";
 import { Link, useLocation } from "wouter";
@@ -146,9 +147,10 @@ function MobileCategoryTree({ category, onNavigate, activePath }: { category: Ca
     </div>
   </details>;
 }
-
 function Header() {
   const { language, setLanguage, t } = useLanguage();
+  const identity = trpc.staff.me.useQuery();
+  const accountLabel = identity.data ? (language === "en" ? "Account" : "Профил") : t("account");
   const { count } = useFavorites();
   const { categories } = useCatalogue();
   const [location, setLocation] = useLocation();
@@ -245,7 +247,7 @@ function Header() {
         </form>
         <div className="header-actions" aria-label={t("customerInfo")}>
           <div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div>
-          <Link href="/account" className="header-account" aria-label={t("account")}><UserRound size={21} /><span>{t("account")}</span></Link>
+          <Link href="/account" className="header-account" aria-label={accountLabel}><UserRound size={21} /><span>{accountLabel}</span></Link>
           <Link href="/favorites" className="header-favorites" aria-label={t("favorites")}><Heart size={21} /><span>{t("favorites")}</span>{count > 0 && <i>{count}</i>}</Link>
           <div className="header-cart-wrap"><button type="button" className="header-cart" onClick={() => setCartOpen((open) => !open)} aria-expanded={cartOpen} aria-controls="header-mini-cart"><ShoppingCart size={21} /><span>{t("cart")}</span>{cartCount > 0 && <i>{cartCount}</i>}</button>{cartOpen && <MiniCart id="header-mini-cart" rows={cartRows} total={cartTotal} copy={cartCopy} onClose={() => setCartOpen(false)} onIncrement={(slug) => addItem(slug)} onDecrement={(slug, quantity) => setQuantity(slug, quantity - 1)} onRemove={removeItem} />}</div>
         </div>

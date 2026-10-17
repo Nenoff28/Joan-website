@@ -1,4 +1,5 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { canVisitAdminSection } from "@shared/permissions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,10 +22,24 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Archive, BadgePercent, BookOpen, Boxes, ClipboardList, History, LayoutDashboard, LogOut, MessageSquare, PackageSearch, PanelLeft, Tags, UsersRound } from "lucide-react";
+import {
+  Archive,
+  BadgePercent,
+  BookOpen,
+  Boxes,
+  ClipboardList,
+  History,
+  LayoutDashboard,
+  LogOut,
+  MessageSquare,
+  PackageSearch,
+  PanelLeft,
+  Tags,
+  UsersRound,
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
 const menuItems = [
@@ -39,6 +54,7 @@ const menuItems = [
   { icon: UsersRound, label: "Клиенти", path: "/admin/customers" },
   { icon: Archive, label: "Исторически поръчки", path: "/admin/legacy-orders" },
   { icon: History, label: "Активност", path: "/admin/activity" },
+  { icon: UsersRound, label: "Потребители и роли", path: "/admin/users-roles" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -51,18 +67,29 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
+  const staffQuery = trpc.staff.me.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   });
-  const { loading, user } = useAuth();
+  const loading = staffQuery.isLoading;
+  const user = staffQuery.data;
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
+    try {
+      const saved = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
+      if (saved >= MIN_WIDTH && saved <= MAX_WIDTH) setSidebarWidth(saved);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
+    } catch {}
   }, [sidebarWidth]);
 
   if (loading) {
-    return <DashboardLayoutSkeleton />
+    return <DashboardLayoutSkeleton />;
   }
 
   if (!user) {
@@ -71,32 +98,52 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+              Влезте в профила си
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Достъп получават само профилите, на които администратор е назначил
+              служебна роля.
             </p>
           </div>
           <Button
-            onClick={() => startLogin()}
+            onClick={() => {
+              window.location.href = "/account";
+            }}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            Вход в Joan.bg
+          </Button>
+          <Button variant="outline" onClick={() => startLogin()}>
+            Сегашен администраторски вход
           </Button>
         </div>
       </div>
     );
   }
 
-  if (user.role !== "admin") {
+  if (!user.canAccess) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f0f1ed] p-6">
         <div className="max-w-md border-l-4 border-[#d71920] bg-white p-8 shadow-sm">
-          <p className="text-xs font-bold tracking-[0.16em] text-[#d71920] uppercase">ЖОАН · ОПЕРАТИВЕН ДОСТЪП</p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-[#1e262c]">Нямате права за администрация.</h1>
-          <p className="mt-3 text-sm leading-6 text-[#5f696d]">Този раздел е достъпен само за одобрени администраторски профили.</p>
-          <Button onClick={() => { window.location.href = "/"; }} className="mt-6 bg-[#d71920] hover:bg-[#aa1017]">Към публичния каталог</Button>
+          <p className="text-xs font-bold tracking-[0.16em] text-[#d71920] uppercase">
+            ЖОАН · ОПЕРАТИВЕН ДОСТЪП
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-[#1e262c]">
+            Нямате права за администрация.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#5f696d]">
+            Вашият профил няма служебни права. Администраторът може да ви
+            назначи роля от „Потребители и роли“.
+          </p>
+          <Button
+            onClick={() => {
+              window.location.href = "/";
+            }}
+            className="mt-6 bg-[#d71920] hover:bg-[#aa1017]"
+          >
+            Към публичния каталог
+          </Button>
         </div>
       </div>
     );
@@ -126,13 +173,35 @@ function DashboardLayoutContent({
   children,
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
-  const { user, logout } = useAuth();
+  const staffQuery = trpc.staff.me.useQuery();
+  const user = staffQuery.data;
+  const utils = trpc.useUtils();
+  const customerLogout = trpc.customer.logout.useMutation();
+  const legacyLogout = trpc.auth.logout.useMutation();
+  const logout = async () => {
+    await Promise.all([
+      customerLogout.mutateAsync(),
+      legacyLogout.mutateAsync(),
+    ]);
+    try {
+      sessionStorage.removeItem("manus-cookie");
+    } catch {}
+    await Promise.all([
+      utils.staff.me.invalidate(),
+      utils.customer.me.invalidate(),
+      utils.auth.me.invalidate(),
+    ]);
+    setLocation("/account");
+  };
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const visibleMenuItems = menuItems.filter(item =>
+    canVisitAdminSection(user?.permissions ?? [], item.path)
+  );
+  const activeMenuItem = visibleMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -190,7 +259,11 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Жоан" className="admin-sidebar-logo" />
+                  <img
+                    src="/manus-storage/joan-existing-logo_61725b9d.webp"
+                    alt="Жоан"
+                    className="admin-sidebar-logo"
+                  />
                   <span className="admin-sidebar-title">Администрация</span>
                 </div>
               ) : null}
@@ -199,7 +272,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {visibleMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
@@ -218,7 +291,14 @@ function DashboardLayoutContent({
                 );
               })}
             </SidebarMenu>
-            {!isCollapsed ? <div className="admin-sidebar-bay"><span>01</span><p><b>ОПЕРАТИВЕН РЕЖИМ</b>Каталог, наличности и заявки.</p></div> : null}
+            {!isCollapsed ? (
+              <div className="admin-sidebar-bay">
+                <p>
+                  <b>{user?.role.name ?? "СЛУЖЕБЕН ДОСТЪП"}</b>Само разрешените
+                  за вашата роля раздели.
+                </p>
+              </div>
+            ) : null}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
@@ -268,7 +348,11 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt="Жоан" className="admin-mobile-logo" />
+                <img
+                  src="/manus-storage/joan-existing-logo_61725b9d.webp"
+                  alt="Жоан"
+                  className="admin-mobile-logo"
+                />
                 <div className="admin-mobile-title">
                   <small>ЖОАН · ОПЕРАТИВЕН РЕЖИМ</small>
                   <span>{activeMenuItem?.label ?? "Меню"}</span>

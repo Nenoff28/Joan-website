@@ -1,8 +1,11 @@
+import { additionalCustomerProcedures, assertCustomerSameOrigin } from "./customerAuthRouter";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
+import { permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
+import { accessRouter, staffRouter } from "./accessRouter";
 import {
   adjustProductStock,
   createAdminProduct,
@@ -107,6 +110,8 @@ const categoryPayloadSchema = z.object({
 
 export const appRouter = router({
   system: systemRouter,
+  staff: staffRouter,
+  access: accessRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -146,44 +151,45 @@ export const appRouter = router({
     })).mutation(({ input }) => createContactEnquiry(input)),
   }),
   customer: router({
+    ...additionalCustomerProcedures,
     me: publicProcedure.query(({ ctx }) => getCustomerFromRequest(ctx.req.headers.cookie)),
-    login: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(256) })).mutation(({ input, ctx }) => loginCustomer(input.email, input.password, ctx.res)),
-    activate: publicProcedure.input(z.object({ token: z.string().trim().min(32).max(160), password: z.string().min(12).max(256) })).mutation(({ input, ctx }) => activateCustomerAccount(input.token, input.password, ctx.res)),
+    login: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(256) })).mutation(({ input, ctx }) => { assertCustomerSameOrigin(ctx.req); return loginCustomer(input.email, input.password, ctx.res); }),
+    activate: publicProcedure.input(z.object({ token: z.string().trim().min(32).max(160), password: z.string().min(12).max(256) })).mutation(({ input, ctx }) => { assertCustomerSameOrigin(ctx.req); return activateCustomerAccount(input.token, input.password, ctx.res); }),
     logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),
   }),
   admin: router({
-    summary: adminProcedure.query(() => getAdminSummary()),
-    operations: adminProcedure.query(() => getAdminOperations()),
-    products: adminProcedure.query(() => getAdminProducts()),
-    categories: adminProcedure.query(() => getAdminCategories()),
-    orders: adminProcedure.query(() => getAdminOrders()),
-    contactEnquiries: adminProcedure.query(() => getAdminContactEnquiries()),
-    brochures: adminProcedure.query(() => getAdminBrochures()),
-    previewLegacyCustomerImport: adminProcedure.input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyCustomerWorkbook(input.workbookData)),
-    importLegacyCustomers: adminProcedure.input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
+    summary: permissionProcedure("dashboard.read").query(async ({ ctx }) => { const summary = await getAdminSummary(); return { ...summary, recentOrders: ctx.staff.permissions.includes("orders.read") ? summary.recentOrders : [] }; }),
+    operations: anyPermissionProcedure(["dashboard.read", "products.read", "inventory.read", "promotions.read", "orders.read", "activity.read"]).query(({ ctx }) => getAdminOperations(ctx.staff.permissions)),
+    products: anyPermissionProcedure(["products.read", "inventory.read", "promotions.read"]).query(() => getAdminProducts()),
+    categories: permissionProcedure("categories.read").query(() => getAdminCategories()),
+    orders: permissionProcedure("orders.read").query(() => getAdminOrders()),
+    contactEnquiries: permissionProcedure("enquiries.read").query(() => getAdminContactEnquiries()),
+    brochures: permissionProcedure("brochures.read").query(() => getAdminBrochures()),
+    previewLegacyCustomerImport: permissionProcedure("customers.read").input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyCustomerWorkbook(input.workbookData)),
+    importLegacyCustomers: permissionProcedure("customers.import").input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
       const result = await importLegacyCustomers(input.workbookData, ctx.user.id);
       await logAdminActivity(ctx.user.id, "customer_profiles.imported", "customer_profile_import", null, { importedProfiles: result.importedProfiles, importedAddresses: result.importedAddresses, pendingActivation: result.pendingActivation, disabledProfiles: result.disabledProfiles });
       return result;
     }),
-    previewLegacyOrderImport: adminProcedure.input(z.object({ csvData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyOrders(input.csvData)),
-    importLegacyOrders: adminProcedure.input(z.object({ csvData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
+    previewLegacyOrderImport: permissionProcedure("legacy_orders.read").input(z.object({ csvData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyOrders(input.csvData)),
+    importLegacyOrders: permissionProcedure("legacy_orders.import").input(z.object({ csvData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
       const result = await importLegacyOrders(input.csvData);
       await logAdminActivity(ctx.user.id, "customer_orders.imported", "legacy_customer_order_import", null, { importedOrders: result.importedOrders, importedOrderLines: result.importedOrderLines, linkedByLegacyCustomerId: result.linkedByLegacyCustomerId, linkedByEmail: result.linkedByEmail, unlinkedGuestOrRemoved: result.unlinkedGuestOrRemoved });
       return result;
     }),
-    createProduct: adminProcedure.input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.user.id)),
-    updateProduct: adminProcedure.input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.user.id)),
-    adjustStock: adminProcedure.input(z.object({ id: z.number().int().positive(), delta: z.number().int().min(-999999).max(999999).refine((value) => value !== 0) })).mutation(({ input, ctx }) => adjustProductStock(input.id, input.delta, ctx.user.id)),
-    savePromotion: adminProcedure.input(z.object({ id: z.number().int().positive(), priceEur: z.number().nonnegative().nullable(), oldPriceEur: z.number().nonnegative().nullable(), discountLabel: z.string().trim().max(48).nullable() })).mutation(({ input, ctx }) => saveProductPromotion(input, ctx.user.id)),
-    uploadProductImage: adminProcedure.input(z.object({ dataUrl: z.string().min(32).max(6_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadProductImage(input, ctx.user.id)),
-    uploadBrochure: adminProcedure.input(z.object({ title: z.string().trim().min(3).max(255), sourcePdf: z.object({ dataUrl: z.string().min(32).max(28_000_000), fileName: z.string().trim().min(1).max(160) }).optional(), pages: z.array(z.object({ dataUrl: z.string().min(32).max(4_500_000), fileName: z.string().trim().min(1).max(160) })).min(1).max(16) })).mutation(({ input, ctx }) => uploadAdminBrochure(input, ctx.user.id)),
-    uploadBrochurePage: adminProcedure.input(z.object({ dataUrl: z.string().min(32).max(4_500_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadBrochurePage(input, ctx.user.id)),
-    replaceBrochure: adminProcedure.input(z.object({ title: z.string().trim().min(3).max(255), pageUrls: z.array(z.string().startsWith("/manus-storage/")).min(1).max(16) })).mutation(({ input, ctx }) => replaceAdminBrochure(input, ctx.user.id)),
-    activateBrochure: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => activateAdminBrochure(input.id, ctx.user.id)),
-    archiveBrochure: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => archiveAdminBrochure(input.id, ctx.user.id)),
-    saveCategory: adminProcedure.input(z.object({ id: z.number().int().positive().optional(), category: categoryPayloadSchema })).mutation(({ input, ctx }) => saveAdminCategory(input.id, input.category, ctx.user.id)),
-    updateOrder: adminProcedure.input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateOrderRequest(input.id, input.status, input.adminNote, ctx.user.id)),
-    updateContactEnquiry: adminProcedure.input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.user.id)),
+    createProduct: permissionProcedure("products.write").input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.user.id)),
+    updateProduct: permissionProcedure("products.write").input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.user.id)),
+    adjustStock: permissionProcedure("inventory.write").input(z.object({ id: z.number().int().positive(), delta: z.number().int().min(-999999).max(999999).refine((value) => value !== 0) })).mutation(({ input, ctx }) => adjustProductStock(input.id, input.delta, ctx.user.id)),
+    savePromotion: permissionProcedure("promotions.write").input(z.object({ id: z.number().int().positive(), priceEur: z.number().nonnegative().nullable(), oldPriceEur: z.number().nonnegative().nullable(), discountLabel: z.string().trim().max(48).nullable() })).mutation(({ input, ctx }) => saveProductPromotion(input, ctx.user.id)),
+    uploadProductImage: permissionProcedure("products.write").input(z.object({ dataUrl: z.string().min(32).max(6_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadProductImage(input, ctx.user.id)),
+    uploadBrochure: permissionProcedure("brochures.write").input(z.object({ title: z.string().trim().min(3).max(255), sourcePdf: z.object({ dataUrl: z.string().min(32).max(28_000_000), fileName: z.string().trim().min(1).max(160) }).optional(), pages: z.array(z.object({ dataUrl: z.string().min(32).max(4_500_000), fileName: z.string().trim().min(1).max(160) })).min(1).max(16) })).mutation(({ input, ctx }) => uploadAdminBrochure(input, ctx.user.id)),
+    uploadBrochurePage: permissionProcedure("brochures.write").input(z.object({ dataUrl: z.string().min(32).max(4_500_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadBrochurePage(input, ctx.user.id)),
+    replaceBrochure: permissionProcedure("brochures.write").input(z.object({ title: z.string().trim().min(3).max(255), pageUrls: z.array(z.string().startsWith("/manus-storage/")).min(1).max(16) })).mutation(({ input, ctx }) => replaceAdminBrochure(input, ctx.user.id)),
+    activateBrochure: permissionProcedure("brochures.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => activateAdminBrochure(input.id, ctx.user.id)),
+    archiveBrochure: permissionProcedure("brochures.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => archiveAdminBrochure(input.id, ctx.user.id)),
+    saveCategory: permissionProcedure("categories.write").input(z.object({ id: z.number().int().positive().optional(), category: categoryPayloadSchema })).mutation(({ input, ctx }) => saveAdminCategory(input.id, input.category, ctx.user.id)),
+    updateOrder: permissionProcedure("orders.write").input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateOrderRequest(input.id, input.status, input.adminNote, ctx.user.id)),
+    updateContactEnquiry: permissionProcedure("enquiries.write").input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.user.id)),
   }),
 });
 

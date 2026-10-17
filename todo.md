@@ -29,3 +29,17 @@
 # Скриване на броя категории в началното меню
 - [x] Премахнат е числовият индикатор „11“ от заглавието „Категории“ на началната страница. Самите 11 категории, менюто, иконите, подкатегориите и навигационните действия са запазени.
 - [x] Добавена е regression проверка, че броят не се визуализира. Проверено е на desktop и mobile; преминаха 52 Vitest файла / 185 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Собствени клиентски профили, Google вход и потребители/роли
+- [x] Добавяне на customer/operator/admin и персонализирани роли с избираеми права, backend permission checks и журнал на измененията.
+- [x] Секция „Потребители и роли“ за търсене на клиентски профили, назначаване на роли и редакция на персонализирани роли.
+- [x] Ограничени менюта, маршрутни проверки и read/write действия в административния панел; запазване на сегашния Manus администраторски достъп при прехода.
+- [x] Собствена публична регистрация и Google OpenID Connect вход; новите профили винаги са customer, без автоматично даване на административни права по имейл.
+- [x] Проверена schema миграция, regression тестове и визуален QA. Google live login изисква предоставени OAuth Client ID/Secret и разрешен callback URL; липсващи настройки не се заместват с фиктивни credentials.
+
+- [x] Отстранени са откритите при browser QA mobile overflow и SSR lazy/Suspense recoverable error на admin entry routes. Хедърът използва lean identity за „Профил“ след собствен вход. Privacy страницата отразява регистрацията, Google идентификаторите и служебните роли.
+- [x] Преминаха 58 Vitest файла / 220 теста, TypeScript, production client+SSR build и git diff --check. Изолираният browser QA с mock API потвърди създаване на custom роля, назначаване, операторски allowlist, пренасочване, отказ на забранен URL, read-only контролите и 375px mobile layout без page errors. Реалните анонимни admin заявки връщат 403. Тестови профили/поръчки не са записвани в production базата.
+- [x] Целевият production crawler SSR verifier премина за home, catalogue page 1, profile loading shell, privacy, admin entry routes, index redirect и реални 404. Документирани са употребата на роли, собственият admin преход и Google настройването в docs/users-roles.md и docs/google-login-setup.md.
+- [ ] Активиране и live проверка на Google OAuth след предоставяне на GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET и разрешен callback; към момента configured=false и бутонът е явно неактивен.
+- [ ] IP allowlist след предоставяне на точните разрешени IP адреси и проверка на доверения reverse proxy, без риск от admin lockout.
+- [ ] Отделен SEO follow-up: съществуващият SSR canonical на /products?page=2 сочи към /products. Не е променян в задачата за роли и вход.

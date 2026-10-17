@@ -72,6 +72,11 @@ function normalizedEmail(value: unknown) {
   return normalizedText(value, 320).toLocaleLowerCase("en-US");
 }
 
+/** Publicly shared normalizer: customer emails are compared case-insensitively. */
+export function normalizeCustomerEmail(value: unknown) {
+  return normalizedEmail(value);
+}
+
 function truthy(value: unknown) {
   const normalized = normalizedText(value, 16).toLowerCase();
   return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "да";
@@ -191,6 +196,11 @@ function sessionSecret() {
   return createHash("sha256").update(`joan-customer-session:${ENV.cookieSecret}`).digest();
 }
 
+/** Returns the derived signing key without exposing the configured secret itself. */
+export function getCustomerSessionSigningKey() {
+  return sessionSecret();
+}
+
 function readCookie(cookieHeader: string | undefined, key: string) {
   return cookieHeader?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${key}=`))?.slice(key.length + 1);
 }
@@ -217,7 +227,28 @@ export function clearCustomerSession(response: { clearCookie: (name: string, opt
   response.clearCookie(CUSTOMER_SESSION_COOKIE, { ...sessionCookieOptions(), maxAge: -1 });
 }
 
-export async function getCustomerFromRequest(cookieHeader: string | undefined) {
+export type CustomerIdentity = {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  accountStatus: CustomerStatus;
+  accessRoleId: number | null;
+  staffUserId: number | null;
+};
+
+type VerifiedCustomerRequest = { identity: CustomerIdentity; payload: Record<string, unknown> };
+
+/**
+ * Verifies the customer session and returns only the role-bearing identity.
+ * Addresses, orders and password material are deliberately excluded.
+ */
+export async function getCustomerIdentityFromRequest(cookieHeader: string | undefined): Promise<CustomerIdentity | null> {
+  const verified = await verifyCustomerRequest(cookieHeader);
+  return verified?.identity ?? null;
+}
+
+async function verifyCustomerRequest(cookieHeader: string | undefined): Promise<VerifiedCustomerRequest | null> {
   const encoded = readCookie(cookieHeader, CUSTOMER_SESSION_COOKIE);
   if (!encoded) return null;
   try {
@@ -228,11 +259,133 @@ export async function getCustomerFromRequest(cookieHeader: string | undefined) {
     if (!Number.isInteger(customerId) || customerId < 1) return null;
     const [row] = await db.select({ profile: customerProfiles, credential: customerCredentials }).from(customerProfiles).innerJoin(customerCredentials, eq(customerCredentials.customerId, customerProfiles.id)).where(eq(customerProfiles.id, customerId)).limit(1);
     if (!row || row.profile.accountStatus !== "active" || row.credential.sessionVersion !== payload.sessionVersion) return null;
-    const addresses = await db.select().from(customerAddresses).where(eq(customerAddresses.customerId, customerId));
-    const historicalOrders = await getHistoricalOrdersForCustomer(customerId);
-    return { id: row.profile.id, firstName: row.profile.firstName, lastName: row.profile.lastName, email: row.profile.email, phone: row.profile.phone, addresses: addresses.map((address) => ({ id: address.id, firstName: address.firstName, lastName: address.lastName, company: address.company, addressLine1: address.addressLine1, addressLine2: address.addressLine2, city: address.city, postcode: address.postcode, zone: address.zone, country: address.country, isDefault: address.isDefault })), historicalOrders };
+    const profile = row.profile;
+    return {
+      identity: {
+        id: profile.id,
+        email: profile.email,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        accountStatus: profile.accountStatus,
+        accessRoleId: profile.accessRoleId ?? null,
+        staffUserId: profile.staffUserId ?? null,
+      },
+      payload: payload as Record<string, unknown>,
+    };
   } catch {
     return null;
+  }
+}
+
+export async function getCustomerFromRequest(cookieHeader: string | undefined) {
+  const verified = await verifyCustomerRequest(cookieHeader);
+  if (!verified) return null;
+  const customerId = verified.identity.id;
+  try {
+    const db = await requiredDb();
+    const addresses = await db.select().from(customerAddresses).where(eq(customerAddresses.customerId, customerId));
+    const historicalOrders = await getHistoricalOrdersForCustomer(customerId);
+    const [profile] = await db.select().from(customerProfiles).where(eq(customerProfiles.id, customerId)).limit(1);
+    if (!profile || profile.accountStatus !== "active") return null;
+    return { id: profile.id, firstName: profile.firstName, lastName: profile.lastName, email: profile.email, phone: profile.phone, accountStatus: profile.accountStatus, accessRoleId: profile.accessRoleId, staffUserId: profile.staffUserId, payload: verified.payload, addresses: addresses.map((address) => ({ id: address.id, firstName: address.firstName, lastName: address.lastName, company: address.company, addressLine1: address.addressLine1, addressLine2: address.addressLine2, city: address.city, postcode: address.postcode, zone: address.zone, country: address.country, isDefault: address.isDefault })), historicalOrders };
+  } catch {
+    return null;
+  }
+}
+
+export type CustomerRegistrationInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  password: string;
+  acceptedTerms: boolean;
+};
+
+const registrationAttempts = new Map<string, { startedAt: number; count: number }>();
+const AUTH_RATE_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_RATE_LIMIT = 8;
+
+/** Best-effort per-process throttle; deployment-wide rate limiting belongs at the edge. */
+export function consumeCustomerAuthRateLimit(key: string, limit = AUTH_RATE_LIMIT, windowMs = AUTH_RATE_WINDOW_MS) {
+  const now = Date.now();
+  for (const [storedKey, entry] of Array.from(registrationAttempts.entries())) {
+    if (now - entry.startedAt >= windowMs) registrationAttempts.delete(storedKey);
+  }
+  if (registrationAttempts.size >= 4096 && !registrationAttempts.has(key)) {
+    const oldest = Array.from(registrationAttempts.entries()).sort((left, right) => left[1].startedAt - right[1].startedAt)[0]?.[0];
+    if (oldest) registrationAttempts.delete(oldest);
+  }
+  const previous = registrationAttempts.get(key);
+  if (!previous || now - previous.startedAt >= windowMs) {
+    registrationAttempts.set(key, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (previous.count >= limit) return false;
+  previous.count += 1;
+  return true;
+}
+
+export function assertCustomerAuthRateLimit(key: string) {
+  if (!consumeCustomerAuthRateLimit(key)) throw new Error("Твърде много опити. Изчакайте малко и опитайте отново.");
+}
+
+/** Separate namespace lets the router apply login throttling without sharing registration counters. */
+export function assertCustomerLoginRateLimit(key: string) {
+  assertCustomerAuthRateLimit(`login:${key}`);
+}
+
+export function validateCustomerRegistrationInput(input: CustomerRegistrationInput) {
+  const firstName = normalizedText(input.firstName, 160);
+  const lastName = normalizedText(input.lastName, 160);
+  const email = normalizedEmail(input.email);
+  const phone = normalizedText(input.phone, 64) || null;
+  if (!firstName || !lastName || !email || !email.includes("@")) throw new Error("Въведете име, фамилия и валиден имейл адрес.");
+  if (input.password.length < PASSWORD_MIN_LENGTH) throw new Error(`Паролата трябва да е поне ${PASSWORD_MIN_LENGTH} символа.`);
+  if (!input.acceptedTerms) throw new Error("Трябва да приемете условията за използване.");
+  return { firstName, lastName, email, phone };
+}
+
+function isDuplicateDatabaseError(error: unknown) {
+  const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return code === "ER_DUP_ENTRY" || message.includes("duplicate") || message.includes("unique");
+}
+
+/** Creates a first-party customer profile; role fields are intentionally not accepted from clients. */
+export async function registerCustomerAccount(input: CustomerRegistrationInput, response: { cookie: (name: string, value: string, options: Record<string, unknown>) => void }) {
+  const values = validateCustomerRegistrationInput(input);
+  const db = await requiredDb();
+  try {
+    const [existing] = await db.select({ id: customerProfiles.id }).from(customerProfiles).where(eq(customerProfiles.email, values.email)).limit(1);
+    if (existing) throw new Error("Този имейл вече има клиентски профил. Влезте с паролата си или използвайте възстановяване на достъпа.");
+    const passwordHash = hashCustomerPassword(input.password);
+    let customerId = 0;
+    await db.transaction(async (tx) => {
+      const result = await tx.insert(customerProfiles).values({
+        legacyCustomerId: null,
+        email: values.email,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phone: values.phone,
+        newsletterSubscribed: false,
+        legacyWasApproved: false,
+        legacyWasActive: false,
+        accountStatus: "active",
+        accessRoleId: null,
+        staffUserId: null,
+        emailVerifiedAt: null,
+        activatedAt: new Date(),
+        lastSignedInAt: new Date(),
+      });
+      customerId = Number(result[0].insertId);
+      await tx.insert(customerCredentials).values({ customerId, passwordHash, passwordSetAt: new Date(), sessionVersion: 1, failedLoginCount: 0, lockedUntil: null });
+    });
+    await setCustomerSession(response, customerId, 1);
+    return { success: true as const };
+  } catch (error) {
+    if (isDuplicateDatabaseError(error)) throw new Error("Този имейл вече има клиентски профил. Влезте с паролата си или използвайте възстановяване на достъпа.");
+    throw error;
   }
 }
 

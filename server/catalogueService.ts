@@ -517,13 +517,14 @@ export async function getAdminSummary() {
 }
 
 /** Returns real operational queues derived from current catalogue, request, and audit records. */
-export async function getAdminOperations() {
+export async function getAdminOperations(permissions?: readonly string[]) {
+  const allowed = (key: string) => !permissions || permissions.includes(key);
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [products, orders, activityRows] = await Promise.all([
-    getAdminProducts(),
-    getAdminOrders(),
-    db.select({ activity: adminActivities, adminName: users.name, adminEmail: users.email }).from(adminActivities).innerJoin(users, eq(adminActivities.adminUserId, users.id)).orderBy(desc(adminActivities.createdAt)).limit(24),
+    allowed("dashboard.read") || allowed("products.read") || allowed("inventory.read") || allowed("promotions.read") ? getAdminProducts() : Promise.resolve([]),
+    allowed("dashboard.read") || allowed("orders.read") ? getAdminOrders() : Promise.resolve([]),
+    allowed("activity.read") ? db.select({ activity: adminActivities, adminName: users.name, adminEmail: users.email }).from(adminActivities).innerJoin(users, eq(adminActivities.adminUserId, users.id)).orderBy(desc(adminActivities.createdAt)).limit(24) : Promise.resolve([]),
   ]);
   const activeProducts = products.filter((product) => product.isActive);
   const promotions = activeProducts.filter((product) => Boolean(product.discount || product.oldPrice));
@@ -536,11 +537,11 @@ export async function getAdminOperations() {
   orders.forEach((order) => { orderCounts[order.status] += 1; });
   return {
     metrics: { activeProducts: activeProducts.length, promotions: promotions.length, stockAttention: inventoryQueue.length, catalogueIssues: qualityQueue.length, openRequests: orderCounts.new + orderCounts.contacted + orderCounts.confirmed },
-    promotions: promotions.slice(0, 24),
-    inventoryQueue,
-    qualityQueue,
+    promotions: allowed("promotions.read") || allowed("products.read") ? promotions.slice(0, 24) : [],
+    inventoryQueue: allowed("inventory.read") || allowed("products.read") ? inventoryQueue : [],
+    qualityQueue: allowed("products.read") ? qualityQueue : [],
     orderCounts,
-    reporting: buildAdminReportingSnapshot(orders),
+    reporting: buildAdminReportingSnapshot(allowed("dashboard.read") ? orders : []),
     activities: activityRows.map((row) => ({ id: row.activity.id, action: row.activity.action, entityType: row.activity.entityType, entityId: row.activity.entityId, metadata: (() => { try { return JSON.parse(row.activity.metadataJson) as Record<string, unknown>; } catch { return {}; } })(), createdAt: row.activity.createdAt, adminName: row.adminName ?? row.adminEmail ?? "Администратор" })),
   };
 }

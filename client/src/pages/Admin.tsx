@@ -1,7 +1,9 @@
 /** Joan operations console: live store control without invented customer, sales, or stock data. */
 import DashboardLayout from "@/components/DashboardLayout";
+import AdminUsersRoles from "@/components/AdminUsersRoles";
 import { trpc } from "@/lib/trpc";
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
+import { canVisitAdminSection, firstAdminPath, hasPermission, type Permission } from "@shared/permissions";
 import {
   AlertTriangle,
   Archive,
@@ -235,6 +237,29 @@ const euro = (value: number) =>
     value
   );
 
+type StaffPermissionState = {
+  permissions: readonly string[];
+  canAccess: boolean;
+};
+type AdminPageProps = Pick<StaffPermissionState, "permissions">;
+
+const can = (permissions: readonly string[], permission: Permission) =>
+  hasPermission(permissions, permission);
+
+function ReadOnlyBadge({ text = "Само преглед" }: { text?: string }) {
+  return <span className="admin-count">{text}</span>;
+}
+
+function AccessDeniedState({ text = "Нямате права за тази административна секция." }: { text?: string }) {
+  return (
+    <section className="admin-workspace" role="alert">
+      <div className="admin-error">
+        <b>Достъпът е ограничен.</b> {text}
+      </div>
+    </section>
+  );
+}
+
 GlobalWorkerOptions.workerSrc = pdfWorker;
 
 function ShellHeading({
@@ -260,9 +285,11 @@ function ShellHeading({
   );
 }
 
-function AdminOverview() {
-  const summary = trpc.admin.summary.useQuery();
-  const operations = trpc.admin.operations.useQuery();
+function AdminOverview({ permissions }: AdminPageProps) {
+  const canDashboard = can(permissions, "dashboard.read");
+  const canCreateProducts = can(permissions, "products.write");
+  const summary = trpc.admin.summary.useQuery(undefined, { enabled: canDashboard });
+  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canDashboard });
   if (summary.isLoading || operations.isLoading) return <LoadingState />;
   if (!summary.data || !operations.data) return <ErrorState />;
   const metrics = operations.data.metrics;
@@ -309,15 +336,17 @@ function AdminOverview() {
         title="Оперативен контролен център"
         text="Ежедневен преглед на каталога, наличностите, промоциите и заявките за потвърждение."
         action={
-          <button
-            className="admin-primary"
-            type="button"
-            onClick={() => {
-              window.location.href = "/admin/products";
-            }}
-          >
-            <Plus size={17} /> Нов артикул
-          </button>
+          canCreateProducts ? (
+            <button
+              className="admin-primary"
+              type="button"
+              onClick={() => {
+                window.location.href = "/admin/products";
+              }}
+            >
+              <Plus size={17} /> Нов артикул
+            </button>
+          ) : undefined
         }
       />
       <div className="admin-stat-grid">
@@ -690,11 +719,14 @@ function AdminReportingCharts({
   );
 }
 
-function AdminProducts() {
+function AdminProducts({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
-  const productsQuery = trpc.admin.products.useQuery();
-  const categoriesQuery = trpc.admin.categories.useQuery();
-  const operations = trpc.admin.operations.useQuery();
+  const canReadProducts = can(permissions, "products.read");
+  const canWriteProducts = can(permissions, "products.write");
+  const canReadCategories = can(permissions, "categories.read");
+  const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadProducts });
+  const categoriesQuery = trpc.admin.categories.useQuery(undefined, { enabled: canReadCategories });
+  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts });
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
   const onSaved = async (message: string) => {
     await Promise.all([
@@ -716,10 +748,19 @@ function AdminProducts() {
   const [search, setSearch] = useState("");
   const [qualityOnly, setQualityOnly] = useState(false);
   const [page, setPage] = useState(1);
+  const categoryOptions = useMemo(() => {
+    if (canReadCategories) return (categoriesQuery.data ?? []).map(category => ({ id: category.id, label: category.label }));
+    const derived = new Map<number, { id: number; label: string }>();
+    (productsQuery.data ?? []).forEach(product => {
+      if (!derived.has(product.categoryId)) derived.set(product.categoryId, { id: product.categoryId, label: product.categoryName });
+    });
+    return Array.from(derived.values());
+  }, [canReadCategories, categoriesQuery.data, productsQuery.data]);
+  const canEditProductForm = canWriteProducts && canReadCategories;
   useEffect(() => {
-    if (form.categoryId === 0 && categoriesQuery.data?.[0])
-      setForm(emptyProductForm(categoriesQuery.data[0].id));
-  }, [categoriesQuery.data, form.categoryId]);
+    if (form.categoryId === 0 && categoryOptions[0])
+      setForm(emptyProductForm(categoryOptions[0].id));
+  }, [categoryOptions, form.categoryId]);
   const issueIds = useMemo(
     () =>
       new Set(operations.data?.qualityQueue.map(product => product.id) ?? []),
@@ -777,6 +818,7 @@ function AdminProducts() {
   }
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (!canEditProductForm) return;
     const payload = {
       categoryId: form.categoryId,
       slug: form.slug.trim(),
@@ -804,7 +846,7 @@ function AdminProducts() {
   }
   function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !canWriteProducts) return;
     if (
       !/^image\/(jpeg|png|webp)$/.test(file.type) ||
       file.size > 4 * 1024 * 1024
@@ -834,15 +876,20 @@ function AdminProducts() {
         title="Каталог и качество"
         text="Поддържайте продуктова информация, визуални материали, цени, SEO и публикуване с контроли за качеството на записа."
         action={
-          <button
-            type="button"
-            className="admin-primary"
-            onClick={() =>
-              setForm(emptyProductForm(categoriesQuery.data?.[0]?.id ?? 0))
-            }
-          >
-            <Plus size={17} /> Нов артикул
-          </button>
+          canWriteProducts ? (
+            <button
+              type="button"
+              className="admin-primary"
+              disabled={!canReadCategories || !categoryOptions.length}
+              onClick={() =>
+                setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
+              }
+            >
+              <Plus size={17} /> Нов артикул
+            </button>
+          ) : (
+            <ReadOnlyBadge />
+          )
         }
       />
       <section className="admin-edit-panel">
@@ -858,7 +905,7 @@ function AdminProducts() {
               type="button"
               className="admin-text-action"
               onClick={() =>
-                setForm(emptyProductForm(categoriesQuery.data?.[0]?.id ?? 0))
+                setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
               }
             >
               <Trash2 size={15} /> Откажи редакцията
@@ -866,6 +913,7 @@ function AdminProducts() {
           )}
         </div>
         <form className="admin-form" onSubmit={submit}>
+          <fieldset disabled={!canEditProductForm}>
           <div className="admin-form-grid">
             <label>
               Име на артикул
@@ -893,7 +941,7 @@ function AdminProducts() {
                   update("categoryId", Number(event.target.value))
                 }
               >
-                {(categoriesQuery.data ?? []).map(category => (
+                {categoryOptions.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.label}
                   </option>
@@ -1130,7 +1178,7 @@ function AdminProducts() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageUpload}
-                disabled={uploadImage.isPending}
+                disabled={!canWriteProducts || uploadImage.isPending}
               />
             </label>
             <small>
@@ -1164,20 +1212,22 @@ function AdminProducts() {
             Публикуван в публичния каталог
           </label>
           <div className="admin-form-actions">
-            <button type="submit" className="admin-primary" disabled={saving}>
+            {canWriteProducts && <button type="submit" className="admin-primary" disabled={saving || !canEditProductForm}>
               {saving ? (
                 <Loader2 size={17} className="animate-spin" />
               ) : (
                 <Save size={17} />
               )}{" "}
               {saving ? "Записване..." : "Запази артикула"}
-            </button>
+            </button>}
+            {!canWriteProducts && <ReadOnlyBadge text="Само преглед · редакцията е недостъпна" />}
             {(createProduct.error || updateProduct.error) && (
               <p className="admin-form-error">
                 {createProduct.error?.message || updateProduct.error?.message}
               </p>
             )}
           </div>
+          </fieldset>
         </form>
       </section>
       <section className="admin-panel">
@@ -1263,13 +1313,17 @@ function AdminProducts() {
                         )}
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-text-action"
-                          onClick={() => edit(product)}
-                        >
-                          Редакция <ArrowUpRight size={15} />
-                        </button>
+                        {canWriteProducts ? (
+                          <button
+                            type="button"
+                            className="admin-text-action"
+                            onClick={() => edit(product)}
+                          >
+                            Редакция <ArrowUpRight size={15} />
+                          </button>
+                        ) : (
+                          <ReadOnlyBadge />
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1317,9 +1371,11 @@ function AdminProducts() {
   );
 }
 
-function AdminInventory() {
+function AdminInventory({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
-  const operations = trpc.admin.operations.useQuery();
+  const canReadInventory = can(permissions, "inventory.read");
+  const canWriteInventory = can(permissions, "inventory.write");
+  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadInventory });
   const adjust = trpc.admin.adjustStock.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -1339,6 +1395,7 @@ function AdminInventory() {
         section="НАЛИЧНОСТИ"
         title="Контрол на складови записи"
         text="Работна зона за бърза корекция на количества и преглед на артикули, които изискват внимание."
+        action={!canWriteInventory ? <ReadOnlyBadge /> : undefined}
       />
       <section className="admin-inventory-summary">
         <div>
@@ -1390,9 +1447,11 @@ function AdminInventory() {
                   <button
                     type="button"
                     disabled={
-                      adjust.isPending || (product.stockQuantity ?? 0) === 0
+                      !canWriteInventory || adjust.isPending || (product.stockQuantity ?? 0) === 0
                     }
-                    onClick={() => adjust.mutate({ id: product.id, delta: -1 })}
+                    onClick={() => {
+                      if (canWriteInventory) adjust.mutate({ id: product.id, delta: -1 });
+                    }}
                     aria-label={`Намали количество: ${product.name}`}
                   >
                     <ArrowDown size={16} />
@@ -1400,8 +1459,10 @@ function AdminInventory() {
                   <b>{product.stockQuantity ?? 0}</b>
                   <button
                     type="button"
-                    disabled={adjust.isPending}
-                    onClick={() => adjust.mutate({ id: product.id, delta: 1 })}
+                    disabled={!canWriteInventory || adjust.isPending}
+                    onClick={() => {
+                      if (canWriteInventory) adjust.mutate({ id: product.id, delta: 1 });
+                    }}
                     aria-label={`Увеличи количество: ${product.name}`}
                   >
                     <ArrowUp size={16} />
@@ -1422,9 +1483,11 @@ function AdminInventory() {
   );
 }
 
-function AdminPromotions() {
-  const operations = trpc.admin.operations.useQuery();
-  const productsQuery = trpc.admin.products.useQuery();
+function AdminPromotions({ permissions }: AdminPageProps) {
+  const canReadPromotions = can(permissions, "promotions.read");
+  const canWritePromotions = can(permissions, "promotions.write");
+  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadPromotions });
+  const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadPromotions });
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const availableProducts = (productsQuery.data ?? []).filter(
     product => product.isActive && product.price
@@ -1465,7 +1528,7 @@ function AdminPromotions() {
         </div>
       </section>
       {selected ? (
-        <PromotionEditor product={selected} />
+        <PromotionEditor product={selected} canWrite={canWritePromotions} />
       ) : (
         <EmptyState
           icon={BadgePercent}
@@ -1527,7 +1590,7 @@ function AdminPromotions() {
   );
 }
 
-function PromotionEditor({ product }: { product: AdminProduct }) {
+function PromotionEditor({ product, canWrite }: { product: AdminProduct; canWrite: boolean }) {
   const utils = trpc.useUtils();
   const save = trpc.admin.savePromotion.useMutation({
     onSuccess: async () => {
@@ -1570,6 +1633,7 @@ function PromotionEditor({ product }: { product: AdminProduct }) {
         className="admin-form"
         onSubmit={event => {
           event.preventDefault();
+          if (!canWrite) return;
           save.mutate({
             id: product.id,
             priceEur: numericOrNull(form.priceEur),
@@ -1578,6 +1642,7 @@ function PromotionEditor({ product }: { product: AdminProduct }) {
           });
         }}
       >
+        <fieldset disabled={!canWrite}>
         <div className="admin-form-grid">
           <label>
             Продажна цена EUR
@@ -1616,7 +1681,7 @@ function PromotionEditor({ product }: { product: AdminProduct }) {
           </label>
         </div>
         <div className="admin-form-actions">
-          <button
+          {canWrite && <button
             type="submit"
             className="admin-primary"
             disabled={save.isPending}
@@ -1627,16 +1692,20 @@ function PromotionEditor({ product }: { product: AdminProduct }) {
               <Save size={17} />
             )}{" "}
             Запази предложение
-          </button>
+          </button>}
+          {!canWrite && <ReadOnlyBadge text="Само преглед · промяната на цени е недостъпна" />}
         </div>
+        </fieldset>
       </form>
     </section>
   );
 }
 
-function AdminCategories() {
+function AdminCategories({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
-  const categories = trpc.admin.categories.useQuery();
+  const canReadCategories = can(permissions, "categories.read");
+  const canWriteCategories = can(permissions, "categories.write");
+  const categories = trpc.admin.categories.useQuery(undefined, { enabled: canReadCategories });
   const save = trpc.admin.saveCategory.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -1675,13 +1744,17 @@ function AdminCategories() {
         title="Структура на каталога"
         text="Поддържайте категориите, визуалните им записи и работните подкатегории, които клиентите виждат в навигацията."
         action={
-          <button
-            type="button"
-            className="admin-primary"
-            onClick={() => setForm(emptyCategoryForm())}
-          >
-            <Plus size={17} /> Нова категория
-          </button>
+          canWriteCategories ? (
+            <button
+              type="button"
+              className="admin-primary"
+              onClick={() => setForm(emptyCategoryForm())}
+            >
+              <Plus size={17} /> Нова категория
+            </button>
+          ) : (
+            <ReadOnlyBadge />
+          )
         }
       />
       <section className="admin-edit-panel">
@@ -1695,6 +1768,7 @@ function AdminCategories() {
           className="admin-form"
           onSubmit={event => {
             event.preventDefault();
+            if (!canWriteCategories) return;
             save.mutate({
               id: form.id,
               category: {
@@ -1710,6 +1784,7 @@ function AdminCategories() {
             });
           }}
         >
+          <fieldset disabled={!canWriteCategories}>
           <div className="admin-form-grid">
             <label>
               Име
@@ -1808,7 +1883,7 @@ function AdminCategories() {
             Активна в публичния каталог
           </label>
           <div className="admin-form-actions">
-            <button
+            {canWriteCategories && <button
               type="submit"
               className="admin-primary"
               disabled={save.isPending}
@@ -1819,8 +1894,10 @@ function AdminCategories() {
                 <Save size={17} />
               )}{" "}
               Запази категорията
-            </button>
+            </button>}
+            {!canWriteCategories && <ReadOnlyBadge text="Само преглед · редакцията е недостъпна" />}
           </div>
+          </fieldset>
         </form>
       </section>
       <section className="admin-panel">
@@ -1847,13 +1924,17 @@ function AdminCategories() {
                     {categoryNodeCount(category.subcategories)} навигационни
                     записа
                   </p>
-                  <button
-                    type="button"
-                    className="admin-text-action"
-                    onClick={() => edit(category)}
-                  >
-                    Редакция <ArrowUpRight size={15} />
-                  </button>
+                  {canWriteCategories ? (
+                    <button
+                      type="button"
+                      className="admin-text-action"
+                      onClick={() => edit(category)}
+                    >
+                      Редакция <ArrowUpRight size={15} />
+                    </button>
+                  ) : (
+                    <ReadOnlyBadge />
+                  )}
                 </div>
               </article>
             ))}
@@ -1864,10 +1945,11 @@ function AdminCategories() {
   );
 }
 
-function AdminOrders() {
+function AdminOrders({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
-  const orders = trpc.admin.orders.useQuery();
-  const operations = trpc.admin.operations.useQuery();
+  const canReadOrders = can(permissions, "orders.read");
+  const canWriteOrders = can(permissions, "orders.write");
+  const orders = trpc.admin.orders.useQuery(undefined, { enabled: canReadOrders });
   const update = trpc.admin.updateOrder.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -1882,12 +1964,17 @@ function AdminOrders() {
   const filtered = (orders.data ?? []).filter(
     order => filter === "all" || order.status === filter
   );
+  const orderCounts = (orders.data ?? []).reduce<Record<OrderStatus, number>>((counts, order) => {
+    counts[order.status] += 1;
+    return counts;
+  }, { new: 0, contacted: 0, confirmed: 0, closed: 0, cancelled: 0 });
   return (
     <section className="admin-workspace">
       <ShellHeading
         section="ЗАЯВКИ"
         title="Заявки за доставка"
         text="Управлявайте заявките по статут, контакт и вътрешни бележки. Не се съхраняват платежни данни."
+        action={!canWriteOrders ? <ReadOnlyBadge /> : undefined}
       />
       <section className="admin-order-status-strip">
         {(
@@ -1910,7 +1997,7 @@ function AdminOrders() {
             <b>
               {status === "all"
                 ? (orders.data?.length ?? 0)
-                : (operations.data?.orderCounts[status] ?? 0)}
+                : orderCounts[status]}
             </b>
           </button>
         ))}
@@ -1932,9 +2019,10 @@ function AdminOrders() {
                 key={order.id}
                 order={order}
                 busy={update.isPending}
-                onSave={(status, adminNote) =>
-                  update.mutate({ id: order.id, status, adminNote })
-                }
+                canWrite={canWriteOrders}
+                onSave={(status, adminNote) => {
+                  if (canWriteOrders) update.mutate({ id: order.id, status, adminNote });
+                }}
               />
             ))}
           </div>
@@ -1950,9 +2038,11 @@ function AdminOrders() {
   );
 }
 
-function AdminContactEnquiries() {
+function AdminContactEnquiries({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
-  const enquiries = trpc.admin.contactEnquiries.useQuery();
+  const canReadEnquiries = can(permissions, "enquiries.read");
+  const canWriteEnquiries = can(permissions, "enquiries.write");
+  const enquiries = trpc.admin.contactEnquiries.useQuery(undefined, { enabled: canReadEnquiries });
   const update = trpc.admin.updateContactEnquiry.useMutation({
     onSuccess: async () => {
       await utils.admin.contactEnquiries.invalidate();
@@ -1969,6 +2059,7 @@ function AdminContactEnquiries() {
         section="ЗАПИТВАНИЯ"
         title="Контактна опашка"
         text="Съобщенията от страницата „Контакти“ се записват тук с номер, данни за връзка и вътрешна бележка."
+        action={!canWriteEnquiries ? <ReadOnlyBadge /> : undefined}
       />
       <section className="admin-order-status-strip">
         {(["all", "new", "contacted", "closed"] as const).map(status => (
@@ -2008,9 +2099,10 @@ function AdminContactEnquiries() {
                 key={enquiry.id}
                 enquiry={enquiry}
                 busy={update.isPending}
-                onSave={(status, note) =>
-                  update.mutate({ id: enquiry.id, status, adminNote: note })
-                }
+                canWrite={canWriteEnquiries}
+                onSave={(status, note) => {
+                  if (canWriteEnquiries) update.mutate({ id: enquiry.id, status, adminNote: note });
+                }}
               />
             ))}
           </div>
@@ -2026,9 +2118,11 @@ function AdminContactEnquiries() {
   );
 }
 
-function AdminCustomers() {
+function AdminCustomers({ permissions }: AdminPageProps) {
   const [workbookData, setWorkbookData] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
+  const canReadCustomers = can(permissions, "customers.read");
+  const canImportCustomers = can(permissions, "customers.import");
   const preview = trpc.admin.previewLegacyCustomerImport.useMutation({
     onError: error =>
       toast.error(error.message || "Файлът не може да бъде проверен."),
@@ -2061,7 +2155,7 @@ function AdminCustomers() {
       const value = String(reader.result);
       setWorkbookData(value);
       setFileName(file.name);
-      preview.mutate({ workbookData: value });
+      if (canReadCustomers) preview.mutate({ workbookData: value });
     };
     reader.readAsDataURL(file);
   }
@@ -2077,6 +2171,7 @@ function AdminCustomers() {
         section="КЛИЕНТИ"
         title="Прехвърляне на клиентски профили"
         text="Проверете и импортирайте профили и адреси от OpenCart. Стари пароли, salt стойности и други password-related полета не се записват."
+        action={!canImportCustomers ? <ReadOnlyBadge text="Само преглед · импортът е недостъпен" /> : undefined}
       />
       <section className="admin-edit-panel admin-customer-import">
         <div className="admin-panel-head">
@@ -2106,7 +2201,7 @@ function AdminCustomers() {
               type="file"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={selectFile}
-              disabled={preview.isPending || importer.isPending}
+              disabled={!canReadCustomers || preview.isPending || importer.isPending}
             />
           </label>
         </div>
@@ -2151,11 +2246,13 @@ function AdminCustomers() {
           </p>
         )}
         <div className="admin-form-actions">
-          <button
+          {canImportCustomers && <button
             type="button"
             className="admin-primary"
             disabled={!isReady || importer.isPending}
-            onClick={() => workbookData && importer.mutate({ workbookData })}
+            onClick={() => {
+              if (workbookData && canImportCustomers) importer.mutate({ workbookData });
+            }}
           >
             {importer.isPending ? (
               <>
@@ -2166,16 +2263,19 @@ function AdminCustomers() {
                 <CheckCircle2 size={17} /> Импортирай проверените профили
               </>
             )}
-          </button>
+          </button>}
+          {!canImportCustomers && <ReadOnlyBadge text="Само преглед · импортът е недостъпен" />}
         </div>
       </section>
     </section>
   );
 }
 
-function AdminLegacyOrders() {
+function AdminLegacyOrders({ permissions }: AdminPageProps) {
   const [csvData, setCsvData] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
+  const canReadLegacyOrders = can(permissions, "legacy_orders.read");
+  const canImportLegacyOrders = can(permissions, "legacy_orders.import");
   const preview = trpc.admin.previewLegacyOrderImport.useMutation({
     onError: error =>
       toast.error(
@@ -2211,7 +2311,7 @@ function AdminLegacyOrders() {
       const value = String(reader.result);
       setCsvData(value);
       setFileName(file.name);
-      preview.mutate({ csvData: value });
+      if (canReadLegacyOrders) preview.mutate({ csvData: value });
     };
     reader.readAsDataURL(file);
   }
@@ -2224,6 +2324,7 @@ function AdminLegacyOrders() {
         section="ИСТОРИЧЕСКИ ПОРЪЧКИ"
         title="Прехвърляне на legacy поръчки"
         text="Мигрирайте одобрената история от OpenCart, без платежни данни, IP адреси, браузърна информация или коментари към плащането."
+        action={!canImportLegacyOrders ? <ReadOnlyBadge text="Само преглед · импортът е недостъпен" /> : undefined}
       />
       <section className="admin-edit-panel admin-customer-import">
         <div className="admin-panel-head">
@@ -2255,7 +2356,7 @@ function AdminLegacyOrders() {
               type="file"
               accept=".csv,text/csv"
               onChange={selectFile}
-              disabled={preview.isPending || importer.isPending}
+              disabled={!canReadLegacyOrders || preview.isPending || importer.isPending}
             />
           </label>
         </div>
@@ -2299,11 +2400,13 @@ function AdminLegacyOrders() {
           </p>
         )}
         <div className="admin-form-actions">
-          <button
+          {canImportLegacyOrders && <button
             type="button"
             className="admin-primary"
             disabled={!isReady || importer.isPending}
-            onClick={() => csvData && importer.mutate({ csvData })}
+            onClick={() => {
+              if (csvData && canImportLegacyOrders) importer.mutate({ csvData });
+            }}
           >
             {importer.isPending ? (
               <>
@@ -2314,15 +2417,17 @@ function AdminLegacyOrders() {
                 <CheckCircle2 size={17} /> Импортирай проверената история
               </>
             )}
-          </button>
+          </button>}
+          {!canImportLegacyOrders && <ReadOnlyBadge text="Само преглед · импортът е недостъпен" />}
         </div>
       </section>
     </section>
   );
 }
 
-function AdminActivity() {
-  const operations = trpc.admin.operations.useQuery();
+function AdminActivity({ permissions }: AdminPageProps) {
+  const canReadActivity = can(permissions, "activity.read");
+  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadActivity });
   if (operations.isLoading) return <LoadingState />;
   if (!operations.data) return <ErrorState />;
   return (
@@ -2392,9 +2497,11 @@ async function brochurePagesFromPdf(file: File) {
   return pages;
 }
 
-function AdminBrochures() {
+function AdminBrochures({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
-  const brochures = trpc.admin.brochures.useQuery();
+  const canReadBrochures = can(permissions, "brochures.read");
+  const canWriteBrochures = can(permissions, "brochures.write");
+  const brochures = trpc.admin.brochures.useQuery(undefined, { enabled: canReadBrochures });
   const [title, setTitle] = useState("Промо брошура");
   const [activateNow, setActivateNow] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -2437,6 +2544,7 @@ function AdminBrochures() {
   });
   async function handlePdfUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    if (!file || !canWriteBrochures) return;
     event.target.value = "";
     if (!file) return;
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
@@ -2475,6 +2583,7 @@ function AdminBrochures() {
         section="БРОШУРИ"
         title="Промоционални брошури"
         text="Качете PDF файл, страниците му се подготвят като slideshow и избраната версия се показва на началната страница."
+        action={!canWriteBrochures ? <ReadOnlyBadge /> : undefined}
       />
       <section className="admin-brochure-command">
         <div>
@@ -2502,6 +2611,7 @@ function AdminBrochures() {
             <input
               value={title}
               onChange={event => setTitle(event.target.value)}
+              disabled={!canWriteBrochures}
               placeholder="напр. Промо брошура · септември 2026"
             />
           </label>
@@ -2509,6 +2619,7 @@ function AdminBrochures() {
             <input
               type="checkbox"
               checked={activateNow}
+              disabled={!canWriteBrochures}
               onChange={event => setActivateNow(event.target.checked)}
             />{" "}
             Активирай автоматично след качване
@@ -2537,6 +2648,7 @@ function AdminBrochures() {
               accept="application/pdf,.pdf"
               onChange={handlePdfUpload}
               disabled={
+                !canWriteBrochures ||
                 processing ||
                 uploadPage.isPending ||
                 upload.isPending ||
@@ -2603,22 +2715,26 @@ function AdminBrochures() {
                         <Download size={15} /> PDF
                       </a>
                     )}
-                    {!brochure.isActive && !brochure.isArchived && (
+                    {canWriteBrochures && !brochure.isActive && !brochure.isArchived && (
                       <button
                         type="button"
                         className="admin-primary"
                         disabled={activate.isPending}
-                        onClick={() => activate.mutate({ id: brochure.id })}
+                        onClick={() => {
+                          if (canWriteBrochures) activate.mutate({ id: brochure.id });
+                        }}
                       >
                         <FileCheck2 size={15} /> Активирай
                       </button>
                     )}
-                    {!brochure.isActive && !brochure.isArchived && (
+                    {canWriteBrochures && !brochure.isActive && !brochure.isArchived && (
                       <button
                         type="button"
                         className="admin-text-action"
                         disabled={archive.isPending}
-                        onClick={() => archive.mutate({ id: brochure.id })}
+                        onClick={() => {
+                          if (canWriteBrochures) archive.mutate({ id: brochure.id });
+                        }}
                       >
                         <Archive size={15} /> Архивирай
                       </button>
@@ -2662,6 +2778,10 @@ function ActivityLine({
     "brochure.archived": "архивира брошура",
     "customer_profiles.imported": "импортира клиентски профили",
     "customer_orders.imported": "импортира исторически поръчки",
+    "role.created": "създаде роля",
+    "role.updated": "обнови роля",
+    "role.deleted": "изтри роля",
+    "customer.role_assigned": "назначи роля на клиент",
   };
   return (
     <div className="admin-activity-row">
@@ -2689,10 +2809,12 @@ function ActivityLine({
 function OrderCard({
   order,
   busy,
+  canWrite,
   onSave,
 }: {
   order: AdminOrder;
   busy: boolean;
+  canWrite: boolean;
   onSave: (status: OrderStatus, note: string | null) => void;
 }) {
   const [status, setStatus] = useState<OrderStatus>(order.status);
@@ -2735,6 +2857,7 @@ function OrderCard({
         <small>{formatDate(order.createdAt)}</small>
       </div>
       <div className="admin-order-actions">
+        <fieldset disabled={!canWrite}>
         <label>
           Статус
           <select
@@ -2756,14 +2879,15 @@ function OrderCard({
             placeholder="видимо само за администратори"
           />
         </label>
-        <button
+        {canWrite ? <button
           type="button"
           className="admin-primary"
           disabled={busy}
           onClick={() => onSave(status, note.trim() || null)}
         >
           <Save size={16} /> Запази
-        </button>
+        </button> : <ReadOnlyBadge text="Само преглед · обработката е недостъпна" />}
+        </fieldset>
       </div>
     </article>
   );
@@ -2771,10 +2895,12 @@ function OrderCard({
 function ContactEnquiryCard({
   enquiry,
   busy,
+  canWrite,
   onSave,
 }: {
   enquiry: AdminContactEnquiry;
   busy: boolean;
+  canWrite: boolean;
   onSave: (status: ContactEnquiryStatus, note: string | null) => void;
 }) {
   const [status, setStatus] = useState<ContactEnquiryStatus>(enquiry.status);
@@ -2799,6 +2925,7 @@ function ContactEnquiryCard({
         <small>{formatDate(enquiry.createdAt)}</small>
       </div>
       <div className="admin-order-actions">
+        <fieldset disabled={!canWrite}>
         <label>
           Статус
           <select
@@ -2824,14 +2951,15 @@ function ContactEnquiryCard({
             placeholder="видимо само за администратори"
           />
         </label>
-        <button
+        {canWrite ? <button
           type="button"
           className="admin-primary"
           disabled={busy}
           onClick={() => onSave(status, note.trim() || null)}
         >
           <Save size={16} /> Запази
-        </button>
+        </button> : <ReadOnlyBadge text="Само преглед · обработката е недостъпна" />}
+        </fieldset>
       </div>
     </article>
   );
@@ -2905,24 +3033,58 @@ function emptyCategoryForm(): CategoryForm {
     isActive: true,
   };
 }
-function AdminWorkspace() {
-  const [location] = useLocation();
-  if (location === "/admin/products") return <AdminProducts />;
-  if (location === "/admin/inventory") return <AdminInventory />;
-  if (location === "/admin/promotions") return <AdminPromotions />;
-  if (location === "/admin/brochures") return <AdminBrochures />;
-  if (location === "/admin/categories") return <AdminCategories />;
-  if (location === "/admin/orders") return <AdminOrders />;
-  if (location === "/admin/enquiries") return <AdminContactEnquiries />;
-  if (location === "/admin/customers") return <AdminCustomers />;
-  if (location === "/admin/legacy-orders") return <AdminLegacyOrders />;
-  if (location === "/admin/activity") return <AdminActivity />;
-  return <AdminOverview />;
+function AdminWorkspace({
+  staff,
+  isLoading,
+  error,
+}: {
+  staff: StaffPermissionState | null | undefined;
+  isLoading: boolean;
+  error: boolean;
+}) {
+  const [location, setLocation] = useLocation();
+  const permissions = staff?.permissions ?? [];
+  const redirectPath =
+    location === "/admin" && !can(permissions, "dashboard.read")
+      ? firstAdminPath(permissions)
+      : null;
+
+  useEffect(() => {
+    if (redirectPath && redirectPath !== location) setLocation(redirectPath);
+  }, [location, redirectPath, setLocation]);
+
+  if (isLoading) return <LoadingState />;
+  if (error || !staff || !staff.canAccess) return <AccessDeniedState />;
+  if (redirectPath) {
+    return <AccessDeniedState text="Пренасочване към първата разрешена секция…" />;
+  }
+  if (!canVisitAdminSection(permissions, location)) {
+    return <AccessDeniedState />;
+  }
+
+  if (location === "/admin") return <AdminOverview permissions={permissions} />;
+  if (location === "/admin/products") return <AdminProducts permissions={permissions} />;
+  if (location === "/admin/inventory") return <AdminInventory permissions={permissions} />;
+  if (location === "/admin/promotions") return <AdminPromotions permissions={permissions} />;
+  if (location === "/admin/brochures") return <AdminBrochures permissions={permissions} />;
+  if (location === "/admin/categories") return <AdminCategories permissions={permissions} />;
+  if (location === "/admin/orders") return <AdminOrders permissions={permissions} />;
+  if (location === "/admin/enquiries") return <AdminContactEnquiries permissions={permissions} />;
+  if (location === "/admin/customers") return <AdminCustomers permissions={permissions} />;
+  if (location === "/admin/legacy-orders") return <AdminLegacyOrders permissions={permissions} />;
+  if (location === "/admin/activity") return <AdminActivity permissions={permissions} />;
+  if (location === "/admin/users-roles") return <AdminUsersRoles />;
+  return <AccessDeniedState text="Непознат административен маршрут." />;
 }
 export default function Admin() {
+  const staffQuery = trpc.staff.me.useQuery();
   return (
     <DashboardLayout>
-      <AdminWorkspace />
+      <AdminWorkspace
+        staff={staffQuery.data}
+        isLoading={staffQuery.isLoading}
+        error={Boolean(staffQuery.error)}
+      />
     </DashboardLayout>
   );
 }

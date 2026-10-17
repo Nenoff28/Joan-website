@@ -19,6 +19,6 @@ describe("global route scroll reset", () => {
   it("mounts the reset once above every storefront and administrator route", () => {
     expect(appSource).toContain("<ScrollToTop />");
     expect(appSource).toContain('<Route path={"/products"} component={AllProducts} />');
-    expect(appSource).toContain('<Route path={"/admin/:section"} component={Admin} />');
+    expect(appSource).toContain('<Route path={"/admin/:section"} component={AdminClientRoute} />');
   });
 });

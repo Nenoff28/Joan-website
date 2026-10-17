@@ -13,14 +13,29 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+/** Portable website permissions; the legacy Manus administrator remains a bootstrap identity. */
+export const accessRoles = mysqlTable("access_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 80 }).notNull().unique(),
+  name: varchar("name", { length: 160 }).notNull(),
+  description: text("description"),
+  permissionsJson: text("permissionsJson").notNull(),
+  isSystem: boolean("isSystem").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /** Storefront customer profiles are kept separate from Manus OAuth administrator identities. */
 export const customerProfiles = mysqlTable("customer_profiles", {
   id: int("id").autoincrement().primaryKey(),
-  legacyCustomerId: int("legacyCustomerId").notNull().unique(),
+  legacyCustomerId: int("legacyCustomerId").unique(),
   email: varchar("email", { length: 320 }).notNull().unique(),
   firstName: varchar("firstName", { length: 160 }).notNull(),
   lastName: varchar("lastName", { length: 160 }).notNull(),
   phone: varchar("phone", { length: 64 }),
+  accessRoleId: int("accessRoleId").references(() => accessRoles.id),
+  staffUserId: int("staffUserId").unique().references(() => users.id),
+  emailVerifiedAt: timestamp("emailVerifiedAt"),
   newsletterSubscribed: boolean("newsletterSubscribed").default(false).notNull(),
   legacyWasApproved: boolean("legacyWasApproved").default(false).notNull(),
   legacyWasActive: boolean("legacyWasActive").default(false).notNull(),
@@ -31,6 +46,14 @@ export const customerProfiles = mysqlTable("customer_profiles", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("customer_profiles_status_idx").on(table.accountStatus)]);
+
+/** Google subjects, not matching email strings, identify the external account. */
+export const customerGoogleIdentities = mysqlTable("customer_google_identities", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull().unique().references(() => customerProfiles.id),
+  subject: varchar("subject", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
 
 /** Imported addresses remain associated with the stored customer profile. */
 export const customerAddresses = mysqlTable("customer_addresses", {
