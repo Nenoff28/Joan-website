@@ -732,3 +732,20 @@ a.feature-category-card[href="/category/banya"] img,
 a.feature-category-card[href="/category/v-i-k"] img,
 a.feature-category-card[href="/category/boi-lakove-mazilki"] img,
 a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !important; }
+
+/* Calm homepage entrance: warm stone navigation, graphite brochure CTA, restrained red accents. */
+.homepage-entrance { --home-menu-surface: #f7f5f2; --home-menu-ink: #303739; --home-menu-muted: #626b6e; --home-menu-accent: #955456; --home-menu-line: #dedbd6; --home-menu-selected: #eee5e3; --home-cta-surface: #303739; --home-cta-hover: #424b4e; }
+.homepage-entrance .homepage-category-menu { background: var(--home-menu-surface); border: 1px solid var(--home-menu-line); border-top: 2px solid var(--home-menu-accent); box-shadow: 0 6px 20px rgba(38, 43, 44, .05); color: var(--home-menu-ink); }
+.homepage-entrance .homepage-category-menu-title { border-bottom-color: var(--home-menu-line); color: var(--home-menu-ink); }
+.homepage-entrance .homepage-category-menu-title b { background: #ebe8e3; border-radius: 999px; color: var(--home-menu-muted); letter-spacing: 0; padding: .18rem .4rem; }
+.homepage-category-menu .homepage-category-item > .homepage-category-link { background: transparent; color: var(--home-menu-ink); }
+.homepage-category-menu .homepage-category-item > .homepage-category-link svg:first-child { color: var(--home-menu-accent); }
+.homepage-category-menu .homepage-category-item > .homepage-category-link svg:last-child { color: var(--home-menu-muted); opacity: 1; }
+.homepage-category-menu .homepage-category-item > .homepage-category-link:hover { background: #ebe8e3; color: var(--home-menu-ink); transform: none; }
+.homepage-category-menu .homepage-category-item > .homepage-category-link.is-open { background: var(--home-menu-selected); box-shadow: inset 2px 0 var(--home-menu-accent); }
+.homepage-category-menu .homepage-category-item > .homepage-category-link:focus-visible { background: var(--home-menu-selected); outline: 2px solid var(--home-menu-accent); outline-offset: 2px; transform: none; }
+.homepage-entrance .homepage-entrance-cta-primary { background: var(--home-cta-surface); border-color: var(--home-cta-surface); color: #fff; box-shadow: 0 4px 12px rgba(38, 43, 44, .1); }
+.homepage-entrance .homepage-entrance-cta-primary svg:first-child { color: #e4c4c5; }
+.homepage-entrance .homepage-entrance-cta-primary:hover, .homepage-entrance .homepage-entrance-cta-primary:focus-visible { background: var(--home-cta-hover); border-color: var(--home-cta-hover); color: #fff; }
+.homepage-entrance .homepage-entrance-cta-primary:focus-visible { outline: 2px solid var(--home-menu-accent); outline-offset: 3px; }
+@media (max-width: 760px) { .homepage-category-menu .homepage-category-item > .homepage-category-link { background: #ebe8e3; } .homepage-category-menu .homepage-category-item > .homepage-category-link.is-open { background: var(--home-menu-selected); } }

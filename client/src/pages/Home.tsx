@@ -223,7 +223,7 @@ export default function Home() {
         >
           <aside
             className="homepage-category-menu"
-            aria-label={en ? "Product categories" : "Категории продукти"} style={{backgroundColor: '#d23a32'}}
+            aria-label={en ? "Product categories" : "Категории продукти"}
           >
             <div className="homepage-category-menu-title">
               <span>{en ? "Categories" : "Категории"}</span>

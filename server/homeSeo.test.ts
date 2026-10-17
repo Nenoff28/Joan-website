@@ -178,7 +178,7 @@ describe("homepage SEO audit regressions", () => {
       "setActivePromoBanner(current => (current + 1) % promoBanners.length)"
     );
     expect(stylesheet).toContain(
-      "background: var(--red); border-radius: .8rem;"
+      "background: var(--home-menu-surface);"
     );
     expect(stylesheet).toContain("grid-template-rows: auto auto;");
     expect(stylesheet).toContain("grid-row: 1 / span 2;");
