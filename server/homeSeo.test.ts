@@ -177,9 +177,7 @@ describe("homepage SEO audit regressions", () => {
     expect(homeSource).toContain(
       "setActivePromoBanner(current => (current + 1) % promoBanners.length)"
     );
-    expect(stylesheet).toContain(
-      "background: var(--home-menu-surface);"
-    );
+    expect(stylesheet).toContain("background: var(--home-menu-surface);");
     expect(stylesheet).toContain("grid-template-rows: auto auto;");
     expect(stylesheet).toContain("grid-row: 1 / span 2;");
     expect(stylesheet).toContain("height: clamp(340px, 34vw, 440px);");
@@ -188,5 +186,9 @@ describe("homepage SEO audit regressions", () => {
     expect(stylesheet).not.toContain(
       ".homepage-category-item:hover .homepage-category-flyout"
     );
+    expect(homeSource).not.toContain(
+      'String(categories.length).padStart(2, "0")'
+    );
+    expect(homeSource).not.toContain("<b>{String(categories.length)");
   });
 });

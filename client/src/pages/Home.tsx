@@ -227,7 +227,6 @@ export default function Home() {
           >
             <div className="homepage-category-menu-title">
               <span>{en ? "Categories" : "Категории"}</span>
-              <b>{String(categories.length).padStart(2, "0")}</b>
             </div>
             <nav>
               {categories.map(category => (
