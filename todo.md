@@ -455,3 +455,7 @@
 - [x] Add two rounded homepage CTA buttons below the promotional slideshow: brochure and promotional products.
 - [x] Reduce the homepage slideshow height and align the category menu bottom with the two CTA buttons below it.
 - [x] Increase the homepage slideshow height again while keeping the CTA buttons in the same position and reducing their visual size.
+- [x] Rewrite the About company description in first-person voice with stronger, customer-facing copy.
+- [x] Remove the redundant “Магазинът отвътре”, store/base caption text, and visible photo caption from About.
+- [x] Update the About stock statistic from 20 000+ to 90 000+.
+- [x] Add extra vertical spacing around the “За фирма Жоан” tab heading so it does not visually merge with adjacent text.

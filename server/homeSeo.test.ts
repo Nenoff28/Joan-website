@@ -109,6 +109,25 @@ describe("homepage SEO audit regressions", () => {
     expect(companyBlock).toBeLessThan(joanTodayBlock);
   });
 
+  it("keeps the About copy in first person and removes redundant store captions", () => {
+    const aboutSource = readFileSync(
+      resolve(process.cwd(), "client/src/pages/About.tsx"),
+      "utf8"
+    );
+    const stylesheet = readFileSync(
+      resolve(process.cwd(), "client/src/index.css"),
+      "utf8"
+    );
+    expect(aboutSource).toContain("Ние развиваме своя асортимент");
+    expect(aboutSource).toContain("90 000+");
+    expect(aboutSource).not.toContain("Магазинът отвътре");
+    expect(aboutSource).not.toContain("Кадър от магазина и базата");
+    expect(aboutSource).not.toContain("<figcaption>");
+    expect(stylesheet).toContain(
+      ".about-hero .eyebrow { margin: 0 0 .9rem; padding-top: .2rem; }"
+    );
+  });
+
   it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {
     expect(homeSource).toContain(
       'title={en ? "Current offers" : "Актуални предложения"}'
