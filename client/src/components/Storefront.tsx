@@ -343,8 +343,8 @@ function Footer() {
         <div className="footer-brand">
           <Wordmark />
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
-          <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
-          <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer"><MapPin size={16} /> {language === "en" ? "Silistra, 22 Tutrakan St." : store.address}</a>
+          <a className="footer-contact-line" href={`mailto:${store.email}`} style={{ paddingBottom: "0px", paddingTop: "5px" }}><Mail size={16} style={{ paddingBottom: "0px", paddingTop: "5px" }} /> {store.email}</a>
+          <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer" style={{ borderColor: "#ffffff", borderStyle: "none" }}><MapPin size={16} style={{ borderColor: "#ffffff", borderStyle: "none" }} /> {language === "en" ? "Silistra, 22 Tutrakan St." : store.address}</a>
           <div className="footer-social-row" aria-label={language === "en" ? "Social media" : "Социални мрежи"}><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Joan on Facebook" title="Joan on Facebook"><img src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png" alt="Joan on Facebook" /></a><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on Instagram — profile coming soon" : "Instagram на ЖОАН — профилът предстои"} title={language === "en" ? "Instagram — coming soon" : "Instagram — скоро"}><img src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram" /></span><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on TikTok — profile coming soon" : "TikTok на ЖОАН — профилът предстои"} title={language === "en" ? "TikTok — coming soon" : "TikTok — скоро"}><img src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok" /></span></div>
         </div>
         <nav className="footer-column" aria-labelledby="footer-customers-title">
@@ -367,7 +367,7 @@ function Footer() {
           <button type="button" className="footer-link-button" onClick={() => window.dispatchEvent(new Event("joan:cookie-settings"))}>{language === "en" ? "Cookies" : "Бисквитки"}</button>
         </nav>
       </div>
-      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. {language === "en" ? "All rights reserved." : "Всички права запазени."}</span></div></div>
+      <div className="footer-bottom" style={{color: '#cecfcf'}}><div className="page-frame" style={{color: '#cecfcf'}}><span style={{color: '#cecfcf'}}>© {new Date().getFullYear()} ЖОАН. {language === "en" ? "All rights reserved." : "Всички права запазени."}</span></div></div>
     </footer>
   );
 }

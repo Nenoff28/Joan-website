@@ -1,7 +1,6 @@
 
-# Footer three-column refinement
-- [x] Keep the Joan logo, phone, email, Google Maps address, and social icons in their existing left-side brand/contact block.
-- [x] Replace the former category and customer-information columns with the requested three information columns: For customers, Joan, and General information.
-- [x] Remove the two unwanted descriptive copy lines from the visible footer content.
-- [x] Make the new column links white and the column headings bold, with responsive desktop/mobile layout.
-- [x] Validate 175 Vitest tests, TypeScript, production client+SSR build, git diff --check, and desktop/mobile screenshots.
+# Footer visual edit verification
+- [x] Reviewed the deterministic footer edits.
+- [x] Replaced invalid `paddingBottom: "px"` with `0px` and merged duplicate style attributes into valid JSX style objects.
+- [x] Preserved the requested white footer text, bold column headings, white map/icon treatment, and footer layout.
+- [x] Verified desktop/mobile screenshots, 175 Vitest tests, TypeScript, production client+SSR build, and git diff --check.
