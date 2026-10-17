@@ -680,3 +680,34 @@ html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }
 @media (prefers-reduced-motion: reduce) { .homepage-banner-slide-in img { animation: none; } }
 @media (max-width: 820px) { .homepage-entrance { grid-template-columns: 205px minmax(0, 1fr); }.homepage-category-item > .homepage-category-link span { font-size: .68rem; }.homepage-category-flyout { min-width: 360px; } }
 @media (max-width: 640px) { .homepage-entrance { display: block; margin-top: .8rem; }.homepage-category-menu { padding: .75rem; }.homepage-category-menu nav { display: flex; gap: .35rem; overflow-x: auto; padding-bottom: .2rem; scrollbar-width: thin; }.homepage-category-item { flex: 0 0 auto; }.homepage-category-item > .homepage-category-link { background: rgba(0,0,0,.13); grid-template-columns: 18px auto; min-height: 42px; padding: .55rem .7rem; width: auto; }.homepage-category-item > .homepage-category-link span { font-size: .66rem; white-space: nowrap; }.homepage-category-item > .homepage-category-link svg:last-child { display: none; }.homepage-category-flyout { left: 0; min-width: min(340px, calc(100vw - 2rem)); top: calc(100% + .45rem); }.homepage-category-flyout::before { border-bottom: 9px solid #fff; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 0; left: 1.3rem; top: -9px; }.homepage-category-flyout-grid { grid-template-columns: 1fr 1fr; max-height: 280px; }.homepage-banner-stage { height: auto; border-radius: .8rem; margin-top: .7rem; }.homepage-banner-link, .homepage-banner-link img { border-radius: .8rem; }.homepage-banner-link img { aspect-ratio: 640 / 426; height: auto; }.homepage-category-menu { grid-row: auto; }.homepage-entrance-actions { display: grid; gap: .55rem; grid-column: auto; grid-template-columns: 1fr 1fr; margin-top: .7rem; }.homepage-entrance-cta { font-size: .64rem; min-height: 44px; padding: .45rem .55rem; text-align: center; } }
+
+/* Footer redesign: three clear information columns with a light, readable surface. */
+.site-footer { background: #f3f4f1; border-top: 1px solid #d7dbd6; color: #182126; }
+.footer-main { border-top: 0; display: grid; gap: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 2.8rem 0 2.4rem; }
+.footer-column { border-left: 1px solid #c9cfca; display: grid; align-content: start; gap: .48rem; min-height: 154px; padding: 0 1.35rem; }
+.footer-column:first-child { border-left: 0; padding-left: 0; }
+.footer-column h3 { color: #11181c; font-size: 1rem; letter-spacing: 0; margin: 0 0 .6rem; text-transform: none; }
+.footer-column a, .footer-link-button { color: #283338; font-size: .82rem; line-height: 1.35; text-align: left; }
+.footer-column a:hover, .footer-link-button:hover { color: var(--red); }
+.footer-link-button { background: transparent; border: 0; cursor: pointer; font: inherit; padding: 0; }
+.footer-contact-strip { align-items: center; border-top: 1px solid #c9cfca; display: flex; gap: 2rem; justify-content: space-between; padding-bottom: 1.4rem; padding-top: 1.4rem; }
+.footer-contact-strip .brand-mark { flex: 0 0 auto; }
+.footer-contact-details { align-items: center; display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; justify-content: flex-end; }
+.footer-contact-details .footer-contact-line { color: #283338; margin-top: 0; }
+.footer-contact-details .footer-contact-line:hover { color: var(--red); }
+.footer-contact-details .footer-map-link { max-width: none; }
+.footer-contact-details .footer-contact-line svg { color: var(--red); }
+.footer-contact-details .footer-social-row { border-top: 0; margin: 0; padding: 0; }
+.footer-bottom { background: #e7eae6; border-top: 1px solid #d0d5d0; color: #334047; }
+.footer-bottom > div { justify-content: flex-start; min-height: 44px; }
+.footer-social-row a:focus-visible { outline-color: var(--red); }
+@media (max-width: 760px) {
+  .footer-main { display: grid; gap: 0; grid-template-columns: 1fr; padding: 2.2rem 0 1.2rem; }
+  .footer-column, .footer-column:first-child { border-left: 0; border-top: 1px solid #c9cfca; min-height: 0; padding: 1.1rem 0; }
+  .footer-column:first-child { border-top: 0; padding-top: 0; }
+  .footer-column h3 { font-size: .96rem; margin-bottom: .35rem; }
+  .footer-column a, .footer-link-button { font-size: .8rem; }
+  .footer-contact-strip { align-items: flex-start; display: grid; gap: 1.1rem; padding-bottom: 1.5rem; padding-top: 1.4rem; }
+  .footer-contact-details { align-items: flex-start; display: grid; gap: .55rem; justify-content: start; }
+  .footer-contact-details .footer-social-row { display: flex; }
+}

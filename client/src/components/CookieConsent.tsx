@@ -38,6 +38,9 @@ export default function CookieConsent() {
       setConsent(stored);
       removeAnalytics();
     }
+    const openSettings = () => setConsent(null);
+    window.addEventListener("joan:cookie-settings", openSettings);
+    return () => window.removeEventListener("joan:cookie-settings", openSettings);
   }, []);
 
   const choose = (value: Exclude<Consent, null>) => {

@@ -294,6 +294,7 @@ function Header() {
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
             <Link href="/faq" onClick={() => setMobileOpen(false)} aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
+            <Link href="/checkout">{t("checkoutNav")}</Link>
           </div>
           <Link href="/products" onClick={() => setMobileOpen(false)} className="mobile-all-products">{t("viewAllProducts")} <ArrowRight size={17} /></Link>
           <p className="mobile-drawer-label">{t("categories")}</p>
@@ -336,22 +337,39 @@ function BackToTop() {
 
 function Footer() {
   const { language, t } = useLanguage();
-  const { categories } = useCatalogue();
   return (
     <footer className="site-footer">
       <div className="page-frame footer-main">
-        <div className="footer-brand">
-          <Wordmark />
-          <p>{t("catalogueIntro")}</p>
+        <nav className="footer-column" aria-labelledby="footer-customers-title">
+          <h3 id="footer-customers-title">{language === "en" ? "For customers" : "За клиенти"}</h3>
+          <Link href="/terms">{language === "en" ? "Terms and conditions" : "Общи условия"}</Link>
+          <Link href="/faq">{language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}</Link>
+          <Link href="/delivery">{language === "en" ? "Delivery and payment" : "Доставка и плащане"}</Link>
+          <Link href="/returns">{t("returns")}</Link>
+          <Link href="/privacy">{language === "en" ? "Personal data" : "Лични данни"}</Link>
+        </nav>
+        <nav className="footer-column" aria-labelledby="footer-joan-title">
+          <h3 id="footer-joan-title">Жоан</h3>
+          <Link href="/about">{language === "en" ? "About us" : "За нас"}</Link>
+          <Link href="/contact">{language === "en" ? "Contact" : "Контакти"}</Link>
+          <Link href="/contact?topic=careers">{language === "en" ? "Careers" : "Кариери"}</Link>
+        </nav>
+        <nav className="footer-column" aria-labelledby="footer-information-title">
+          <h3 id="footer-information-title">{language === "en" ? "General information" : "Обща информация"}</h3>
+          <a href="/#brochure">{language === "en" ? "Brochure" : "Брошура"}</a>
+          <button type="button" className="footer-link-button" onClick={() => window.dispatchEvent(new Event("joan:cookie-settings"))}>{language === "en" ? "Cookies" : "Бисквитки"}</button>
+        </nav>
+      </div>
+      <div className="page-frame footer-contact-strip">
+        <Wordmark />
+        <div className="footer-contact-details">
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`}><Mail size={16} /> {store.email}</a>
           <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer"><MapPin size={16} /> {language === "en" ? "Silistra, 22 Tutrakan St." : store.address}</a>
           <div className="footer-social-row" aria-label={language === "en" ? "Social media" : "Социални мрежи"}><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Joan on Facebook" title="Joan on Facebook"><img src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png" alt="Joan on Facebook" /></a><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on Instagram — profile coming soon" : "Instagram на ЖОАН — профилът предстои"} title={language === "en" ? "Instagram — coming soon" : "Instagram — скоро"}><img src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram" /></span><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on TikTok — profile coming soon" : "TikTok на ЖОАН — профилът предстои"} title={language === "en" ? "TikTok — coming soon" : "TikTok — скоро"}><img src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok" /></span></div>
         </div>
-        <div><h3>{t("categories")}</h3><Link href="/products">{t("viewAllProducts")}</Link>{categories.slice(0, 6).map((category) => <Link key={category.slug} href={`/category/${category.slug}`}>{category.label}</Link>)}</div>
-        <div><h3>{t("customerInfo")}</h3><Link href="/delivery">{t("delivery")}</Link><Link href="/terms">{t("terms")}</Link><Link href="/privacy">{language === "en" ? "Privacy Policy" : "Политика за поверителност"}</Link><Link href="/faq">{language === "en" ? "FAQ" : "ЧЗВ"}</Link><Link href="/returns">{t("returns")}</Link><Link href="/checkout">{t("checkoutNav")}</Link></div>
       </div>
-      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. {language === "en" ? "All rights reserved." : "Всички права запазени."}</span><span>{language === "en" ? "Online catalogue with availability and delivery confirmed by the Joan team." : "Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан."}</span></div></div>
+      <div className="footer-bottom"><div className="page-frame"><span>© {new Date().getFullYear()} ЖОАН. {language === "en" ? "All rights reserved." : "Всички права запазени."}</span></div></div>
     </footer>
   );
 }

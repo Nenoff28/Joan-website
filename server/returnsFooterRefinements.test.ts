@@ -40,8 +40,23 @@ describe("returns FAQ and footer refinements", () => {
     expect(cssSource).toContain('prefers-reduced-motion: reduce');
     expect(cssSource).toContain('--footer-social-control: 23.5px');
     expect(cssSource).toContain('transform: scale(1.22)');
-    expect(cssSource).toContain('footer-social-placeholder:last-child img { transform: scale(1.48)');
+    expect(cssSource).toContain("footer-social-placeholder:last-child img { transform: scale(1.48)");
     expect(cssSource).toContain(".footer-facebook img");
     expect(cssSource).toContain(".footer-bottom { color: #dbe3de; }");
+  });
+
+  it("uses the requested three-column footer structure and readable light theme", () => {
+    expect(storefrontSource).toContain('aria-labelledby="footer-customers-title"');
+    expect(storefrontSource).toContain('За клиенти');
+    expect(storefrontSource).toContain('aria-labelledby="footer-joan-title"');
+    expect(storefrontSource).toContain('aria-labelledby="footer-information-title"');
+    expect(storefrontSource).toContain('Обща информация');
+    expect(storefrontSource).toContain('Брошура');
+    expect(storefrontSource).toContain('Бисквитки');
+    expect(storefrontSource).not.toContain('Подредени категории за ремонт, дом, градина и професионална работа.');
+    expect(storefrontSource).not.toContain('Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.');
+    expect(cssSource).toContain('.site-footer { background: #f3f4f1;');
+    expect(cssSource).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(cssSource).toContain('.footer-link-button');
   });
 });
