@@ -1,4 +1,7 @@
 
-# Back-to-top right alignment refinement
-- [x] Move „Към началото“ to a fixed bottom-right position with explicit `left: auto`, 20px desktop right inset and 12px mobile right inset, so it no longer appears centered over product cards.
-- [x] Verify computed browser position after scrolling: `position: fixed`, `right: 20px`, `left: auto`, `bottom: 76px`.
+# Footer three-column refinement
+- [x] Keep the Joan logo, phone, email, Google Maps address, and social icons in their existing left-side brand/contact block.
+- [x] Replace the former category and customer-information columns with the requested three information columns: For customers, Joan, and General information.
+- [x] Remove the two unwanted descriptive copy lines from the visible footer content.
+- [x] Make the new column links white and the column headings bold, with responsive desktop/mobile layout.
+- [x] Validate 175 Vitest tests, TypeScript, production client+SSR build, git diff --check, and desktop/mobile screenshots.

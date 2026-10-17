@@ -23,7 +23,7 @@ describe("returns information and back-to-top interaction", () => {
   it("provides a dedicated public returns route and footer link", () => {
     expect(appSource).toContain('path={"/returns"} component={Returns}');
     expect(storefrontSource).toContain(
-      '<Link href="/returns">{t("returns")}</Link>'
+      '<Link href="/returns">{language === "en" ? "Return an order" : "Връщане на поръчка"}</Link>'
     );
     expect(returnsSource).toContain(
       'title={en ? "Product returns" : "Връщане на продукти"}'

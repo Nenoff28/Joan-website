@@ -9,7 +9,7 @@ const cssSource = readFileSync(resolve(process.cwd(), "client/src/index.css"), "
 
 describe("returns FAQ and footer refinements", () => {
   it("keeps the footer return action as a real route instead of a payment-security toast", () => {
-    expect(storefrontSource).toContain('<Link href="/returns">{t("returns")}</Link>');
+    expect(storefrontSource).toContain('<Link href="/returns">{language === "en" ? "Return an order" : "Връщане на поръчка"}</Link>');
     expect(storefrontSource).not.toContain('onClick={() => toast(t("mockSecurity"))}>{t("returns")}');
     expect(storefrontSource).not.toContain('footer-return-link');
   });
@@ -45,17 +45,20 @@ describe("returns FAQ and footer refinements", () => {
     expect(cssSource).toContain(".footer-bottom { color: #dbe3de; }");
   });
 
-  it("restores the previous dark footer structure with the logo, contacts and category links", () => {
+  it("keeps the logo/contact block and renders the requested three readable footer columns", () => {
     expect(storefrontSource).toContain('className="footer-brand"');
-    expect(storefrontSource).toContain('t("catalogueIntro")');
-    expect(storefrontSource).toContain('t("categories")');
-    expect(storefrontSource).toContain('t("customerInfo")');
-    expect(storefrontSource).toContain('t("checkoutNav")');
-    expect(storefrontSource).toContain('Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.');
-    expect(storefrontSource).not.toContain('aria-labelledby="footer-customers-title"');
-    expect(storefrontSource).not.toContain('className="footer-link-button"');
+    expect(storefrontSource).toContain('aria-labelledby="footer-customers-title"');
+    expect(storefrontSource).toContain('aria-labelledby="footer-joan-title"');
+    expect(storefrontSource).toContain('aria-labelledby="footer-information-title"');
+    expect(storefrontSource).toContain('За клиенти');
+    expect(storefrontSource).toContain('Обща информация');
+    expect(storefrontSource).toContain('className="footer-link-button"');
+    expect(storefrontSource).not.toContain('Подредени категории за ремонт, дом, градина и професионална работа.');
+    expect(storefrontSource).not.toContain('Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.');
     expect(cssSource).toContain('.footer-main h3 { color: white; }');
     expect(cssSource).toContain('.footer-main > div:not(.footer-brand) a, .footer-main > div:not(.footer-brand) button { color: #e4ebe7; }');
+    expect(cssSource).toContain('.footer-main > nav { align-content: start; display: grid; gap: .55rem; }');
+    expect(cssSource).toContain('.footer-main > nav a, .footer-main > nav button { color: #fff;');
     expect(cssSource).not.toContain('.site-footer { background: #f3f4f1;');
   });
 });
