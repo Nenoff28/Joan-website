@@ -19,7 +19,8 @@ const supportSources = ["About", "Contact", "Delivery", "FAQ", "Returns", "Terms
 describe("public English localization", () => {
   it("keeps the shared dictionary and storefront navigation bilingual", () => {
     expect(languageSource).toContain('language: "Language"');
-    expect(storefrontSource).toContain('"Primary navigation"');
+    expect(storefrontSource).toContain('className="catalogue-trigger masthead-catalogue-trigger"');
+    expect(storefrontSource).not.toContain('"Primary navigation"');
     expect(storefrontSource).toContain('"Frequently asked questions"');
     expect(storefrontSource).toContain('"In stock"');
     expect(storefrontSource).toContain('{language === "en" ? "Open" : "Отвори"}');

@@ -205,6 +205,9 @@ function Header() {
 
       <div className="page-frame masthead">
         <Wordmark />
+        <button type="button" className="catalogue-trigger masthead-catalogue-trigger" onClick={() => { if (window.matchMedia("(max-width: 760px)").matches) setMobileOpen(true); else setMegaOpen((open) => !open); }} aria-expanded={megaOpen || mobileOpen} aria-controls={mobileOpen ? "mobile-category-drawer" : "catalogue-mega-menu"} aria-label={t("allCategories")}>
+          <Menu size={22} aria-hidden="true" />
+        </button>
         <form className="search-wrap" onSubmit={submitSearch} role="search">
           <label htmlFor="site-search" className="sr-only">{t("searchLabel")}</label>
           <Search size={20} aria-hidden="true" />
@@ -246,21 +249,7 @@ function Header() {
           <Link href="/favorites" className="header-favorites" aria-label={t("favorites")}><Heart size={21} /><span>{t("favorites")}</span>{count > 0 && <i>{count}</i>}</Link>
           <div className="header-cart-wrap"><button type="button" className="header-cart" onClick={() => setCartOpen((open) => !open)} aria-expanded={cartOpen} aria-controls="header-mini-cart"><ShoppingCart size={21} /><span>{t("cart")}</span>{cartCount > 0 && <i>{cartCount}</i>}</button>{cartOpen && <MiniCart id="header-mini-cart" rows={cartRows} total={cartTotal} copy={cartCopy} onClose={() => setCartOpen(false)} onIncrement={(slug) => addItem(slug)} onDecrement={(slug, quantity) => setQuantity(slug, quantity - 1)} onRemove={removeItem} />}</div>
         </div>
-        <button type="button" className="mobile-cart-toggle" onClick={() => setMobileOpen(true)} aria-label={`${t("cart")}: ${cartCount}`}><ShoppingCart size={22} />{cartCount > 0 && <i>{cartCount}</i>}</button><button type="button" className="mobile-menu-toggle" onClick={() => setMobileOpen(true)} aria-label={t("allCategories")}><Menu size={24} /></button>
-      </div>
-
-      <div className="nav-shell">
-        <div className="page-frame primary-nav">
-          <button type="button" className="catalogue-trigger" onClick={() => setMegaOpen(!megaOpen)} aria-expanded={megaOpen} aria-controls="catalogue-mega-menu" aria-label={t("allCategories")}>
-            <Menu size={22} aria-hidden="true" />
-          </button>
-          <nav aria-label={language === "en" ? "Primary navigation" : "Основна навигация"} className="desktop-links">
-            <Link href="/">{t("home")}</Link>
-            <Link href="/about">{t("about")}</Link>
-            <Link href="/contact">{t("storeContacts")}</Link>
-            <Link href="/faq" aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>
-          </nav>
-        </div>
+        <button type="button" className="mobile-cart-toggle" onClick={() => setMobileOpen(true)} aria-label={`${t("cart")}: ${cartCount}`}><ShoppingCart size={22} />{cartCount > 0 && <i>{cartCount}</i>}</button>
       </div>
 
       {megaOpen && (
@@ -282,7 +271,7 @@ function Header() {
       )}
 
       {mobileOpen && (
-        <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label={t("allCategories")}>
+        <div id="mobile-category-drawer" className="mobile-drawer" role="dialog" aria-modal="true" aria-label={t("allCategories")}>
           <div className="mobile-drawer-head"><Wordmark /><div className="mobile-drawer-actions"><div className="language-toggle" aria-label={t("language")}><button type="button" aria-label="Български" aria-pressed={language === "bg"} className={language === "bg" ? "is-active" : ""} onClick={() => setLanguage("bg")}><span className="flag-icon flag-bg" aria-hidden="true" /></button><button type="button" aria-label="English" aria-pressed={language === "en"} className={language === "en" ? "is-active" : ""} onClick={() => setLanguage("en")}><span className="flag-icon flag-en" aria-hidden="true" /></button></div><button type="button" onClick={() => setMobileOpen(false)} aria-label={language === "en" ? "Close" : "Затвори"}><X size={24} /></button></div></div>
           <form className="mobile-search-wrap" onSubmit={(event) => { submitSearch(event); setMobileOpen(false); }} role="search"><label htmlFor="mobile-site-search" className="sr-only">{t("searchLabel")}</label><Search size={18} aria-hidden="true" /><input id="mobile-site-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("searchPlaceholder")} autoComplete="off" /><Button type="submit" className="search-submit">{t("search")}</Button></form>
           {query && <div className="mobile-search-results" aria-live="polite">{searchMatches.length ? searchMatches.map((product) => <button key={product.slug} type="button" onClick={() => { setLocation(`/product/${product.slug}`); setQuery(""); setSearchFocused(false); setMobileOpen(false); }}><img src={product.image} alt={product.imageAlt || product.name} /><span><b>{product.brand}</b>{product.name}</span><ChevronRight size={16} /></button>) : <p>{t("noMatches")}</p>}</div>}

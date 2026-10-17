@@ -6,24 +6,20 @@ const headerSource = readFileSync(resolve(process.cwd(), "client/src/components/
 const languageSource = readFileSync(resolve(process.cwd(), "client/src/contexts/LanguageContext.tsx"), "utf8");
 
 describe("streamlined storefront header navigation", () => {
-  it("uses an accessible icon-only category trigger connected to the mega menu", () => {
-    expect(headerSource).toContain('className="catalogue-trigger"');
-    expect(headerSource).toContain('aria-controls="catalogue-mega-menu"');
-    expect(headerSource).toContain('aria-label={t("allCategories")}');
-    expect(headerSource).toContain('id="catalogue-mega-menu"');
-  });
+	it("uses an accessible icon-only category trigger connected to the mega menu", () => {
+		expect(headerSource).toContain('className="catalogue-trigger masthead-catalogue-trigger"');
+		expect(headerSource).toContain('aria-controls={mobileOpen ? "mobile-category-drawer" : "catalogue-mega-menu"}');
+		expect(headerSource).toContain('aria-label={t("allCategories")}');
+		expect(headerSource).toContain('id="catalogue-mega-menu"');
+		expect(headerSource).not.toContain('className="nav-shell"');
+		expect(headerSource).not.toContain('className="desktop-links"');
+	});
 
-  it("keeps category routes inside the category menu rather than duplicating them in the desktop links", () => {
-    const desktopNav = headerSource.match(/<nav aria-label=\{language === "en" \? "Primary navigation" : "Основна навигация"\} className="desktop-links">([\s\S]*?)<\/nav>/)?.[1] ?? "";
-    expect(desktopNav).toContain('href="/"');
-    expect(desktopNav).toContain('href="/about"');
-    expect(desktopNav).toContain('href="/contact"');
-    expect(desktopNav).toContain('href="/faq"');
-    expect(desktopNav).not.toContain('href="/category/instrumenti"');
-    expect(desktopNav).not.toContain('href="/category/gradina"');
-    expect(desktopNav).not.toContain('href="/category/stroitelstvo"');
-    expect(desktopNav).not.toContain('href="/category/boi-lakove-mazilki"');
-  });
+	it("keeps informational routes out of the removed secondary header bar", () => {
+		expect(headerSource).not.toContain('aria-label={language === "en" ? "Primary navigation" : "Основна навигация"}');
+		expect(headerSource).not.toContain('className="desktop-links"');
+		expect(headerSource).toContain('className="catalogue-trigger masthead-catalogue-trigger"');
+	});
 
   it("uses the requested Bulgarian labels for the informational header routes", () => {
     expect(languageSource).toContain('about: "За нас"');
