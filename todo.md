@@ -1,7 +1,5 @@
 
-# Footer redesign
-- [x] Reordered the footer into the requested three columns: „За клиенти“, „Жоан“ and „Обща информация“.
-- [x] Added the requested links for terms, FAQ, delivery and payment, returns, personal data, about, contact, careers, brochure and cookies.
-- [x] Removed the footer descriptions „Подредени категории за ремонт, дом, градина и професионална работа.“ and „Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.“.
-- [x] Changed the footer to a light background with dark, readable text and responsive mobile stacking.
-- [x] Preserved phone, email, Google Maps, Facebook, Instagram and TikTok access in a compact contact row.
+# Back-to-top and cookie banner refinement
+- [x] Make „Към началото“ a rounded pill button and move it closer to the right edge on desktop and mobile so it covers less content.
+- [x] Remove the persistent „Поверителност“ floating button; after accepting or rejecting the initial cookie choice, the consent window disappears completely.
+- [x] Verify the final behavior visually and in-browser: BackToTop computed styles are fixed, right-aligned and `border-radius: 999px`; no persistent privacy trigger or consent dialog remains after consent.

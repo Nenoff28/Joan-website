@@ -9,7 +9,9 @@ const ANALYTICS_ID = "joan-analytics";
 type Consent = "accepted" | "rejected" | null;
 
 function loadAnalytics() {
-  const endpoint = String(import.meta.env.VITE_ANALYTICS_ENDPOINT ?? "").replace(/\/+$/, "");
+  const endpoint = String(
+    import.meta.env.VITE_ANALYTICS_ENDPOINT ?? ""
+  ).replace(/\/+$/, "");
   const websiteId = String(import.meta.env.VITE_ANALYTICS_WEBSITE_ID ?? "");
   if (!endpoint || !websiteId || document.getElementById(ANALYTICS_ID)) return;
   const script = document.createElement("script");
@@ -40,7 +42,8 @@ export default function CookieConsent() {
     }
     const openSettings = () => setConsent(null);
     window.addEventListener("joan:cookie-settings", openSettings);
-    return () => window.removeEventListener("joan:cookie-settings", openSettings);
+    return () =>
+      window.removeEventListener("joan:cookie-settings", openSettings);
   }, []);
 
   const choose = (value: Exclude<Consent, null>) => {
@@ -50,6 +53,43 @@ export default function CookieConsent() {
     else removeAnalytics();
   };
 
-  if (consent) return <button type="button" className="cookie-settings-trigger" onClick={() => setConsent(null)} aria-label={en ? "Change privacy choices" : "Промени избора за поверителност"}>{en ? "Privacy" : "Поверителност"}</button>;
-  return <aside className="cookie-consent" role="dialog" aria-live="polite" aria-label={en ? "Cookie preferences" : "Настройки за бисквитки"}><div className="cookie-consent-copy"><strong>{en ? "Privacy choices" : "Вашият избор за поверителност"}</strong><p>{en ? "We use necessary storage for site features. Optional, privacy-friendly analytics is loaded only if you accept." : "Използваме необходимо съхранение за функциите на сайта. Незадължителната, съобразена с поверителността статистика се зарежда само след приемане."} <Link href="/privacy">{en ? "Privacy Policy" : "Политика за поверителност"}</Link></p></div><div className="cookie-consent-actions"><button type="button" className="cookie-reject" onClick={() => choose("rejected")}>{en ? "Reject optional" : "Отказвам незадължителните"}</button><button type="button" className="cookie-accept" onClick={() => choose("accepted")}>{en ? "Accept analytics" : "Приемам статистиката"}</button></div></aside>;
+  if (consent) return null;
+  return (
+    <aside
+      className="cookie-consent"
+      role="dialog"
+      aria-live="polite"
+      aria-label={en ? "Cookie preferences" : "Настройки за бисквитки"}
+    >
+      <div className="cookie-consent-copy">
+        <strong>
+          {en ? "Privacy choices" : "Вашият избор за поверителност"}
+        </strong>
+        <p>
+          {en
+            ? "We use necessary storage for site features. Optional, privacy-friendly analytics is loaded only if you accept."
+            : "Използваме необходимо съхранение за функциите на сайта. Незадължителната, съобразена с поверителността статистика се зарежда само след приемане."}{" "}
+          <Link href="/privacy">
+            {en ? "Privacy Policy" : "Политика за поверителност"}
+          </Link>
+        </p>
+      </div>
+      <div className="cookie-consent-actions">
+        <button
+          type="button"
+          className="cookie-reject"
+          onClick={() => choose("rejected")}
+        >
+          {en ? "Reject optional" : "Отказвам незадължителните"}
+        </button>
+        <button
+          type="button"
+          className="cookie-accept"
+          onClick={() => choose("accepted")}
+        >
+          {en ? "Accept analytics" : "Приемам статистиката"}
+        </button>
+      </div>
+    </aside>
+  );
 }

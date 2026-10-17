@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
+const read = (path: string) =>
+  readFileSync(resolve(process.cwd(), path), "utf8");
 const app = read("client/src/App.tsx");
 const privacy = read("client/src/pages/Privacy.tsx");
 const storefront = read("client/src/components/Storefront.tsx");
@@ -15,7 +16,7 @@ const notFound = read("client/src/pages/NotFound.tsx");
 const globalCss = read("client/src/index.css");
 const componentShowcase = read("client/src/pages/ComponentShowcase.tsx");
 
- describe("launch readiness SEO and privacy regressions", () => {
+describe("launch readiness SEO and privacy regressions", () => {
   it("exposes the dedicated Privacy Policy route with a real data-processing explanation", () => {
     expect(app).toContain('path="/privacy" component={Privacy}');
     expect(privacy).toContain("Какви данни обработваме");
@@ -30,12 +31,13 @@ const componentShowcase = read("client/src/pages/ComponentShowcase.tsx");
 
   it("loads optional analytics only after an explicit consent choice", () => {
     expect(html).not.toContain("VITE_ANALYTICS_ENDPOINT");
-    expect(consent).toContain('localStorage.getItem(CONSENT_KEY)');
+    expect(consent).toContain("localStorage.getItem(CONSENT_KEY)");
     expect(consent).toContain('choose("accepted")');
     expect(consent).toContain('choose("rejected")');
     expect(consent).toContain("loadAnalytics()");
     expect(consent).toContain("removeAnalytics()");
-    expect(consent).toContain("cookie-settings-trigger");
+    expect(consent).toContain("if (consent) return null;");
+    expect(consent).not.toContain('className="cookie-settings-trigger"');
   });
 
   it("keeps contact enquiries persistent and sends an owner notification", () => {
