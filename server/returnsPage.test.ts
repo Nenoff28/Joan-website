@@ -62,10 +62,8 @@ describe("returns information and back-to-top interaction", () => {
     expect(storefrontSource).toContain("aria-label={label}");
     expect(cssSource).toContain(".back-to-top");
     expect(cssSource).toContain("border-radius: 999px");
-    expect(cssSource).toContain(
-      "right: max(.5rem, calc((100vw - 1280px) / 2 - .5rem))"
-    );
-    expect(cssSource).toContain("right: .55rem");
+    expect(cssSource).toContain("right: 1.25rem; left: auto");
+    expect(cssSource).toContain("right: .75rem; left: auto");
     expect(cssSource).toContain(
       "@media (prefers-reduced-motion: reduce) { .back-to-top"
     );
