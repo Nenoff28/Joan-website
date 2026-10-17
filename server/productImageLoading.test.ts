@@ -13,5 +13,7 @@ describe("catalogue image loading", () => {
     expect(stylesheet).toContain(".product-image-box { background: #fff; background-image: none;");
     expect(stylesheet).toContain(".product-image-box img { height: 100%; max-height: none; object-fit: contain;");
     expect(stylesheet).toContain(".product-gallery { background: #fff; background-image: none;");
+    expect(stylesheet).toContain(".catalogue-workbench .product-image-box,");
+    expect(stylesheet).toContain("background-image: none !important;");
   });
 });
