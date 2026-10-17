@@ -65,6 +65,31 @@ describe("calm homepage entrance palette", () => {
     expect(home).toContain('href="#brochure"');
   });
 
+  it("pairs the brochure CTA with a neutral outlined promotions CTA in the same family", () => {
+    const secondary = ".homepage-entrance .homepage-entrance-cta-secondary";
+    expect(declaration(secondary, "background")).toBe(
+      "var(--home-menu-surface)"
+    );
+    expect(declaration(secondary, "color")).toBe("var(--home-cta-surface)");
+    expect(declaration(secondary, "border-color")).toBe(
+      "var(--home-menu-muted)"
+    );
+    expect(declaration(`${secondary}:hover`, "background")).toBe("#ebe8e3");
+    expect(declaration(`${secondary}:hover`, "color")).toBe(
+      "var(--home-cta-surface)"
+    );
+    expect(declaration(`${secondary}:focus-visible`, "outline")).toBe(
+      "2px solid var(--home-menu-accent)"
+    );
+    expect(
+      declaration(
+        ".homepage-entrance .homepage-entrance-cta-primary svg:first-child",
+        "color"
+      )
+    ).toBe("currentColor");
+    expect(home).toContain('href="#current-offers"');
+  });
+
   it("preserves AA text contrast on the new surfaces", () => {
     const surface = declaration(".homepage-entrance", "--home-menu-surface");
     for (const token of [

@@ -745,7 +745,12 @@ a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !im
 .homepage-category-menu .homepage-category-item > .homepage-category-link.is-open { background: var(--home-menu-selected); box-shadow: inset 2px 0 var(--home-menu-accent); }
 .homepage-category-menu .homepage-category-item > .homepage-category-link:focus-visible { background: var(--home-menu-selected); outline: 2px solid var(--home-menu-accent); outline-offset: 2px; transform: none; }
 .homepage-entrance .homepage-entrance-cta-primary { background: var(--home-cta-surface); border-color: var(--home-cta-surface); color: #fff; box-shadow: 0 4px 12px rgba(38, 43, 44, .1); }
-.homepage-entrance .homepage-entrance-cta-primary svg:first-child { color: #e4c4c5; }
+.homepage-entrance .homepage-entrance-cta-primary svg:first-child { color: currentColor; }
 .homepage-entrance .homepage-entrance-cta-primary:hover, .homepage-entrance .homepage-entrance-cta-primary:focus-visible { background: var(--home-cta-hover); border-color: var(--home-cta-hover); color: #fff; }
 .homepage-entrance .homepage-entrance-cta-primary:focus-visible { outline: 2px solid var(--home-menu-accent); outline-offset: 3px; }
 @media (max-width: 760px) { .homepage-category-menu .homepage-category-item > .homepage-category-link { background: #ebe8e3; } .homepage-category-menu .homepage-category-item > .homepage-category-link.is-open { background: var(--home-menu-selected); } }
+
+/* Matching CTA family: filled graphite primary and warm-neutral outlined secondary. */
+.homepage-entrance .homepage-entrance-cta-secondary { background: var(--home-menu-surface); border-color: var(--home-menu-muted); color: var(--home-cta-surface); box-shadow: 0 4px 12px rgba(38, 43, 44, .06); }
+.homepage-entrance .homepage-entrance-cta-secondary:hover, .homepage-entrance .homepage-entrance-cta-secondary:focus-visible { background: #ebe8e3; border-color: var(--home-cta-surface); color: var(--home-cta-surface); }
+.homepage-entrance .homepage-entrance-cta-secondary:focus-visible { outline: 2px solid var(--home-menu-accent); outline-offset: 3px; }
