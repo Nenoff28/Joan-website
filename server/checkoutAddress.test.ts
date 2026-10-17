@@ -41,15 +41,23 @@ describe("checkout address selection", () => {
     ).toBe(true);
   });
 
-  it("uses region and dependent city/village selects with automatic postcode", () => {
+  it("uses searchable region and dependent city/village comboboxes with editable postcode", () => {
     expect(checkoutSource).toContain("const regions = useMemo");
     expect(checkoutSource).toContain("const locationOptions = useMemo");
-    expect(checkoutSource).toContain("updateRegion(event.target.value)");
-    expect(checkoutSource).toContain("updateLocation(event.target.value)");
-    expect(checkoutSource).toContain("readOnly");
-    expect(checkoutSource).toContain('aria-readonly="true"');
-    expect(checkoutSource).toContain("Попълва се автоматично");
-    expect(checkoutSource).toContain("Filled automatically");
+    expect(checkoutSource).toContain("filteredRegions");
+    expect(checkoutSource).toContain("filteredLocations");
+    expect(checkoutSource).toContain("startsWith(query)");
+    expect(checkoutSource).toContain('role="combobox"');
+    expect(checkoutSource).toContain('aria-autocomplete="list"');
+    expect(checkoutSource).toContain("updateRegion(region)");
+    expect(checkoutSource).toContain("updateLocation(");
+    expect(checkoutSource).toContain("${location.name}::${location.postcode}");
+    expect(checkoutSource).not.toContain('<option value="">');
+    expect(checkoutSource).not.toContain("readOnly");
+    expect(checkoutSource).toContain("Въведете или редактирайте кода");
+    expect(checkoutSource).toContain("Enter or edit the postcode");
+    expect(cssSource).toContain(".checkout-combobox");
+    expect(cssSource).toContain(".checkout-suggestions");
   });
 
   it("accepts digits only in the phone field and removes checkout step numbers", () => {

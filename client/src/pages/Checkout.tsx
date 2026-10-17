@@ -51,6 +51,14 @@ function getCheckoutProduct(products: ManagedProduct[], search: string) {
   };
 }
 
+function normalizeLocationQuery(value: string) {
+  return value.trim().toLocaleLowerCase("bg-BG");
+}
+
+function locationLabel(location: (typeof bulgarianLocations)[number]) {
+  return `${location.type} ${location.name}`;
+}
+
 export default function Checkout() {
   const { language, t } = useLanguage();
   const { items, setQuantity, removeItem, normalizeSlugs, clearCart } =
@@ -114,6 +122,10 @@ export default function Checkout() {
     consent: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [regionQuery, setRegionQuery] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
+  const [citySuggestionsOpen, setCitySuggestionsOpen] = useState(false);
   const [requestNumbers, setRequestNumbers] = useState<string[]>([]);
   const createOrderRequest = trpc.catalogue.createOrderRequest.useMutation({
     onError: () =>
@@ -138,6 +150,24 @@ export default function Checkout() {
       bulgarianLocations.filter(location => location.region === values.region),
     [values.region]
   );
+  const filteredRegions = useMemo(() => {
+    const query = normalizeLocationQuery(regionQuery);
+    return regions
+      .filter(
+        region => !query || normalizeLocationQuery(region).startsWith(query)
+      )
+      .slice(0, 12);
+  }, [regionQuery, regions]);
+  const filteredLocations = useMemo(() => {
+    const query = normalizeLocationQuery(cityQuery);
+    return locationOptions
+      .filter(location => {
+        const name = normalizeLocationQuery(location.name);
+        const label = normalizeLocationQuery(locationLabel(location));
+        return !query || name.startsWith(query) || label.startsWith(query);
+      })
+      .slice(0, 14);
+  }, [cityQuery, locationOptions]);
   const flowTitle =
     language === "bg" ? "Заявка за доставка" : "Delivery request";
   const flowIntro =
@@ -154,6 +184,9 @@ export default function Checkout() {
     setErrors(current => ({ ...current, [key]: undefined }));
   }
   function updateRegion(region: string) {
+    setRegionQuery(region);
+    setRegionSuggestionsOpen(false);
+    setCityQuery("");
     setValues(current => ({
       ...current,
       region,
@@ -177,6 +210,41 @@ export default function Checkout() {
       city: location?.name ?? "",
       postcode: location?.postcode ?? "",
       locationKey,
+    }));
+    setCityQuery(location ? locationLabel(location) : "");
+    setCitySuggestionsOpen(false);
+    setErrors(current => ({
+      ...current,
+      city: undefined,
+      postcode: undefined,
+    }));
+  }
+  function updateRegionQuery(query: string) {
+    setRegionQuery(query);
+    setRegionSuggestionsOpen(true);
+    setValues(current => ({
+      ...current,
+      region: current.region === query ? current.region : "",
+      city: "",
+      postcode: "",
+      locationKey: "",
+    }));
+    setCityQuery("");
+    setErrors(current => ({
+      ...current,
+      region: undefined,
+      city: undefined,
+      postcode: undefined,
+    }));
+  }
+  function updateCityQuery(query: string) {
+    setCityQuery(query);
+    setCitySuggestionsOpen(true);
+    setValues(current => ({
+      ...current,
+      city: current.city === query ? current.city : "",
+      postcode: current.city === query ? current.postcode : "",
+      locationKey: current.city === query ? current.locationKey : "",
     }));
     setErrors(current => ({
       ...current,
@@ -350,54 +418,111 @@ export default function Checkout() {
                       )}
                     </label>
                     <div className="checkout-two-col">
-                      <label>
+                      <label className="checkout-combobox">
                         {language === "bg" ? "Област" : "Region"}
-                        <select
-                          value={values.region}
-                          onChange={event => updateRegion(event.target.value)}
+                        <input
+                          value={regionQuery}
+                          onChange={event =>
+                            updateRegionQuery(event.target.value)
+                          }
+                          onFocus={() => setRegionSuggestionsOpen(true)}
+                          onBlur={() =>
+                            setTimeout(
+                              () => setRegionSuggestionsOpen(false),
+                              120
+                            )
+                          }
+                          placeholder={
+                            language === "bg"
+                              ? "Напишете област..."
+                              : "Type a region..."
+                          }
+                          autoComplete="off"
+                          role="combobox"
+                          aria-autocomplete="list"
+                          aria-expanded={regionSuggestionsOpen}
+                          aria-controls="checkout-region-suggestions"
                           aria-invalid={Boolean(errors.region)}
-                        >
-                          <option value="">
-                            {language === "bg"
-                              ? "Изберете област"
-                              : "Select a region"}
-                          </option>
-                          {regions.map(region => (
-                            <option key={region} value={region}>
-                              {region}
-                            </option>
-                          ))}
-                        </select>
+                        />
+                        {regionSuggestionsOpen &&
+                          filteredRegions.length > 0 && (
+                            <div
+                              id="checkout-region-suggestions"
+                              className="checkout-suggestions"
+                              role="listbox"
+                            >
+                              {filteredRegions.map(region => (
+                                <button
+                                  key={region}
+                                  type="button"
+                                  role="option"
+                                  onMouseDown={event => event.preventDefault()}
+                                  onClick={() => updateRegion(region)}
+                                >
+                                  {region}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         {errors.region && (
                           <small className="field-error">{errors.region}</small>
                         )}
                       </label>
-                      <label>
+                      <label className="checkout-combobox">
                         {language === "bg" ? "Град/село" : "City/village"}
-                        <select
-                          value={values.locationKey}
-                          onChange={event => updateLocation(event.target.value)}
-                          disabled={!values.region}
-                          aria-invalid={Boolean(errors.city)}
-                        >
-                          <option value="">
-                            {values.region
+                        <input
+                          value={cityQuery}
+                          onChange={event =>
+                            updateCityQuery(event.target.value)
+                          }
+                          onFocus={() =>
+                            values.region && setCitySuggestionsOpen(true)
+                          }
+                          onBlur={() =>
+                            setTimeout(() => setCitySuggestionsOpen(false), 120)
+                          }
+                          placeholder={
+                            values.region
                               ? language === "bg"
-                                ? "Изберете град или село"
-                                : "Select a city or village"
+                                ? "Напишете град или село..."
+                                : "Type a city or village..."
                               : language === "bg"
                                 ? "Първо изберете област"
-                                : "Select a region first"}
-                          </option>
-                          {locationOptions.map(location => (
-                            <option
-                              key={`${location.name}-${location.postcode}`}
-                              value={`${location.name}::${location.postcode}`}
+                                : "Select a region first"
+                          }
+                          autoComplete="off"
+                          disabled={!values.region}
+                          role="combobox"
+                          aria-autocomplete="list"
+                          aria-expanded={citySuggestionsOpen}
+                          aria-controls="checkout-city-suggestions"
+                          aria-invalid={Boolean(errors.city)}
+                        />
+                        {citySuggestionsOpen &&
+                          values.region &&
+                          filteredLocations.length > 0 && (
+                            <div
+                              id="checkout-city-suggestions"
+                              className="checkout-suggestions"
+                              role="listbox"
                             >
-                              {location.type} {location.name}
-                            </option>
-                          ))}
-                        </select>
+                              {filteredLocations.map(location => (
+                                <button
+                                  key={`${location.name}-${location.postcode}`}
+                                  type="button"
+                                  role="option"
+                                  onMouseDown={event => event.preventDefault()}
+                                  onClick={() =>
+                                    updateLocation(
+                                      `${location.name}::${location.postcode}`
+                                    )
+                                  }
+                                >
+                                  {locationLabel(location)}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         {errors.city && (
                           <small className="field-error">{errors.city}</small>
                         )}
@@ -407,12 +532,16 @@ export default function Checkout() {
                       {t("postcode")}
                       <input
                         value={values.postcode}
-                        readOnly
-                        aria-readonly="true"
+                        onChange={event =>
+                          update(
+                            "postcode",
+                            event.target.value.replace(/\D/g, "").slice(0, 4)
+                          )
+                        }
                         placeholder={
                           language === "bg"
-                            ? "Попълва се автоматично"
-                            : "Filled automatically"
+                            ? "Въведете или редактирайте кода"
+                            : "Enter or edit the postcode"
                         }
                         aria-invalid={Boolean(errors.postcode)}
                       />
