@@ -136,6 +136,12 @@ describe("homepage SEO audit regressions", () => {
     expect(homeSource).not.toContain("<ServiceStrip />");
     expect(homeSource).not.toContain("ServiceStrip,");
     expect(homeSource).toContain(
+      'className="homepage-entrance-cta homepage-entrance-cta-primary"'
+    );
+    expect(homeSource).toContain('href="#brochure"');
+    expect(homeSource).toContain('href="#current-offers"');
+    expect(homeSource).toContain('id="current-offers"');
+    expect(homeSource).toContain(
       "const [openCategorySlug, setOpenCategorySlug] = useState<string | null>(null);"
     );
     expect(homeSource).toContain(

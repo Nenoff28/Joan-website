@@ -338,8 +338,34 @@ export default function Home() {
               ))}
             </div>
           </div>
+          <div
+            className="homepage-entrance-actions"
+            aria-label={
+              en ? "Homepage shortcuts" : "Бързи връзки от началната страница"
+            }
+          >
+            <a
+              href="#brochure"
+              className="homepage-entrance-cta homepage-entrance-cta-primary"
+              onClick={scrollToBrochure}
+            >
+              <FileText size={18} />
+              <span>{en ? "Browse brochure" : "Разгледайте брошурата"}</span>
+              <ArrowRight size={16} />
+            </a>
+            <a
+              href="#current-offers"
+              className="homepage-entrance-cta homepage-entrance-cta-secondary"
+            >
+              <span>
+                {en ? "Promotional products" : "Продукти на промоция"}
+              </span>
+              <ArrowRight size={16} />
+            </a>
+          </div>
         </section>
         <section
+          id="current-offers"
           className="promotions-section homepage-product-shelf"
           aria-labelledby="current-offers-title"
         >

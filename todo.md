@@ -452,3 +452,4 @@
 - [x] Correct homepage subgroup links to the catalogue's canonical `?path=` route format and verify that first-level subcategory navigation no longer returns 404.
 - [x] Add automatic seven-second promotional rotation and a reduced-motion-safe transition effect when homepage slides change.
 - [x] Remove the homepage service-information strip below the promotional banner as requested.
+- [x] Add two rounded homepage CTA buttons below the promotional slideshow: brochure and promotional products.
