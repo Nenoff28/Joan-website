@@ -1,4 +1,4 @@
-import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, like, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, users } from "../drizzle/schema";
@@ -272,6 +272,7 @@ export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
 
 export type PublicCataloguePageInput = {
   language?: CatalogueLanguage;
+  promotion?: boolean;
   page: number;
   pageSize: number;
   categorySlug?: string;
@@ -346,9 +347,17 @@ async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]
   return descendantCategoryIds(treeRows, matchedInternalIds);
 }
 
-function publicCatalogueConditions(input: PublicCataloguePageInput, categoryId?: number) {
+export function publicCataloguePromotionPredicate() {
+  return or(
+    and(isNotNull(catalogueProducts.oldPriceEur), isNotNull(catalogueProducts.priceEur), gt(catalogueProducts.oldPriceEur, catalogueProducts.priceEur)),
+    sql`TRIM(COALESCE(${catalogueProducts.discountLabel}, '')) <> ''`,
+  )!;
+}
+
+export function publicCatalogueConditions(input: PublicCataloguePageInput, categoryId?: number) {
   const conditions = [eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)];
   if (categoryId) conditions.push(eq(catalogueProducts.categoryId, categoryId));
+  if (input.promotion) conditions.push(publicCataloguePromotionPredicate());
   const selectedBrands = input.brands?.length ? input.brands : input.brand ? [input.brand] : [];
   if (selectedBrands.length) {
     const brandConditions = selectedBrands.map((brand) => input.language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand}) = ${brand}` : eq(catalogueProducts.brand, brand));

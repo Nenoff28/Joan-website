@@ -57,6 +57,7 @@ const catalogueLanguageSchema = z.enum(["bg", "en"]);
 const publicCatalogueLanguageInput = z.object({ language: catalogueLanguageSchema }).optional();
 const publicCataloguePageSchema = z.object({
   language: catalogueLanguageSchema.optional(),
+  promotion: z.boolean().optional(),
   page: z.number().int().min(1).max(10_000),
   pageSize: z.number().int().min(1).max(48),
   categorySlug: z.string().trim().min(3).max(128).regex(/^[a-z0-9-]+$/).optional(),

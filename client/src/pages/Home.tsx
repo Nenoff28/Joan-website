@@ -352,15 +352,15 @@ export default function Home() {
               <span>{en ? "Browse brochure" : "Разгледайте брошурата"}</span>
               <ArrowRight size={16} />
             </a>
-            <a
-              href="#current-offers"
+            <Link
+              href="/products?promotion=1"
               className="homepage-entrance-cta homepage-entrance-cta-secondary"
             >
               <span>
                 {en ? "Promotional products" : "Продукти на промоция"}
               </span>
               <ArrowRight size={16} />
-            </a>
+            </Link>
           </div>
         </section>
         <section

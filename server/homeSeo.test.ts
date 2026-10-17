@@ -158,7 +158,7 @@ describe("homepage SEO audit regressions", () => {
       'className="homepage-entrance-cta homepage-entrance-cta-primary"'
     );
     expect(homeSource).toContain('href="#brochure"');
-    expect(homeSource).toContain('href="#current-offers"');
+    expect(homeSource).toContain('href="/products?promotion=1"');
     expect(homeSource).toContain('id="current-offers"');
     expect(homeSource).toContain(
       "const [openCategorySlug, setOpenCategorySlug] = useState<string | null>(null);"

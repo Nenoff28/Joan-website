@@ -87,7 +87,7 @@ describe("calm homepage entrance palette", () => {
         "color"
       )
     ).toBe("currentColor");
-    expect(home).toContain('href="#current-offers"');
+    expect(home).toContain('href="/products?promotion=1"');
   });
 
   it("preserves AA text contrast on the new surfaces", () => {
@@ -125,6 +125,6 @@ describe("calm homepage entrance palette", () => {
         "outline"
       )
     ).toBe("2px solid var(--home-menu-accent)");
-    expect(home).toContain('href="#current-offers"');
+    expect(home).toContain('href="/products?promotion=1"');
   });
 });

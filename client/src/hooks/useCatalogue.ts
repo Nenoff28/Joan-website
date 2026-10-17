@@ -49,6 +49,7 @@ export type CataloguePageInput = {
   brand?: string;
   brands?: string[];
   availability?: Array<"in_stock" | "on_request" | "out_of_stock">;
+  promotion?: boolean;
   minPrice?: number;
   maxPrice?: number;
   sort?: "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc";

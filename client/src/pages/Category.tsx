@@ -5,6 +5,7 @@ import { useCatalogue, useCataloguePage } from "@/hooks/useCatalogue";
 import type { CatalogueCategory } from "@/hooks/useCatalogue";
 import { categoryLabelsFromTokens, categoryPathTokens } from "@/lib/categoryHierarchy";
 import { paginationItems } from "@/lib/pagination";
+import { isPromotionFilter, withPromotionFilter } from "@shared/catalogueFilters";
 import { ArrowRight, ChevronDown, Grid2X2, ListFilter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useRoute, useSearch } from "wouter";
@@ -43,6 +44,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [, params] = useRoute("/category/:slug");
   const [, setLocation] = useLocation();
   const search = useSearch();
+  const promotion = isPromotionFilter(search);
   const { categories } = useCatalogue();
   const category = categories.find((item) => item.slug === params?.slug) ?? categories[0];
   const selectedPathTokens = useMemo(() => showAll ? [] : new URLSearchParams(search).get("path")?.split("~").filter(Boolean) ?? [], [search, showAll]);
@@ -60,13 +62,19 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [page, setPage] = useState(1);
   const [pageInput, setPageInput] = useState("");
   const resetFilters = () => { setSelectedBrands([]); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); setPage(1); };
+  const setPromotionFilter = (enabled: boolean) => {
+    setPage(1);
+    setLocation(withPromotionFilter(showAll ? "/products" : `/category/${category.slug}`, search, enabled));
+  };
+  const clearFilters = () => { resetFilters(); if (promotion) setPromotionFilter(false); };
 
   useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(1); }, [category?.slug, selectedPathLabel, showAll]);
+  useEffect(() => { setPage(1); }, [promotion]);
   useEffect(() => {
     if (showAll || !category || selectedPath.length === 0) return;
     const canonicalPath = categoryPathTokens(selectedPath).join("~");
-    if (selectedPathTokens.join("~") !== canonicalPath) setLocation(pathLink(category.slug, selectedPath), { replace: true });
-  }, [category, selectedPath, selectedPathTokens, setLocation, showAll]);
+    if (selectedPathTokens.join("~") !== canonicalPath) setLocation(withPromotionFilter(`/category/${category.slug}`, `path=${canonicalPath}`, promotion), { replace: true });
+  }, [category, promotion, selectedPath, selectedPathTokens, setLocation, showAll]);
 
   const pageSize = 48;
   const catalogueInput = useMemo(() => ({
@@ -77,10 +85,11 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
     query: query || undefined,
     brands: selectedBrands.length ? selectedBrands : undefined,
     availability: [inStock ? "in_stock" : null, enquiry ? "on_request" : null].filter((value): value is "in_stock" | "on_request" => Boolean(value)),
+    promotion: promotion || undefined,
     minPrice: minPrice ? Number(minPrice) : undefined,
     maxPrice: maxPrice ? Number(maxPrice) : undefined,
     sort: sort as "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc",
-  }), [category?.slug, enquiry, inStock, maxPrice, minPrice, page, pageSize, query, selectedBrands, selectedPathLabel, showAll, sort]);
+  }), [category?.slug, enquiry, inStock, maxPrice, minPrice, page, pageSize, promotion, query, selectedBrands, selectedPathLabel, showAll, sort]);
   const cataloguePage = useCataloguePage(catalogueInput);
   const brands = cataloguePage.brands;
   const normalizedManufacturerQuery = manufacturerQuery.trim().toLocaleLowerCase("bg-BG");
@@ -96,24 +105,26 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
     setPageInput("");
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  useEffect(() => { if (cataloguePage.data && page > totalPages) setPage(totalPages); }, [cataloguePage.data, page, totalPages]);
   const navigateToCatalogue = (href: string) => { setPage(1); setFiltersOpen(false); setLocation(href); };
-  const selectSubcategory = (path: string[]) => navigateToCatalogue(pathLink(category.slug, path));
-  const title = showAll ? (en ? "All products" : "Всички продукти") : category.label;
-  const description = showAll ? (en ? "Joan’s full catalogue — filter by manufacturer, availability, price and name." : "Пълният каталог на Жоан — филтрирайте по производител, наличност, цена и име.") : category.description;
-  const listingTitle = selectedPathLabel ? `${en ? "Products in" : "Продукти в"} ${selectedPathLabel}` : showAll ? (en ? "All available products" : "Всички налични продукти") : `${en ? "Products in" : "Продукти в"} ${category.label}`;
+  const selectSubcategory = (path: string[]) => navigateToCatalogue(withPromotionFilter(`/category/${category.slug}`, path.length ? `path=${categoryPathTokens(path).join("~")}` : "", promotion));
+  const promotionsTitle = en ? "Promotional products" : "Продукти на промоция";
+  const promotionsDescription = en ? "Browse all promotional products. Filter by manufacturer, availability and price." : "Разгледайте всички продукти на промоция. Филтрирайте по производител, наличност и цена.";
+  const title = showAll ? (promotion ? promotionsTitle : en ? "All products" : "Всички продукти") : category.label;
+  const description = showAll ? (promotion ? promotionsDescription : en ? "Joan’s full catalogue — filter by manufacturer, availability, price and name." : "Пълният каталог на Жоан — филтрирайте по производител, наличност, цена и име.") : category.description;
+  const listingTitle = promotion ? promotionsTitle : selectedPathLabel ? `${en ? "Products in" : "Продукти в"} ${selectedPathLabel}` : showAll ? (en ? "All available products" : "Всички налични продукти") : `${en ? "Products in" : "Продукти в"} ${category.label}`;
 
   return (
     <Layout>
-      <PageMeta title={title} description={description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}${showAll ? "/products" : `/category/${category.slug}`}`} metaRobots="index,follow" />
+      <PageMeta title={title} description={description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}${showAll ? promotion ? "/products?promotion=1" : "/products" : `/category/${category.slug}`}`} metaRobots="index,follow" />
       <JsonLd />
       <main>
         <div className="page-frame category-shell">
-          <Breadcrumbs items={showAll ? [{ label: en ? "All products" : "Всички продукти" }] : [{ label: category.label }]} />
+          <Breadcrumbs items={showAll ? [{ label: title }] : [{ label: category.label }]} />
           {showAll ? (
             <section className="all-products-hero">
-              <p className="eyebrow">{en ? "Full catalogue" : "Пълен каталог"}</p><h1>{en ? "All products" : "Всички продукти"}</h1><p>{en ? "Browse all published products or go to a specific category and subcategory." : "Разгледайте всички публикувани артикули или преминете към конкретна категория и подкатегория."}</p>
-              <div>{categories.map((item) => <Link key={item.slug} href={`/category/${item.slug}`}><CategoryIcon icon={item.icon} size={16} /> {item.label}</Link>)}</div>
+              <p className="eyebrow">{promotion ? (en ? "Promotions" : "Промоции") : en ? "Full catalogue" : "Пълен каталог"}</p><h1>{title}</h1><p>{promotion ? promotionsDescription : en ? "Browse all published products or go to a specific category and subcategory." : "Разгледайте всички публикувани артикули или преминете към конкретна категория и подкатегория."}</p>
+              <div>{categories.map((item) => <Link key={item.slug} href={`/category/${item.slug}${promotion ? "?promotion=1" : ""}`}><CategoryIcon icon={item.icon} size={16} /> {item.label}</Link>)}</div>
             </section>
           ) : (
             <>
@@ -131,6 +142,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
             <aside className={`filter-panel ${filtersOpen ? "is-open" : ""}`} aria-label={en ? "Filters" : "Филтри"}>
               <div className="filter-heading"><b>{en ? "Filters" : "Филтри"}</b><button type="button" onClick={() => setFiltersOpen(false)}>{en ? "Close" : "Затвори"}</button></div>
               <label className="filter-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={showAll ? (en ? "Search all products" : "Търсете във всички продукти") : (en ? "Search this category" : "Търсете в категорията")} /></label>
+              <details open><summary>{en ? "Offers" : "Предложения"} <ChevronDown size={16} /></summary><div className="filter-options"><label><input type="checkbox" checked={promotion} onChange={(event) => setPromotionFilter(event.target.checked)} /> <span>{en ? "Promotion" : "Промоция"}</span></label></div></details>
               <details className="manufacturer-filter">
                 <summary>{en ? "Manufacturer" : "Производител"}{selectedBrands.length ? <b>{selectedBrands.length}</b> : null} <ChevronDown size={16} /></summary>
                 <div className="manufacturer-filter-content">
@@ -142,7 +154,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
               </details>
               <details open><summary>{en ? "Availability" : "Наличност"} <ChevronDown size={16} /></summary><div className="filter-options muted-options"><label><input type="checkbox" checked={inStock} onChange={(event) => setInStock(event.target.checked)} /> <span>{en ? "In stock" : "На склад"}</span></label><label><input type="checkbox" checked={enquiry} onChange={(event) => setEnquiry(event.target.checked)} /> <span>{en ? "On request" : "По запитване"}</span></label></div></details>
               <details open><summary>{en ? "Price (€)" : "Цена (€)"} <ChevronDown size={16} /></summary><div className="filter-price-range"><input value={minPrice} min="0" onChange={(event) => setMinPrice(event.target.value)} type="number" inputMode="decimal" placeholder={en ? "From" : "От"} /><input value={maxPrice} min="0" onChange={(event) => setMaxPrice(event.target.value)} type="number" inputMode="decimal" placeholder={en ? "To" : "До"} /></div></details>
-              <button type="button" className="filter-reset" onClick={resetFilters}><RotateCcw size={14} /> {en ? "Clear filters" : "Изчисти филтрите"}</button>
+              <button type="button" className="filter-reset" onClick={clearFilters}><RotateCcw size={14} /> {en ? "Clear filters" : "Изчисти филтрите"}</button>
             </aside>
             <section className={`listing-content ${selectedPathLabel ? "is-selected-subcategory" : ""}`}>
               {!selectedPathLabel && <div className="listing-heading"><div><p className="eyebrow">{showAll ? (en ? "Full catalogue" : "Пълен каталог") : (en ? "Selected products" : "Подбрани продукти")}</p><h2>{listingTitle}</h2><p>{en ? "Search, filter and sort catalogue products by manufacturer, availability and price." : "Търсете, филтрирайте и подредете каталожните артикули по производител, наличност и цена."}</p></div><button type="button" className="mobile-filter" onClick={() => setFiltersOpen(true)}><SlidersHorizontal size={18} /> {en ? "Filters" : "Филтри"}</button></div>}
@@ -153,7 +165,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
               </div>
               {cataloguePage.isLoading ? <div className="empty-products"><ListFilter size={26} /><h3>{en ? "Loading products…" : "Зареждане на продукти…"}</h3><p>{en ? "Loading results only for the selected category." : "Извличаме само резултатите за избраната категория."}</p></div> : pageProducts.length ? (
                 <div className="catalogue-workbench"><div className="product-grid listing-grid">{pageProducts.map((product) => <ProductCard key={product.slug} product={product} />)}</div>{totalPages > 1 && <nav className="catalogue-pagination" aria-label={en ? "Product pages" : "Страници с продукти"}><button type="button" className="pagination-step" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>{en ? "Previous" : "Предишна"}</button><div className="pagination-page-list" aria-label={en ? "Page numbers" : "Номера на страници"}>{visiblePages.map((item, index) => item === "ellipsis" ? <span key={`ellipsis-${index}`} className="pagination-ellipsis" aria-hidden="true">…</span> : <button type="button" key={item} className={`pagination-page-number ${item === currentPage ? "is-current" : ""}`} onClick={() => goToPage(item)} aria-current={item === currentPage ? "page" : undefined} aria-label={`${en ? "Page" : "Страница"} ${item}`}>{item}</button>)}</div><form className="pagination-jump" onSubmit={(event) => { event.preventDefault(); goToPage(Number(pageInput)); }}><label htmlFor="catalogue-page-jump">{en ? "Go to page" : "Към страница"}</label><input id="catalogue-page-jump" type="number" inputMode="numeric" min="1" max={totalPages} value={pageInput} onChange={(event) => setPageInput(event.target.value)} placeholder={String(totalPages)} /><button type="submit">{en ? "Go" : "Към"}</button></form><span className="pagination-status">{en ? "Page" : "Страница"} <b>{currentPage}</b> {en ? "of" : "от"} {totalPages}</span><button type="button" className="pagination-step" disabled={currentPage === totalPages} onClick={() => goToPage(currentPage + 1)}>{en ? "Next" : "Следваща"}</button></nav>}</div>
-              ) : <div className="empty-products"><ListFilter size={26} /><h3>{en ? "No products for the selected filter." : "Няма продукти за избрания филтър."}</h3><p>{en ? "Clear active filters, change the search, or return to a higher category." : "Изчистете активните филтри, променете търсенето или се върнете към по-горна категория."}</p><button type="button" className="filter-reset" onClick={resetFilters}><RotateCcw size={14} /> {en ? "Show all" : "Покажи всички"}</button></div>}
+              ) : <div className="empty-products"><ListFilter size={26} /><h3>{en ? "No products for the selected filter." : "Няма продукти за избрания филтър."}</h3><p>{en ? "Clear active filters, change the search, or return to a higher category." : "Изчистете активните филтри, променете търсенето или се върнете към по-горна категория."}</p><button type="button" className="filter-reset" onClick={clearFilters}><RotateCcw size={14} /> {en ? "Show all" : "Покажи всички"}</button></div>}
               <div className="catalogue-note"><CategoryIcon icon={showAll ? "drill" : category.icon} size={25} /><p><b>Каталожни резултати.</b> {showAll ? "Изберете категория от горното меню за подробна подкатегорийна структура." : "Използвайте подкатегориите по-горе, за да стесните задача и тип продукт."}</p></div>
             </section>
           </div>

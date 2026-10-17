@@ -149,6 +149,31 @@ describe("administrator management procedures", () => {
     expect(service.getPublicCataloguePage).toHaveBeenCalledWith(input);
   });
 
+  it("forwards promotion=true through the public catalogue page router", async () => {
+    const result = { products: [], total: 2, page: 1, pageSize: 24, brands: [] as string[] };
+    const input = { page: 1, pageSize: 24, promotion: true };
+    service.getPublicCataloguePage.mockResolvedValueOnce(result);
+    const caller = appRouter.createCaller({ ...adminContext(), user: null });
+    await expect(caller.catalogue.page(input)).resolves.toEqual(result);
+    expect(service.getPublicCataloguePage).toHaveBeenCalledWith(input);
+  });
+
+  it("forwards promotion=false through the public catalogue page router", async () => {
+    const result = { products: [], total: 18, page: 1, pageSize: 24, brands: [] as string[] };
+    const input = { page: 1, pageSize: 24, promotion: false };
+    service.getPublicCataloguePage.mockResolvedValueOnce(result);
+    const caller = appRouter.createCaller({ ...adminContext(), user: null });
+    await expect(caller.catalogue.page(input)).resolves.toEqual(result);
+    expect(service.getPublicCataloguePage).toHaveBeenCalledWith(input);
+  });
+
+  it("rejects a non-boolean promotion filter at the public catalogue page router boundary", async () => {
+    service.getPublicCataloguePage.mockClear();
+    const caller = appRouter.createCaller({ ...adminContext(), user: null });
+    await expect(caller.catalogue.page({ page: 1, pageSize: 24, promotion: "true" as never })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(service.getPublicCataloguePage).not.toHaveBeenCalled();
+  });
+
   it("passes a validated brochure PDF and its rendered pages to the authenticated administrator service", async () => {
     const sourcePdf = "data:application/pdf;base64,UEZERGF0YQ==";
     const pageData = "data:image/jpeg;base64,SlBFR0RhdGE=";

@@ -1,9 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
 import { trpc } from "@/lib/trpc";
+import { isPromotionFilter } from "@shared/catalogueFilters";
 
 export type HeadMeta = { title: string; description: string; canonicalPath?: string; ogImage?: string; ogImageAlt?: string; ogType?: "website" | "product"; noindex?: boolean; notFound?: boolean };
-export type CataloguePageInput = { page: number; pageSize: number; categorySlug?: string; path?: string[]; query?: string; brand?: string; availability?: Array<"in_stock" | "on_request" | "out_of_stock">; minPrice?: number; maxPrice?: number; sort?: "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc" };
+export type CataloguePageInput = { promotion?: boolean; language?: "bg" | "en"; page: number; pageSize: number; categorySlug?: string; path?: string[]; query?: string; brand?: string; availability?: Array<"in_stock" | "on_request" | "out_of_stock">; minPrice?: number; maxPrice?: number; sort?: "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc" };
 export type SsrPrefetch = { metadata: () => Promise<any>; page: (input: CataloguePageInput) => Promise<any>; bestSellers: () => Promise<any>; product: (input: { slug: string }) => Promise<any>; brochure: () => Promise<any> };
 
 const SITE = "ЖОАН";
@@ -15,6 +16,8 @@ const cleanPath = (url: string) => { try { return decodeURI(url.split("?")[0]).r
 
 export async function prefetchForPath(url: string, queryClient: QueryClient, prefetch: SsrPrefetch): Promise<HeadMeta> {
   const path = cleanPath(url);
+  const search = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
+  const promotion = isPromotionFilter(search);
   const metadataPromise = prefetch.metadata();
   const headerSearch = { page: 1, pageSize: 4, query: undefined, sort: "relevance" as const };
   const headerSearchPromise = prefetch.page(headerSearch);
@@ -32,17 +35,21 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
   await seed(queryClient, getQueryKey(trpc.catalogue.metadata, undefined, "query"), metadata);
   await seed(queryClient, getQueryKey(trpc.catalogue.page, headerSearch, "query"), await headerSearchPromise);
   if (path === "/products") {
-    const input = { page: 1, pageSize: 48, sort: "relevance" as const };
+    const input: CataloguePageInput = { page: 1, pageSize: 48, language: "bg", availability: [], promotion: promotion || undefined, sort: "relevance" };
+    seed(queryClient, getQueryKey(trpc.catalogue.metadata, { language: "bg" }, "query"), metadata);
     await seed(queryClient, getQueryKey(trpc.catalogue.page, input, "query"), await prefetch.page(input));
-    return { title: `Всички продукти | ${SITE}`, description: DEFAULT_DESCRIPTION, canonicalPath: "/products" };
+    return promotion
+      ? { title: `Продукти на промоция | ${SITE}`, description: "Разгледайте всички продукти на промоция. Филтрирайте по производител, наличност и цена.", canonicalPath: "/products?promotion=1" }
+      : { title: `Всички продукти | ${SITE}`, description: DEFAULT_DESCRIPTION, canonicalPath: "/products" };
   }
   const categoryMatch = path.match(/^\/category\/([a-z0-9-]+)$/);
   if (categoryMatch) {
     const category = metadata.categories.find((item: any) => item.slug === categoryMatch[1]);
     if (!category) return { title: SITE, description: DEFAULT_DESCRIPTION, notFound: true };
-    const params = new URLSearchParams(url.slice(url.indexOf("?") + 1));
+    const params = new URLSearchParams(search);
     const tokens = params.get("path")?.split("~").filter(Boolean);
-    const input = { page: 1, pageSize: 48, categorySlug: category.slug, path: tokens?.length ? tokens : undefined, sort: "relevance" as const };
+    const input: CataloguePageInput = { page: 1, pageSize: 48, language: "bg", availability: [], categorySlug: category.slug, path: tokens?.length ? tokens : undefined, promotion: promotion || undefined, sort: "relevance" };
+    seed(queryClient, getQueryKey(trpc.catalogue.metadata, { language: "bg" }, "query"), metadata);
     await seed(queryClient, getQueryKey(trpc.catalogue.page, input, "query"), await prefetch.page(input));
     return { title: `${category.label} | ${SITE}`, description: category.description || DEFAULT_DESCRIPTION, canonicalPath: `/category/${category.slug}`, ogImage: category.image, ogImageAlt: category.label, noindex: Boolean(tokens?.length) };
   }

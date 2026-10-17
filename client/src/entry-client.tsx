@@ -4,6 +4,7 @@ import { HydrationBoundary, QueryClient, QueryClientProvider, type DehydratedSta
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { hydrateRoot } from "react-dom/client";
 import superjson from "superjson";
+import { Router } from "wouter";
 import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
@@ -31,4 +32,8 @@ const client = trpc.createClient({
 
 const root = document.getElementById("root")!;
 const state = window.__RQ_STATE__ ? superjson.deserialize(window.__RQ_STATE__ as any) as DehydratedState : undefined;
-hydrateRoot(root, <trpc.Provider client={client} queryClient={queryClient}><QueryClientProvider client={queryClient}><HydrationBoundary state={state}><App /></HydrationBoundary></QueryClientProvider></trpc.Provider>);
+// Wouter's server snapshot is also used by the first hydration render. Without
+// ssrSearch, URL-derived filters initially become empty and mismatch the HTML.
+const initialPath = window.location.pathname;
+const initialSearch = window.location.search.slice(1);
+hydrateRoot(root, <trpc.Provider client={client} queryClient={queryClient}><QueryClientProvider client={queryClient}><HydrationBoundary state={state}><Router ssrPath={initialPath} ssrSearch={initialSearch}><App /></Router></HydrationBoundary></QueryClientProvider></trpc.Provider>);
