@@ -94,7 +94,8 @@ describe("granular administrator UI permission contract", () => {
 
   it("makes mutation controls read-only without dispatching mutations", () => {
     expect(adminPage).toContain("if (!canEditProductForm) return;");
-    expect(adminPage).toContain("fieldset disabled={!canEditProductForm}");
+    expect(adminPage).toContain("fieldset disabled={!canWriteProducts}");
+    expect(adminPage).toContain("disabled={!categoryOptions.length}");
     expect(adminPage).toMatch(/if\s*\(canWriteInventory\)\s*adjust\.mutate/);
     expect(adminPage).toContain("if (!canWrite) return;");
     expect(adminPage).toContain("fieldset disabled={!canWriteCategories}");

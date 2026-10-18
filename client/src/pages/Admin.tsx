@@ -917,7 +917,6 @@ function AdminProducts({ permissions }: AdminPageProps) {
             <button
               type="button"
               className="admin-primary"
-              disabled={!categoryOptions.length}
               onClick={() =>
                 setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
               }
@@ -950,7 +949,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
           )}
         </div>
         <form className="admin-form" onSubmit={submit}>
-          <fieldset disabled={!canEditProductForm}>
+          <fieldset disabled={!canWriteProducts}>
           <div className="admin-form-grid">
             <label>
               Име
@@ -974,6 +973,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
               <select
                 required
                 value={form.categoryId}
+                disabled={!categoryOptions.length}
                 onChange={event =>
                   update("categoryId", Number(event.target.value))
                 }
