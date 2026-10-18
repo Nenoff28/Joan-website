@@ -19,6 +19,7 @@ import {
   publicStaffAccess,
   saveAccessRole,
 } from "./accessControl";
+import { isTrustedMutationOrigin } from "./permissionProcedures";
 import { appRouter } from "./routers";
 
 /**
@@ -361,6 +362,11 @@ describe("mapped admin tRPC permission procedures", () => {
       description: "",
       permissions: ["orders.read"],
     })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("accepts a same-site origin when a reverse proxy supplies the public host", () => {
+    expect(isTrustedMutationOrigin({ headers: { origin: "https://preview.joan.example", host: "127.0.0.1:3000", "x-forwarded-host": "preview.joan.example" } })).toBe(true);
+    expect(isTrustedMutationOrigin({ headers: { origin: "https://evil.example", host: "127.0.0.1:3000", "x-forwarded-host": "preview.joan.example" } })).toBe(false);
   });
 
   it("enforces least-privilege delegation when a role grants a permission the actor lacks", async () => {
