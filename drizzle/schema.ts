@@ -156,6 +156,7 @@ export const catalogueCategories = mysqlTable("catalogue_categories", {
   legacyMetaRobots: varchar("legacyMetaRobots", { length: 255 }),
   sortOrder: int("sortOrder").default(0).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

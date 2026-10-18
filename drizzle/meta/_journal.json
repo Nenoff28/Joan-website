@@ -134,6 +134,13 @@
       "when": 1792325398413,
       "tag": "0018_special_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1792329690568,
+      "tag": "0019_cloudy_alex_power",
+      "breakpoints": true
     }
   ]
 }

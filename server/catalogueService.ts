@@ -1,4 +1,5 @@
 import { and, asc, count, countDistinct, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
 import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, users } from "../drizzle/schema";
@@ -239,7 +240,7 @@ function categoryChildren(rows: CategoryRow[], parent: CategoryRow, publicOnly =
     if (row.legacyCategoryId == null) return false;
     if (parent.legacyCategoryId != null) return row.legacyParentCategoryId === parent.legacyCategoryId;
     return row.legacyParentCategoryId != null && roots.includes(row.legacyParentCategoryId);
-  }).filter((row) => !publicOnly || row.legacyCategoryId != null || row.isActive));
+  }).filter((row) => (!publicOnly || row.isArchived !== true) && (!publicOnly || row.legacyCategoryId != null || row.isActive)));
 }
 
 function categoryTreeForRows(rows: CategoryRow[], parent: CategoryRow, publicOnly: boolean, language: CatalogueLanguage = "bg", englishById: CategoryEnglishMap = new Map(), depth = 0): CategoryNode[] {
@@ -253,7 +254,7 @@ function categoryTreeForRows(rows: CategoryRow[], parent: CategoryRow, publicOnl
 }
 
 function rootCategories(rows: CategoryRow[], activeOnly = false) {
-  return categoryRowsSorted(rows.filter((row) => row.legacyCategoryId == null && row.parentId == null && (!activeOnly || row.isActive)));
+  return categoryRowsSorted(rows.filter((row) => row.isArchived !== true && row.legacyCategoryId == null && row.parentId == null && (!activeOnly || row.isActive)));
 }
 
 function categoryMeta(rows: CategoryRow[]) {
@@ -289,8 +290,8 @@ function hasPublicCategoryBranch(row: CategoryRow, rows: CategoryRow[], meta: Re
   const info = meta.get(row.id);
   if (!info?.rootId) return false;
   const root = rows.find((candidate) => candidate.id === info.rootId);
-  if (!root?.isActive) return false;
-  return info.path.every((candidate) => candidate.legacyCategoryId != null || candidate.isActive);
+  if (!root?.isActive || root.isArchived) return false;
+  return info.path.every((candidate) => candidate.isArchived !== true && (candidate.legacyCategoryId != null || candidate.isActive));
 }
 
 function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: ReturnType<typeof categoryMeta>) {
@@ -352,8 +353,8 @@ export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [categoryRows, productRows] = await Promise.all([
-    db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(desc(catalogueProducts.updatedAt)),
+    db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(eq(catalogueCategories.isArchived, false)).orderBy(asc(catalogueCategories.sortOrder)),
+    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(desc(catalogueProducts.updatedAt)),
   ]);
   const rows = categoryRows.map((row) => row.category);
   const englishById: CategoryEnglishMap = new Map(categoryRows.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
@@ -416,7 +417,7 @@ export function descendantCategoryIds(rows: CategoryBranchRow[], selectedInterna
 async function resolvePublicPathCategoryIds(category: CategoryRow, path: string[], language: CatalogueLanguage) {
   if (!path.length) return [];
   const db = await requireDb();
-  const rowsWithEnglish = await db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id));
+  const rowsWithEnglish = await db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(eq(catalogueCategories.isArchived, false));
   const rows = rowsWithEnglish.map((row) => row.category);
   const englishById: CategoryEnglishMap = new Map(rowsWithEnglish.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
   let candidates: CategoryRow[] = [category];
@@ -442,7 +443,7 @@ export function publicCataloguePromotionPredicate() {
 }
 
 export function publicCatalogueConditions(input: PublicCataloguePageInput, categoryId?: number) {
-  const conditions = [eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)];
+  const conditions = [eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)];
   if (categoryId) conditions.push(eq(catalogueProducts.categoryId, categoryId));
   if (input.promotion) conditions.push(publicCataloguePromotionPredicate());
   const selectedBrands = input.brands?.length ? input.brands : input.brand ? [input.brand] : [];
@@ -488,7 +489,7 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
   const language = input.language ?? "bg";
   const page = Math.max(1, input.page);
   const pageSize = Math.min(48, Math.max(1, input.pageSize));
-  const category = input.categorySlug ? (await db.select().from(catalogueCategories).where(and(eq(catalogueCategories.slug, input.categorySlug), eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).limit(1))[0] : undefined;
+  const category = input.categorySlug ? (await db.select().from(catalogueCategories).where(and(eq(catalogueCategories.slug, input.categorySlug), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).limit(1))[0] : undefined;
   const pathCategoryIds = category && input.path?.length ? await resolvePublicPathCategoryIds(category, input.path, language) : [];
   if (category && input.path?.length && !pathCategoryIds.length) return { products: [], total: 0, page, pageSize, brands: [] as string[] };
   const conditions = publicCatalogueConditions(input, category && !input.path?.length ? category.id : undefined);
@@ -525,7 +526,7 @@ export async function getPublicBestSellers(limit = 8, language: CatalogueLanguag
     .innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id))
     .leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id))
     .leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name))
-    .where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)))
+    .where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)))
     .orderBy(desc(quantityTotals.units), desc(catalogueProducts.updatedAt), asc(catalogueProducts.name))
     .limit(cappedLimit);
   return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl));
@@ -534,9 +535,9 @@ export async function getPublicBestSellers(limit = 8, language: CatalogueLanguag
 export async function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).limit(1);
+  const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).limit(1);
   if (!row) return null;
-  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
+  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
   return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl)) };
 }
 
@@ -544,7 +545,7 @@ export async function getPublicProductsBySlugs(slugs: string[], language: Catalo
   if (!slugs.length) return [];
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true)));
+  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)));
   return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl));
 }
 
@@ -552,16 +553,18 @@ export async function getPublicSitemapEntries() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [categories, products] = await Promise.all([
-    db.select({ slug: catalogueCategories.slug, updatedAt: catalogueCategories.updatedAt }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))),
-    db.select({ slug: catalogueProducts.slug, updatedAt: catalogueProducts.updatedAt }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))),
+    db.select({ slug: catalogueCategories.slug, updatedAt: catalogueCategories.updatedAt }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))),
+    db.select({ slug: catalogueProducts.slug, updatedAt: catalogueProducts.updatedAt }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))),
   ]);
   return { categories, products };
 }
 
-export async function getAdminCategories() {
+export async function getAdminCategories(options?: { includeArchived?: boolean }) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const rows = await db.select().from(catalogueCategories).orderBy(asc(catalogueCategories.sortOrder), asc(catalogueCategories.id));
+  const categoryQuery = db.select().from(catalogueCategories);
+  const filteredCategoryQuery = options?.includeArchived || typeof categoryQuery.where !== "function" ? categoryQuery : categoryQuery.where(eq(catalogueCategories.isArchived, false));
+  const rows = await filteredCategoryQuery.orderBy(asc(catalogueCategories.sortOrder), asc(catalogueCategories.id));
   const meta = categoryMeta(rows);
   return rows.map((category) => {
     const info = meta.get(category.id) ?? { parentId: null, rootId: null, depth: 0, isMain: false, path: [category] };
@@ -575,6 +578,7 @@ export async function getAdminCategories() {
       publicUrl: publicUrlForCategory(category, rows, meta),
       sortOrder: category.sortOrder,
       isActive: category.isActive,
+      isArchived: category.isArchived,
     };
   });
 }
@@ -583,8 +587,8 @@ export async function getAdminProductCategories() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [rootRows, taxonomyRows] = await Promise.all([
-    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId))),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive, isArchived: catalogueCategories.isArchived }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(asc(catalogueCategories.sortOrder)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive, isArchived: catalogueCategories.isArchived }).from(catalogueCategories).where(and(eq(catalogueCategories.isArchived, false), or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId)))),
   ]);
   return buildProductCategoryOptions(rootRows, taxonomyRows);
 }
@@ -600,8 +604,8 @@ export async function getAdminProducts(options?: { includeArchived?: boolean }) 
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [rows, taxonomyRows] = await Promise.all([
-    db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(options?.includeArchived ? undefined : eq(catalogueProducts.isArchived, false)).orderBy(desc(catalogueProducts.updatedAt)),
-    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId))),
+    db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(options?.includeArchived ? undefined : and(eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false))).orderBy(desc(catalogueProducts.updatedAt)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive, isArchived: catalogueCategories.isArchived }).from(catalogueCategories).where(and(eq(catalogueCategories.isArchived, false), or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId)))),
   ]);
   const linksByProduct = new Map<number, Array<{ categoryId: number; position: number | null }>>();
   if (rows.length) {
@@ -653,7 +657,7 @@ export async function getAdminSummary() {
   const db = await requireDb();
   const [[productCount], [categoryCount], [newOrderCount], [lowStockCount], recentOrders] = await Promise.all([
     db.select({ total: count() }).from(catalogueProducts).where(eq(catalogueProducts.isActive, true)),
-    db.select({ total: count() }).from(catalogueCategories).where(eq(catalogueCategories.isActive, true)),
+    db.select({ total: count() }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))),
     db.select({ total: count() }).from(orderRequests).where(eq(orderRequests.status, "new")),
     db.select({ total: count() }).from(catalogueProducts).where(and(eq(catalogueProducts.isActive, true), eq(catalogueProducts.availability, "in_stock"))),
     db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt)).limit(5),
@@ -790,10 +794,12 @@ async function assertAdminProductSlugAvailable(slug: string, excludingProductId?
 }
 
 async function validateProductCategorySelection(db: CatalogueDbLike, categoryId: number, selectedSubcategoryIds?: number[]) {
-  const [root] = await db.select({ id: catalogueCategories.id, slug: catalogueCategories.slug, legacyCategoryId: catalogueCategories.legacyCategoryId, parentId: catalogueCategories.parentId, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(eq(catalogueCategories.id, categoryId)).limit(1);
+  type LockedCategoryRow = Pick<CategoryRow, "id" | "slug" | "legacyCategoryId" | "legacyParentCategoryId" | "parentId" | "name" | "sortOrder" | "isActive" | "isArchived">;
+  const lockedRows: LockedCategoryRow[] = await db.select({ id: catalogueCategories.id, slug: catalogueCategories.slug, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive, isArchived: catalogueCategories.isArchived }).from(catalogueCategories).orderBy(asc(catalogueCategories.id)).for("update");
+  const [root] = lockedRows.filter((row) => row.id === categoryId);
   if (!root) throw new Error("Избраната главна категория е невалидна.");
-  if (!root.isActive || root.legacyCategoryId !== null || root.parentId !== null) throw new Error("Избраната главна категория не е активна.");
-  const taxonomyRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId)));
+  if (root.isArchived || !root.isActive || root.legacyCategoryId !== null || root.parentId !== null) throw new Error("Избраната главна категория не е активна или е архивирана.");
+  const taxonomyRows = lockedRows.filter((row) => row.isArchived === false && (row.legacyCategoryId != null || row.parentId != null));
   const path = validateSelectedSubcategoryPath(taxonomyRows as ProductCategoryTreeRow[], categoryRootsByPublicSlug[root.slug] ?? [], selectedSubcategoryIds, root.id);
   return { root, path };
 }
@@ -904,9 +910,10 @@ async function categoryHasDependants(db: CatalogueDbLike, id: number) {
 export async function saveAdminCategory(id: number | undefined, payload: CategoryPayload, adminUserId: number) {
   const db = await requireDb();
   return db.transaction(async (tx) => {
-    const rows = await tx.select().from(catalogueCategories).orderBy(asc(catalogueCategories.id));
+    const rows = await tx.select().from(catalogueCategories).orderBy(asc(catalogueCategories.id)).for("update");
     const existing = id == null ? undefined : rows.find((row) => row.id === id);
     if (id != null && !existing) throw new Error("Категорията не е намерена.");
+    if (existing?.isArchived) throw new Error("Архивирана категория не може да бъде записвана от остарял чернови запис. Възстановете я първо.");
     const meta = categoryMeta(rows);
     const current = existing ? categoryDepthAndParent(rows, existing.id) : { parentId: null, rootId: null, depth: -1, isMain: true };
     const desiredParentId = payload.parentId === undefined ? current.parentId : payload.parentId;
@@ -929,6 +936,55 @@ export async function saveAdminCategory(id: number | undefined, payload: Categor
     const categoryId = Number(result[0].insertId);
     await tx.insert(adminActivities).values({ adminUserId, action: "category.created", entityType: "category", entityId: categoryId, metadataJson: JSON.stringify({ slug: payload.slug, name: payload.name, parentId: desiredParentId }) });
     return categoryId;
+  });
+}
+
+/**
+ * Archives a category without deleting or rewriting any product data.  The full
+ * category row set is locked in one deterministic order so category saves and
+ * product assignments cannot create/reparent a dependency while these guards
+ * are being evaluated.
+ */
+export async function setAdminCategoryArchived(id: number, archived: boolean, actorId: number) {
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const rows = await tx.select().from(catalogueCategories).orderBy(asc(catalogueCategories.id)).for("update");
+    const category = rows.find((row) => row.id === id);
+    if (!category) throw new TRPCError({ code: "NOT_FOUND", message: "Категорията не е намерена." });
+
+    if (category.isArchived === archived) {
+      return { id, isArchived: category.isArchived, isActive: category.isActive };
+    }
+
+    const meta = categoryMeta(rows);
+    if (!archived) {
+      const parentId = effectiveParentId(category, rows);
+      const requiresParent = category.parentId != null || category.legacyParentCategoryId != null;
+      const parent = parentId == null ? undefined : rows.find((row) => row.id === parentId);
+      if (requiresParent && (!parent || parent.isArchived)) throw new TRPCError({ code: "CONFLICT", message: "Категорията не може да бъде възстановена, защото родителят липсва или е архивиран." });
+    } else {
+      const info = meta.get(category.id);
+      if (category.legacyCategoryId != null && !info?.rootId) throw new TRPCError({ code: "CONFLICT", message: "Тази техническа категория от структурата на каталога не може да бъде премахната самостоятелно." });
+
+      const realChildren = rows.filter((row) => row.id !== id && effectiveParentId(row, rows) === id && (row.legacyCategoryId != null || row.parentId != null));
+      if (realChildren.some((row) => !row.isArchived)) throw new TRPCError({ code: "CONFLICT", message: "Категорията съдържа непремахнати подкатегории. Премахнете ги първо." });
+      if (!realChildren.length && parseCategoryTree(category.subcategoriesJson).length > 0) throw new TRPCError({ code: "CONFLICT", message: "Категорията съдържа подкатегории, записани в старата структура. Първо трябва да бъде прегледана структурата ѝ." });
+
+      const [product] = await tx.select({ id: catalogueProducts.id }).from(catalogueProducts).where(eq(catalogueProducts.categoryId, id)).limit(1);
+      if (product) throw new TRPCError({ code: "CONFLICT", message: "Категорията не може да бъде премахната: има свързани продукти. Преместете ги в друга категория първо." });
+      const [link] = await tx.select({ id: catalogueProductCategoryLinks.id }).from(catalogueProductCategoryLinks).where(eq(catalogueProductCategoryLinks.categoryId, id)).limit(1);
+      if (link) throw new TRPCError({ code: "CONFLICT", message: "Категорията не може да бъде премахната: има свързани продуктови връзки. Преместете артикулите в друга подкатегория първо." });
+    }
+
+    await tx.update(catalogueCategories).set({ isArchived: archived, isActive: false }).where(eq(catalogueCategories.id, id));
+    await tx.insert(adminActivities).values({
+      adminUserId: actorId,
+      action: archived ? "category.archived" : "category.restored",
+      entityType: "category",
+      entityId: id,
+      metadataJson: JSON.stringify({ name: category.name, slug: category.slug, isArchived: archived }),
+    });
+    return { id, isArchived: archived, isActive: false };
   });
 }
 

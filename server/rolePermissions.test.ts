@@ -63,6 +63,7 @@ const fixtures = vi.hoisted(() => {
     replaceAdminBrochure: vi.fn(),
     saveAdminCategory: vi.fn(),
     saveProductPromotion: vi.fn(),
+    setAdminCategoryArchived: vi.fn(),
     setAdminProductArchived: vi.fn(),
     updateAdminProduct: vi.fn(),
     updateContactEnquiry: vi.fn(),
@@ -321,6 +322,26 @@ describe("staff access resolution", () => {
 });
 
 describe("mapped admin tRPC permission procedures", () => {
+  it("denies category archive and restore without categories.write", async () => {
+    for (const permissions of [["categories.read"], ["products.write"], OPERATOR_PERMISSIONS]) {
+      configureCustomerRole("limited-category-removal", permissions);
+      const caller = appRouter.createCaller(contextFor(null));
+      await expect(caller.admin.archiveCategory({ id: 501 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(caller.admin.restoreCategory({ id: 501 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    expect(fixtures.catalogueService.setAdminCategoryArchived).not.toHaveBeenCalled();
+  });
+
+  it("forwards the resolved actor for both category archive and restore", async () => {
+    configureCustomerRole("category-writer", ["categories.read", "categories.write"]);
+    fixtures.catalogueService.setAdminCategoryArchived.mockResolvedValueOnce({ id: 501, isArchived: true, isActive: false }).mockResolvedValueOnce({ id: 501, isArchived: false, isActive: false });
+    const caller = appRouter.createCaller(contextFor(null));
+    await expect(caller.admin.archiveCategory({ id: 501 })).resolves.toMatchObject({ id: 501, isArchived: true });
+    await expect(caller.admin.restoreCategory({ id: 501 })).resolves.toMatchObject({ id: 501, isArchived: false });
+    expect(fixtures.catalogueService.setAdminCategoryArchived).toHaveBeenNthCalledWith(1, 501, true, 41);
+    expect(fixtures.catalogueService.setAdminCategoryArchived).toHaveBeenNthCalledWith(2, 501, false, 41);
+  });
+
   it("denies both archive and restore to read-only product roles and operators", async () => {
     for (const permissions of [["products.read"], OPERATOR_PERMISSIONS]) {
       configureCustomerRole("limited-product-removal", permissions);

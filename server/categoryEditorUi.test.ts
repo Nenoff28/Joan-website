@@ -46,4 +46,17 @@ describe("category editor usability and access", () => {
     expect(css).toContain("minmax(0, 1fr)");
     expect(css).toContain("max-width: 700px");
   });
+  it("provides reversible category removal with explicit confirmation and inline errors", () => {
+    expect(editor).toContain("trpc.admin.archiveCategory.useMutation");
+    expect(editor).toContain("trpc.admin.restoreCategory.useMutation");
+    expect(editor).toContain("Покажи премахнатите");
+    expect(editor).toContain("Премахни категорията");
+    expect(editor).toContain("Да, премахни категорията");
+    expect(editor).toContain("AlertDialogCancel");
+    expect(editor).toContain("setRemoveError(categoryValidationMessage(failure))");
+    expect(editor).toContain("if (!canWrite || busy || row.isArchived) return");
+    expect(editor).toContain("includeArchived: showArchived");
+    expect(editor).toContain("removeFocus.current.focus()");
+    expect(css).toContain(".category-remove-dialog");
+  });
 });

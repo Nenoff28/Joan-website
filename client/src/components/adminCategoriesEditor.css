@@ -354,3 +354,109 @@
     grid-template-columns: 1fr;
   }
 }
+
+.category-remove-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: #962b32;
+  font-size: 12px;
+  font-weight: 650;
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.category-remove-action:hover {
+  background: #fff0f0;
+}
+.category-remove-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.category-archive-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #46574b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.category-archive-filter input {
+  width: 16px;
+  height: 16px;
+  accent-color: #34473a;
+}
+.category-tree-row.archived {
+  background: #f4f4f2;
+}
+.category-tree-row.archived .category-tree-label > span {
+  color: #8a4d37;
+  font-weight: 650;
+}
+.category-remove-dialog {
+  background: #fff;
+  color: #252d29;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.category-remove-summary {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #f5f5f2;
+  overflow-wrap: anywhere;
+}
+.category-remove-summary span,
+.category-remove-summary small {
+  font-size: 12px;
+  color: #58665b;
+}
+.category-remove-confirm {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #a93138;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 650;
+  min-height: 42px;
+  cursor: pointer;
+}
+.category-remove-confirm:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.category-remove-action:focus-visible,
+.category-remove-confirm:focus-visible {
+  outline: 2px solid #34473a;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .category-tree-panel > .admin-panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .category-tree-actions .category-remove-action {
+    font-size: 11px;
+    padding-left: 0;
+  }
+}
+
+.category-editor-form .admin-form-actions {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+.category-editor-form .category-remove-action {
+  max-width: 100%;
+  white-space: normal;
+}

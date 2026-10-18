@@ -1,0 +1,1 @@
+ALTER TABLE `catalogue_categories` ADD `isArchived` boolean DEFAULT false NOT NULL;

@@ -10,10 +10,21 @@ import {
   Plus,
   Save,
   Search,
+  RotateCcw,
+  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { latinPathToken } from "@/lib/categoryHierarchy";
 import { readProductImage } from "@/lib/productImageUpload";
 import { hasPermission } from "@shared/permissions";
@@ -32,6 +43,7 @@ type CategoryRow = {
   icon: string;
   sortOrder: number;
   isActive: boolean;
+  isArchived: boolean;
   parentId: number | null;
   rootId: number | null;
   depth: number;
@@ -88,10 +100,14 @@ export default function AdminCategoriesEditor({
   const canRead = hasPermission(permissions, "categories.read");
   const canWrite = hasPermission(permissions, "categories.write");
   const utils = trpc.useUtils();
-  const query = trpc.admin.categories.useQuery(undefined, {
-    enabled: canRead,
-    staleTime: 0,
-  });
+  const [showArchived, setShowArchived] = useState(false);
+  const query = trpc.admin.categories.useQuery(
+    { includeArchived: showArchived },
+    {
+      enabled: canRead,
+      staleTime: 0,
+    }
+  );
   const rows: CategoryRow[] = (query.data ?? []) as CategoryRow[];
   const [draft, setDraft] = useState<CategoryDraft>(() => emptyDraft());
   const [search, setSearch] = useState("");
@@ -104,6 +120,55 @@ export default function AdminCategoriesEditor({
   const uploadBusy = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLElement>(null);
+  const [removeTarget, setRemoveTarget] = useState<CategoryRow | null>(null);
+  const [removeError, setRemoveError] = useState("");
+  const [listError, setListError] = useState("");
+  const removeFocus = useRef<HTMLButtonElement | null>(null);
+  async function refreshCategories() {
+    await Promise.all([
+      utils.admin.categories.invalidate(),
+      utils.admin.productCategories.invalidate(),
+      utils.admin.products.invalidate(),
+      utils.admin.operations.invalidate(),
+      utils.catalogue.metadata.invalidate(),
+      utils.catalogue.list.invalidate(),
+      utils.catalogue.page.invalidate(),
+    ]);
+  }
+  const archive = trpc.admin.archiveCategory.useMutation({
+    onSuccess: async result => {
+      setRemoveError("");
+      setListError("");
+      if (draft.id === result.id) {
+        setDraft(emptyDraft());
+        setSaved(null);
+        setError("");
+        setUploadError("");
+      }
+      toast.success(
+        "Категорията е премахната. Можете да я възстановите от „Покажи премахнатите“."
+      );
+      await refreshCategories();
+      setRemoveTarget(null);
+    },
+    onError: failure => {
+      setRemoveError(categoryValidationMessage(failure));
+    },
+  });
+  const restore = trpc.admin.restoreCategory.useMutation({
+    onSuccess: async () => {
+      setListError("");
+      toast.success(
+        "Категорията е възстановена. Проверете видимостта ѝ в редактора."
+      );
+      await refreshCategories();
+    },
+    onError: failure => {
+      const message = categoryValidationMessage(failure);
+      setListError(message);
+      toast.error(message);
+    },
+  });
   const upload = trpc.admin.uploadCategoryImage.useMutation();
   const save = trpc.admin.saveCategory.useMutation({
     onSuccess: async id => {
@@ -111,15 +176,7 @@ export default function AdminCategoriesEditor({
       setSaved({ id, label: draft.name.trim() });
       setError("");
       toast.success("Категорията е записана успешно.");
-      await Promise.all([
-        utils.admin.categories.invalidate(),
-        utils.admin.productCategories.invalidate(),
-        utils.admin.products.invalidate(),
-        utils.admin.operations.invalidate(),
-        utils.catalogue.metadata.invalidate(),
-        utils.catalogue.list.invalidate(),
-        utils.catalogue.page.invalidate(),
-      ]);
+      await refreshCategories();
     },
     onError: failure => {
       const message = categoryValidationMessage(failure);
@@ -127,7 +184,8 @@ export default function AdminCategoriesEditor({
       toast.error(message);
     },
   });
-  const busy = uploading || save.isPending;
+  const busy =
+    uploading || save.isPending || archive.isPending || restore.isPending;
   const byId = useMemo(
     () => new Map(rows.map(row => [row.id, row])),
     [query.data]
@@ -159,15 +217,27 @@ export default function AdminCategoriesEditor({
   }, [draft.id, query.data]);
   const parents = rows.filter(
     row =>
-      row.depth < 4 && !blockedParents.has(row.id) && Boolean(row.publicUrl)
+      !row.isArchived &&
+      row.depth < 4 &&
+      !blockedParents.has(row.id) &&
+      Boolean(row.publicUrl)
   );
-  const visibleRows = rows.filter(row =>
-    categoryPath(row)
-      .toLocaleLowerCase("bg-BG")
-      .includes(search.trim().toLocaleLowerCase("bg-BG"))
+  const visibleRows = rows.filter(
+    row =>
+      (showArchived || !row.isArchived) &&
+      categoryPath(row)
+        .toLocaleLowerCase("bg-BG")
+        .includes(search.trim().toLocaleLowerCase("bg-BG"))
   );
   const savedRow = saved ? byId.get(saved.id) : undefined;
   const selectedParent = byId.get(Number(draft.parentId));
+  const editedRow = draft.id ? byId.get(draft.id) : undefined;
+  function requestRemove(row: CategoryRow, trigger: HTMLButtonElement) {
+    if (!canWrite || busy || row.isArchived) return;
+    removeFocus.current = trigger;
+    setRemoveTarget(row);
+    setRemoveError("");
+  }
   function change<K extends keyof CategoryDraft>(
     key: K,
     value: CategoryDraft[K]
@@ -593,6 +663,18 @@ export default function AdminCategoriesEditor({
                   Нова категория
                 </button>
               )}
+              {editedRow && !editedRow.isArchived && canWrite && (
+                <button
+                  type="button"
+                  className="category-remove-action"
+                  disabled={busy}
+                  onClick={event =>
+                    requestRemove(editedRow, event.currentTarget)
+                  }
+                >
+                  <Trash2 size={16} /> Премахни категорията
+                </button>
+              )}
             </div>
           </fieldset>
         </form>
@@ -621,6 +703,15 @@ export default function AdminCategoriesEditor({
             <p className="admin-kicker">СТРУКТУРА</p>
             <h2>Категории и подкатегории</h2>
           </div>
+          <label className="category-archive-filter">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={event => setShowArchived(event.target.checked)}
+              disabled={busy}
+            />
+            Покажи премахнатите
+          </label>
         </div>
         <label className="category-tree-search">
           <Search size={18} />
@@ -631,6 +722,12 @@ export default function AdminCategoriesEditor({
             onChange={event => setSearch(event.target.value)}
           />
         </label>
+        {listError && (
+          <div className="category-editor-error" role="alert">
+            <AlertTriangle size={18} />
+            <span>{listError}</span>
+          </div>
+        )}
         {query.isLoading ? (
           <p role="status">
             <Loader2 size={18} className="animate-spin" /> Зареждаме
@@ -643,9 +740,7 @@ export default function AdminCategoriesEditor({
             {visibleRows.map(row => (
               <article
                 key={row.id}
-                className={
-                  row.isMain ? "category-tree-row main" : "category-tree-row"
-                }
+                className={`category-tree-row${row.isMain ? " main" : ""}${row.isArchived ? " archived" : ""}`}
               >
                 {row.isMain && row.image ? (
                   <img src={row.image} alt="" loading="lazy" />
@@ -657,38 +752,64 @@ export default function AdminCategoriesEditor({
                 <div className="category-tree-label">
                   <span>
                     {row.isMain ? "Главна категория" : "Подкатегория"} ·{" "}
-                    {row.publicUrl ? "В каталога" : "Скрита"}
+                    {row.isArchived
+                      ? "Премахната"
+                      : row.publicUrl
+                        ? "В каталога"
+                        : "Скрита"}
                   </span>
                   <h3>{row.label}</h3>
                   <p>{categoryPath(row)}</p>
                 </div>
                 <div className="category-tree-actions">
-                  {row.publicUrl && (
+                  {row.publicUrl && !row.isArchived && (
                     <Link href={row.publicUrl} className="admin-text-action">
                       Виж <ArrowUpRight size={14} />
                     </Link>
                   )}
                   {canWrite ? (
-                    <>
+                    row.isArchived ? (
                       <button
                         type="button"
                         className="admin-text-action"
                         disabled={busy}
-                        onClick={() => edit(row)}
+                        onClick={() => restore.mutate({ id: row.id })}
                       >
-                        Редакция
+                        <RotateCcw size={14} /> Възстанови
                       </button>
-                      {row.depth < 4 && row.publicUrl && (
+                    ) : (
+                      <>
                         <button
                           type="button"
                           className="admin-text-action"
                           disabled={busy}
-                          onClick={() => start(row.id)}
+                          onClick={() => edit(row)}
                         >
-                          <Plus size={14} /> Подкатегория
+                          Редакция
                         </button>
-                      )}
-                    </>
+                        {row.depth < 4 && row.publicUrl && (
+                          <button
+                            type="button"
+                            className="admin-text-action"
+                            disabled={busy}
+                            onClick={() => start(row.id)}
+                          >
+                            <Plus size={14} /> Подкатегория
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="category-remove-action"
+                          disabled={busy}
+                          onClick={event =>
+                            requestRemove(row, event.currentTarget)
+                          }
+                          aria-label={`Премахни категория ${row.label}`}
+                        >
+                          <Trash2 size={14} /> Премахни
+                        </button>
+                      </>
+                    )
                   ) : (
                     <span className="category-editor-note">Само преглед</span>
                   )}
@@ -698,6 +819,69 @@ export default function AdminCategoriesEditor({
           </div>
         )}
       </section>
+      <AlertDialog
+        open={Boolean(removeTarget)}
+        onOpenChange={open => {
+          if (!open && !archive.isPending) setRemoveTarget(null);
+        }}
+      >
+        <AlertDialogContent
+          className="category-remove-dialog"
+          onCloseAutoFocus={event => {
+            event.preventDefault();
+            if (removeFocus.current?.isConnected) removeFocus.current.focus();
+            else
+              editorRef.current
+                ?.querySelector<HTMLInputElement>("input:not(:disabled)")
+                ?.focus();
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>Премахване на категория</AlertDialogTitle>
+            <AlertDialogDescription>
+              Потвърдете премахването на „{removeTarget?.label}“. Категорията ще
+              бъде архивирана, а не изтрита окончателно.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="category-remove-summary">
+            <strong>{removeTarget?.label}</strong>
+            <span>{removeTarget ? categoryPath(removeTarget) : ""}</span>
+            <small>ID: {removeTarget?.id}</small>
+          </div>
+          <p className="category-editor-note">
+            Не премахваме свързани артикули или подкатегории. Ако категорията
+            съдържа такива, действието ще бъде отказано. Премахнатите категории
+            могат да се възстановят от „Покажи премахнатите“.
+          </p>
+          {removeError && (
+            <div className="category-editor-error" role="alert">
+              <AlertTriangle size={18} />
+              <span>{removeError}</span>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archive.isPending}>
+              Отказ
+            </AlertDialogCancel>
+            <button
+              type="button"
+              className="category-remove-confirm"
+              disabled={archive.isPending || !canWrite}
+              onClick={() => {
+                if (removeTarget && !archive.isPending)
+                  archive.mutate({ id: removeTarget.id });
+              }}
+            >
+              {archive.isPending ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Trash2 size={16} />
+              )}
+              {archive.isPending ? "Премахваме…" : "Да, премахни категорията"}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

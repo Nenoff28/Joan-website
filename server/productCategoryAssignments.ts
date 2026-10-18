@@ -14,6 +14,8 @@ export type ProductCategoryTreeRow = {
   sortOrder: number;
   slug?: string | null;
   isActive?: boolean;
+  /** Optional for compatibility with legacy helper fixtures created before category archiving. */
+  isArchived?: boolean;
 };
 
 export type ProductCategoryPathNode = { id: number; label: string };
@@ -39,7 +41,7 @@ function rowIsSelectable(row: ProductCategoryTreeRow) {
   // Imported taxonomy rows deliberately keep their historical behaviour, including
   // imported rows whose source isActive flag is false. Native children, unlike those
   // rows, are storefront content and must be active before they can be selected.
-  return row.legacyCategoryId != null || row.isActive !== false;
+  return row.isArchived !== true && (row.legacyCategoryId != null || row.isActive !== false);
 }
 
 function sortRows(rows: ProductCategoryTreeRow[]) {
@@ -86,7 +88,7 @@ export function buildProductCategoryOptions(
   };
 
   return [...rootRows]
-    .filter((row) => row.isActive === true && row.legacyCategoryId == null && (row.parentId == null || row.parentId === undefined))
+    .filter((row) => row.isArchived !== true && row.isActive === true && row.legacyCategoryId == null && (row.parentId == null || row.parentId === undefined))
     .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "bg") || left.id - right.id)
     .map((root) => {
       const children = buildChildren(null, root, 0);
