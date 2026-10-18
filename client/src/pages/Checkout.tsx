@@ -122,6 +122,7 @@ export default function Checkout() {
     consent: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [regionQuery, setRegionQuery] = useState("");
   const [cityQuery, setCityQuery] = useState("");
   const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
@@ -276,21 +277,30 @@ export default function Checkout() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!validate()) return;
-    const result = await createOrderRequest.mutateAsync({
-      items: checkoutRows.map(row => ({
-        productSlug: row.product.slug,
-        quantity: row.quantity,
-      })),
-      fullName: values.fullName.trim(),
-      email: values.email.trim(),
-      phone: values.phone.trim(),
-      address: values.address.trim(),
-      region: values.region.trim(),
-      city: values.city.trim(),
-      postcode: values.postcode.trim(),
-    });
-    setRequestNumbers([result.requestNumber]);
-    clearCart();
+    setSubmitError(null);
+    try {
+      const result = await createOrderRequest.mutateAsync({
+        items: checkoutRows.map(row => ({
+          productSlug: row.product.slug,
+          quantity: row.quantity,
+        })),
+        fullName: values.fullName.trim(),
+        email: values.email.trim(),
+        phone: values.phone.trim(),
+        address: values.address.trim(),
+        region: values.region.trim(),
+        city: values.city.trim(),
+        postcode: values.postcode.trim(),
+      });
+      setRequestNumbers([result.requestNumber]);
+      clearCart();
+    } catch {
+      const message = language === "bg"
+        ? "Заявката не можа да бъде записана. Проверете данните и опитайте отново."
+        : "The request could not be saved. Check the details and try again.";
+      setSubmitError(message);
+      toast(message);
+    }
   }
 
   return (
@@ -563,6 +573,11 @@ export default function Checkout() {
                   {errors.consent && (
                     <small className="field-error consent-error">
                       {errors.consent}
+                    </small>
+                  )}
+                  {submitError && (
+                    <small className="field-error checkout-submit-error" role="alert">
+                      {submitError}
                     </small>
                   )}
                   <button

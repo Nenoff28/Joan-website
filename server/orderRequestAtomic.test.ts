@@ -19,4 +19,14 @@ describe("atomic multi-item order request flow", () => {
     expect(checkout).toContain("setRequestNumbers([result.requestNumber])");
     expect(checkout).not.toContain("results.map((result) => result.requestNumber)");
   });
+
+  it("keeps submit failures visible and does not let the cookie banner block the checkout action", () => {
+    const checkout = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/pages/Checkout.tsx"), "utf8");
+    const cookieCss = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/components/cookieConsent.css"), "utf8");
+    expect(checkout).toContain("setSubmitError(null)");
+    expect(checkout).toContain('role="alert"');
+    expect(checkout).toContain("catch {");
+    expect(cookieCss).toContain("pointer-events:none");
+    expect(cookieCss).toContain(".cookie-consent-actions{display:flex");
+  });
 });
