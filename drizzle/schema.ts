@@ -321,6 +321,17 @@ export const contactEnquiries = mysqlTable("contact_enquiries", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("contact_enquiries_status_created_idx").on(table.status, table.createdAt)]);
 
+/** Immutable status/comment history for contact enquiries. */
+export const contactEnquiryHistory = mysqlTable("contact_enquiry_history", {
+  id: int("id").autoincrement().primaryKey(),
+  contactEnquiryId: int("contactEnquiryId").notNull().references(() => contactEnquiries.id),
+  status: mysqlEnum("status", ["new", "contacted", "closed"]).notNull(),
+  comment: text("comment"),
+  authorId: int("authorId").references(() => users.id),
+  authorName: varchar("authorName", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("contact_enquiry_history_enquiry_created_idx").on(table.contactEnquiryId, table.createdAt)]);
+
 /** Versioned brochure records reference source PDFs and pre-rendered page images held in storage. */
 export const catalogueBrochures = mysqlTable("catalogue_brochures", {
   id: int("id").autoincrement().primaryKey(),
@@ -364,4 +375,5 @@ export type OrderRequest = typeof orderRequests.$inferSelect;
 export type OrderRequestItem = typeof orderRequestItems.$inferSelect;
 export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
+export type ContactEnquiryHistory = typeof contactEnquiryHistory.$inferSelect;
 export type CatalogueBrochure = typeof catalogueBrochures.$inferSelect;

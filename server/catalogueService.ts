@@ -2,7 +2,7 @@ import { and, asc, count, countDistinct, desc, eq, gt, gte, inArray, isNotNull, 
 import { TRPCError } from "@trpc/server";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, contactEnquiryHistory, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
@@ -652,6 +652,25 @@ export async function getAdminContactEnquiries() {
   return db.select().from(contactEnquiries).orderBy(desc(contactEnquiries.createdAt));
 }
 
+export async function getAdminContactEnquiryDetail(id: number) {
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Запитването не е намерено.");
+  const db = await requireDb();
+  const [enquiries, history] = await Promise.all([
+    db.select().from(contactEnquiries).where(eq(contactEnquiries.id, id)).limit(1),
+    db.select({
+      id: contactEnquiryHistory.id,
+      status: contactEnquiryHistory.status,
+      comment: contactEnquiryHistory.comment,
+      authorId: contactEnquiryHistory.authorId,
+      authorName: contactEnquiryHistory.authorName,
+      createdAt: contactEnquiryHistory.createdAt,
+    }).from(contactEnquiryHistory).where(eq(contactEnquiryHistory.contactEnquiryId, id)).orderBy(desc(contactEnquiryHistory.createdAt), desc(contactEnquiryHistory.id)),
+  ]);
+  const enquiry = enquiries[0];
+  if (!enquiry) throw new Error("Запитването не е намерено.");
+  return { ...enquiry, history };
+}
+
 export async function getAdminSummary() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
@@ -1001,10 +1020,17 @@ export async function updateOrderRequest(id: number, status: OrderRequestStatus,
   });
 }
 
-export async function updateContactEnquiry(id: number, status: ContactEnquiryStatus, adminNote: string | null, adminUserId: number) {
+export async function updateContactEnquiry(id: number, status: ContactEnquiryStatus, adminNote: string | null, adminUserId: number, adminName: string) {
   const db = await requireDb();
-  await db.update(contactEnquiries).set({ status, adminNote }).where(eq(contactEnquiries.id, id));
-  await logAdminActivity(adminUserId, "contact_enquiry.updated", "contact_enquiry", id, { status });
+  const comment = adminNote?.trim() || null;
+  const authorName = adminName.trim().slice(0, 255) || "Администратор";
+  await db.transaction(async tx => {
+    const [enquiry] = await tx.select({ id: contactEnquiries.id }).from(contactEnquiries).where(eq(contactEnquiries.id, id)).limit(1).for("update");
+    if (!enquiry) throw new Error("Запитването не е намерено.");
+    await tx.update(contactEnquiries).set({ status, adminNote: comment }).where(eq(contactEnquiries.id, id));
+    await tx.insert(contactEnquiryHistory).values({ contactEnquiryId: id, status, comment, authorId: adminUserId, authorName });
+    await tx.insert(adminActivities).values({ adminUserId, action: "contact_enquiry.updated", entityType: "contact_enquiry", entityId: id, metadataJson: JSON.stringify({ status }) });
+  });
 }
 
 export type OrderRequestItemInput = { productSlug: string; quantity: number };
@@ -1040,7 +1066,10 @@ export async function createOrderRequest(input: OrderRequestInput) {
 export async function createContactEnquiry(input: { fullName: string; email: string; phone?: string | null; subject: string; message: string }) {
   const db = await requireDb();
   const referenceNumber = `C-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 5).toUpperCase()}`;
-  await db.insert(contactEnquiries).values({ referenceNumber, fullName: input.fullName, email: input.email, phone: input.phone?.trim() || null, subject: input.subject, message: input.message, status: "new", adminNote: null });
+  await db.transaction(async tx => {
+    const [created] = await tx.insert(contactEnquiries).values({ referenceNumber, fullName: input.fullName, email: input.email, phone: input.phone?.trim() || null, subject: input.subject, message: input.message, status: "new", adminNote: null });
+    await tx.insert(contactEnquiryHistory).values({ contactEnquiryId: Number(created.insertId), status: "new", comment: null, authorId: null, authorName: "Публична форма" });
+  });
   try {
     await notifyOwner({ title: `Ново контактно запитване ${referenceNumber}`, content: `${input.fullName} (${input.email})${input.phone ? `, ${input.phone}` : ""}: ${input.subject}\n${input.message}` });
   } catch (error) {

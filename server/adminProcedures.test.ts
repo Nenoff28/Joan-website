@@ -8,6 +8,7 @@ const service = vi.hoisted(() => ({
   createAdminProduct: vi.fn(),
   createContactEnquiry: vi.fn(),
   createOrderRequest: vi.fn(),
+  getAdminContactEnquiryDetail: vi.fn(),
   getAdminContactEnquiries: vi.fn(),
   getAdminCategories: vi.fn(),
   getAdminProductCategories: vi.fn(),
@@ -137,7 +138,7 @@ describe("administrator management procedures", () => {
     service.updateContactEnquiry.mockResolvedValueOnce(undefined);
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.updateContactEnquiry({ id: 11, status: "contacted", adminNote: "Customer contacted by email." })).resolves.toBeUndefined();
-    expect(service.updateContactEnquiry).toHaveBeenCalledWith(11, "contacted", "Customer contacted by email.", 17);
+    expect(service.updateContactEnquiry).toHaveBeenCalledWith(11, "contacted", "Customer contacted by email.", 17, "Admin");
   });
 
   it("passes a bounded inventory adjustment to the authenticated administrator service", async () => {

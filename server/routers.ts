@@ -15,6 +15,7 @@ import {
   createAdminProduct,
   createContactEnquiry,
   createOrderRequest,
+  getAdminContactEnquiryDetail,
   getAdminContactEnquiries,
   getAdminCategories,
   getAdminProductCategories,
@@ -136,6 +137,7 @@ export const appRouter = router({
     orders: permissionProcedure("orders.read").query(() => getAdminOrders()),
     orderDetail: permissionProcedure("orders.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getAdminOrderDetail(input.id)),
     contactEnquiries: permissionProcedure("enquiries.read").query(() => getAdminContactEnquiries()),
+    contactEnquiryDetail: permissionProcedure("enquiries.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getAdminContactEnquiryDetail(input.id)),
     brochures: permissionProcedure("brochures.read").query(() => getAdminBrochures()),
     previewLegacyCustomerImport: permissionProcedure("customers.read").input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(({ input }) => previewLegacyCustomerWorkbook(input.workbookData)),
     importLegacyCustomers: permissionProcedure("customers.import").input(z.object({ workbookData: z.string().min(32).max(12_000_000) })).mutation(async ({ input, ctx }) => {
@@ -165,7 +167,7 @@ export const appRouter = router({
     restoreCategory: permissionProcedure("categories.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => { const actorId = ctx.staff.id; if (!actorId) throw new Error("Липсва идентичност на оператора."); return setAdminCategoryArchived(input.id, false, actorId); }),
     uploadCategoryImage: permissionProcedure("categories.write").input(z.object({ dataUrl: z.string().min(32).max(15_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadCategoryImage(input, ctx.staff.id ?? ctx.user.id)),
     updateOrder: permissionProcedure("orders.write").input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => { const actorId = ctx.staff.id; if (!actorId) throw new Error("Липсва идентичност на оператора."); return updateOrderRequest(input.id, input.status, input.adminNote, actorId, ctx.staff.name); }),
-    updateContactEnquiry: permissionProcedure("enquiries.write").input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.user.id)),
+    updateContactEnquiry: permissionProcedure("enquiries.write").input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.staff.id ?? ctx.user.id, ctx.staff.name)),
   }),
 });
 

@@ -41,7 +41,7 @@ describe("launch readiness SEO and privacy regressions", () => {
   });
 
   it("keeps contact enquiries persistent and sends an owner notification", () => {
-    expect(catalogueService).toContain("db.insert(contactEnquiries)");
+    expect(catalogueService).toContain("tx.insert(contactEnquiries)");
     expect(catalogueService).toContain("await notifyOwner({ title:");
   });
 

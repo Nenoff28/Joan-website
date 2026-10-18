@@ -141,6 +141,13 @@
       "when": 1792329690568,
       "tag": "0019_cloudy_alex_power",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1792332025858,
+      "tag": "0020_thankful_shen",
+      "breakpoints": true
     }
   ]
 }

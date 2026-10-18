@@ -11,6 +11,10 @@ const orderDetailPage = readFileSync(
   resolve(process.cwd(), "client/src/pages/AdminOrderDetail.tsx"),
   "utf8"
 );
+const contactDetailPage = readFileSync(
+  resolve(process.cwd(), "client/src/pages/AdminContactEnquiryDetail.tsx"),
+  "utf8"
+);
 const categoryEditor = readFileSync(
   resolve(process.cwd(), "client/src/components/AdminCategoriesEditor.tsx"),
   "utf8"
@@ -113,7 +117,9 @@ describe("granular administrator UI permission contract", () => {
     );
     expect(orderDetailPage).toContain("update.mutate({");
     expect(orderDetailPage).toContain("adminNote: comment.trim() || null");
-    expect(adminPage).toContain("if (canWriteEnquiries) update.mutate");
+    expect(contactDetailPage).toContain("fieldset disabled={!canWrite || update.isPending}");
+    expect(contactDetailPage).toContain("update.mutate({");
+    expect(contactDetailPage).toContain("adminNote: comment.trim() || null");
     expect(adminPage).toContain(
       "if (workbookData && canImportCustomers) importer.mutate"
     );

@@ -1915,16 +1915,9 @@ function AdminOrders({ permissions }: AdminPageProps) {
 }
 
 function AdminContactEnquiries({ permissions }: AdminPageProps) {
-  const utils = trpc.useUtils();
   const canReadEnquiries = can(permissions, "enquiries.read");
   const canWriteEnquiries = can(permissions, "enquiries.write");
   const enquiries = trpc.admin.contactEnquiries.useQuery(undefined, { enabled: canReadEnquiries });
-  const update = trpc.admin.updateContactEnquiry.useMutation({
-    onSuccess: async () => {
-      await utils.admin.contactEnquiries.invalidate();
-      toast("Запитването е актуализирано.");
-    },
-  });
   const [filter, setFilter] = useState<"all" | ContactEnquiryStatus>("all");
   const filtered = (enquiries.data ?? []).filter(
     enquiry => filter === "all" || enquiry.status === filter
@@ -1974,11 +1967,6 @@ function AdminContactEnquiries({ permissions }: AdminPageProps) {
               <ContactEnquiryCard
                 key={enquiry.id}
                 enquiry={enquiry}
-                busy={update.isPending}
-                canWrite={canWriteEnquiries}
-                onSave={(status, note) => {
-                  if (canWriteEnquiries) update.mutate({ id: enquiry.id, status, adminNote: note });
-                }}
               />
             ))}
           </div>
@@ -2735,19 +2723,11 @@ function OrderCard({
 }
 function ContactEnquiryCard({
   enquiry,
-  busy,
-  canWrite,
-  onSave,
 }: {
   enquiry: AdminContactEnquiry;
-  busy: boolean;
-  canWrite: boolean;
-  onSave: (status: ContactEnquiryStatus, note: string | null) => void;
 }) {
-  const [status, setStatus] = useState<ContactEnquiryStatus>(enquiry.status);
-  const [note, setNote] = useState(enquiry.adminNote ?? "");
   return (
-    <article className="admin-order-card">
+    <Link href={`/admin/enquiries/${enquiry.id}`} className="admin-order-card admin-order-card-link">
       <div className="admin-order-product">
         <div>
           <p className="admin-kicker">{enquiry.referenceNumber}</p>
@@ -2766,43 +2746,10 @@ function ContactEnquiryCard({
         <small>{formatDate(enquiry.createdAt)}</small>
       </div>
       <div className="admin-order-actions">
-        <fieldset disabled={!canWrite}>
-        <label>
-          Статус
-          <select
-            value={status}
-            onChange={event =>
-              setStatus(event.target.value as ContactEnquiryStatus)
-            }
-          >
-            {(
-              Object.keys(contactEnquiryStatusLabels) as ContactEnquiryStatus[]
-            ).map(item => (
-              <option key={item} value={item}>
-                {contactEnquiryStatusLabels[item]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Вътрешна бележка
-          <textarea
-            value={note}
-            onChange={event => setNote(event.target.value)}
-            placeholder="видимо само за администратори"
-          />
-        </label>
-        {canWrite ? <button
-          type="button"
-          className="admin-primary"
-          disabled={busy}
-          onClick={() => onSave(status, note.trim() || null)}
-        >
-          <Save size={16} /> Запази
-        </button> : <ReadOnlyBadge text="Само преглед · обработката е недостъпна" />}
-        </fieldset>
+        <span className={`admin-order-status admin-order-status-${enquiry.status}`}>{contactEnquiryStatusLabels[enquiry.status]}</span>
+        <b>Отвори запитването →</b>
       </div>
-    </article>
+    </Link>
   );
 }
 function LoadingState() {
