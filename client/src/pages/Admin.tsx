@@ -58,9 +58,12 @@ type Availability = "in_stock" | "on_request" | "out_of_stock";
 type OrderStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
 type ContactEnquiryStatus = "new" | "contacted" | "closed";
 type TechnicalRow = { label: string; value: string };
+type ProductCategoryOption = { id: number; label: string; slug?: string; children?: ProductCategoryOption[] };
+type SavedProduct = { id: number; slug: string; name: string; sku: string | null | undefined; isActive: boolean };
 type ProductForm = {
   id?: number;
   categoryId: number;
+  subcategoryIds: number[];
   slug: string;
   slugMode: "automatic" | "custom";
   seoTitle: string;
@@ -96,6 +99,7 @@ type CategoryForm = {
 type AdminProduct = {
   id: number;
   categoryId: number;
+  subcategoryIds?: number[];
   categoryName: string;
   slug: string;
   seoTitle: string;
@@ -745,34 +749,60 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [savedProduct, setSavedProduct] = useState<SavedProduct | null>(null);
+  const [categorySelectionChanged, setCategorySelectionChanged] = useState(false);
   const onSaved = async (message: string) => {
+    setSearch("");
+    setQualityOnly(false);
+    setPage(1);
     await Promise.all([
       utils.admin.products.invalidate(),
       utils.admin.operations.invalidate(),
       utils.catalogue.list.invalidate(),
+      utils.catalogue.page.invalidate(),
+      utils.catalogue.product.invalidate(),
+      utils.catalogue.metadata.invalidate(),
     ]);
     toast(message);
   };
   const createProduct = trpc.admin.createProduct.useMutation({
-    onSuccess: () => onSaved("Артикулът е добавен."),
+    onSuccess: (id, input) => {
+      setSavedProduct({ id, slug: input.slug, name: input.name, sku: input.sku, isActive: input.isActive });
+      setForm(current => ({ ...current, id, slugMode: "custom" }));
+      setCategorySelectionChanged(false);
+      return onSaved(input.isActive ? "Артикулът е добавен и публикуван." : "Артикулът е записан като непубликуван.");
+    },
     onError: error => { const message = readableProductError(error); setFormErrors({ form: message }); toast.error(message); },
   });
   const updateProduct = trpc.admin.updateProduct.useMutation({
-    onSuccess: () => onSaved("Промените са записани."),
+    onSuccess: (_result, { id, product }) => {
+      setSavedProduct({ id, slug: product.slug, name: product.name, sku: product.sku, isActive: product.isActive });
+      setCategorySelectionChanged(false);
+      return onSaved("Промените са записани.");
+    },
     onError: error => { const message = readableProductError(error); setFormErrors({ form: message }); toast.error(message); },
   });
   const [form, setForm] = useState<ProductForm>(() => emptyProductForm(0));
   const [search, setSearch] = useState("");
   const [qualityOnly, setQualityOnly] = useState(false);
   const [page, setPage] = useState(1);
-  const categoryOptions = useMemo(() => {
-    if (canReadCategories || canWriteProducts) return (categoriesQuery.data ?? []).map(category => ({ id: category.id, label: category.label }));
+  const categoryOptions = useMemo<ProductCategoryOption[]>(() => {
+    if (canReadCategories || canWriteProducts) return (categoriesQuery.data ?? []) as ProductCategoryOption[];
     const derived = new Map<number, { id: number; label: string }>();
     (productsQuery.data ?? []).forEach(product => {
       if (!derived.has(product.categoryId)) derived.set(product.categoryId, { id: product.categoryId, label: product.categoryName });
     });
     return Array.from(derived.values());
   }, [canReadCategories, canWriteProducts, categoriesQuery.data, productsQuery.data]);
+  const subcategoryLevels = useMemo(() => {
+    const levels: ProductCategoryOption[][] = [];
+    let options = categoryOptions.find(category => category.id === form.categoryId)?.children ?? [];
+    for (let depth = 0; depth < 4 && options.length; depth += 1) {
+      levels.push(options);
+      options = options.find(option => option.id === form.subcategoryIds[depth])?.children ?? [];
+    }
+    return levels;
+  }, [categoryOptions, form.categoryId, form.subcategoryIds]);
   const canEditProductForm = canWriteProducts && categoryOptions.length > 0;
   useEffect(() => {
     if (form.categoryId === 0 && categoryOptions[0])
@@ -819,10 +849,31 @@ function AdminProducts({ permissions }: AdminPageProps) {
     update("galleryText", nextGallery.join("\n"));
     update("imageUrl", nextGallery[0] ?? "");
   }
+  function selectCategory(categoryId: number) {
+    setCategorySelectionChanged(true);
+    setForm(current => ({ ...current, categoryId, subcategoryIds: [] }));
+    setFormErrors(current => { const next = { ...current }; delete next.categoryId; delete next.subcategoryIds; return next; });
+  }
+  function selectSubcategory(depth: number, id: number) {
+    setCategorySelectionChanged(true);
+    setForm(current => ({ ...current, subcategoryIds: [...current.subcategoryIds.slice(0, depth), ...(id ? [id] : [])] }));
+    setFormErrors(current => { const next = { ...current }; delete next.subcategoryIds; return next; });
+  }
+  function startNewProduct() {
+    setForm(emptyProductForm(categoryOptions[0]?.id ?? 0));
+    setCategorySelectionChanged(false);
+    setSavedProduct(null);
+    setFormErrors({});
+    setUploadError("");
+  }
   function edit(product: AdminProduct) {
+    setCategorySelectionChanged(false);
+    setSavedProduct(null);
+    setFormErrors({});
     setForm({
       id: product.id,
       categoryId: product.categoryId,
+      subcategoryIds: product.subcategoryIds ?? [],
       slug: product.slug,
       slugMode: "custom",
       seoTitle: product.seoTitle,
@@ -863,6 +914,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
     }
     const payload = {
       categoryId: form.categoryId,
+      ...(!form.id || categorySelectionChanged ? { subcategoryIds: form.subcategoryIds } : {}),
       slug: form.slug.trim(),
       seoTitle: form.seoTitle.trim() || null,
       seoDescription: form.seoDescription.trim() || null,
@@ -940,9 +992,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
               type="button"
               className="admin-primary"
               disabled={Boolean(uploadProgress) || saving}
-              onClick={() =>
-                setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
-              }
+              onClick={startNewProduct}
             >
               <Plus size={17} /> Нов артикул
             </button>
@@ -963,15 +1013,19 @@ function AdminProducts({ permissions }: AdminPageProps) {
             <button
               type="button"
               className="admin-text-action"
-              onClick={() =>
-                setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
-              }
+              disabled={Boolean(uploadProgress) || saving}
+              onClick={startNewProduct}
             >
               <Trash2 size={15} /> Откажи редакцията
             </button>
           )}
         </div>
         <form className="admin-form" onSubmit={submit} noValidate>
+          {savedProduct && <div className="admin-product-saved" role="status">
+            <CheckCircle2 size={21} aria-hidden="true" />
+            <div><b>{savedProduct.isActive ? "Артикулът е публикуван" : "Артикулът е записан като непубликуван"}</b><p>{savedProduct.name}{savedProduct.sku ? ` · Код: ${savedProduct.sku}` : ""} · № {savedProduct.id}</p>{!savedProduct.isActive && <small>За да се показва на клиентите, включете „Публикуван в публичния каталог“ и запазете.</small>}</div>
+            {savedProduct.isActive && <Link href={`/product/${savedProduct.slug}`} className="admin-secondary" target="_blank" rel="noreferrer">Отвори в сайта <ArrowUpRight size={16} /></Link>}
+          </div>}
           <fieldset disabled={!canWriteProducts}>
           <div className="admin-form-grid">
             <label>
@@ -998,9 +1052,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 aria-label="Категория"
                 value={form.categoryId}
                 disabled={!categoryOptions.length}
-                onChange={event =>
-                  update("categoryId", Number(event.target.value))
-                }
+                onChange={event => selectCategory(Number(event.target.value))}
               >
                 {!categoryOptions.length && <option value={0}>{categoriesQuery.isError ? "Категориите не се заредиха" : "Зареждане на категориите…"}</option>}
                 {categoryOptions.map(category => (
@@ -1010,6 +1062,13 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 ))}
               </select>
             </label>
+            {subcategoryLevels.map((options, depth) => <label key={`product-subcategory-${depth}`}>
+              {depth === 0 ? "Подкатегория" : `Подкатегория ${depth + 1}`}
+              <select aria-label={depth === 0 ? "Подкатегория" : `Подкатегория ${depth + 1}`} value={form.subcategoryIds[depth] ?? 0} onChange={event => selectSubcategory(depth, Number(event.target.value))}>
+                <option value={0}>{depth === 0 ? "Без подкатегория — само главната категория" : "Без по-тясна подкатегория"}</option>
+                {options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+            </label>)}
             {categoriesQuery.isError && <div className="admin-form-error" role="alert">Не успяхме да заредим категориите. Въведените данни са запазени. <button type="button" className="admin-secondary" onClick={() => categoriesQuery.refetch()}>Опитай отново</button></div>}
             <label>
               Марка
@@ -3011,6 +3070,7 @@ function EmptyState({
 function emptyProductForm(categoryId: number): ProductForm {
   return {
     categoryId,
+    subcategoryIds: [],
     slug: "",
     slugMode: "automatic",
     seoTitle: "",

@@ -10,6 +10,7 @@ const service = vi.hoisted(() => ({
   createOrderRequest: vi.fn(),
   getAdminContactEnquiries: vi.fn(),
   getAdminCategories: vi.fn(),
+  getAdminProductCategories: vi.fn(),
   getAdminBrochures: vi.fn(),
   getAdminOrders: vi.fn(),
   getAdminOrderDetail: vi.fn(),
@@ -76,10 +77,10 @@ describe("administrator management procedures", () => {
     expect(service.createAdminProduct).toHaveBeenCalledWith(productInput, 17);
   });
   it("allows a product writer to load the category options needed by the product editor", async () => {
-    service.getAdminCategories.mockResolvedValueOnce([{ id: 4, label: "Инструменти" }]);
+    service.getAdminProductCategories.mockResolvedValueOnce([{ id: 4, label: "Инструменти" }]);
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.productCategories()).resolves.toEqual([{ id: 4, label: "Инструменти" }]);
-    expect(service.getAdminCategories).toHaveBeenCalled();
+    expect(service.getAdminProductCategories).toHaveBeenCalled();
   });
   it("forwards the authenticated staff identity when uploading a product image", async () => {
     service.uploadProductImage.mockResolvedValueOnce({ key: "catalogue/admin/test.jpg", url: "/manus-storage/catalogue/admin/test.jpg" });

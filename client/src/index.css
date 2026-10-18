@@ -818,3 +818,16 @@ a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !im
 .admin-upload-progress { color: var(--charcoal); font-size: 13px; }
 .admin-product-validation { width: 100%; padding: 12px 16px; background: #fff2f1; border: 1px solid #e6bbb8; border-radius: 8px; }
 .admin-product-validation p { margin: 6px 0 0; }
+
+/* Product publishing confirmation: direct public link, matching the admin palette. */
+.admin-product-saved { display: flex; align-items: center; gap: 14px; padding: 18px; margin-bottom: 20px; background: #edf5ef; border: 1px solid #b7d1c0; color: #204732; border-radius: 10px; }
+.admin-product-saved > svg { flex-shrink: 0; }
+.admin-product-saved > div { flex: 1; min-width: 0; }
+.admin-product-saved p { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 13px; }
+.admin-product-saved small { display: block; margin-top: 6px; }
+.admin-product-saved .admin-secondary { white-space: nowrap; color: #204732; }
+@media (max-width: 640px) { .admin-product-saved { flex-wrap: wrap; padding: 14px; } .admin-product-saved .admin-secondary { width: 100%; justify-content: center; } }
+
+/* Native select options must not impose their intrinsic text width on the mobile form. */
+.admin-form-grid > label { min-width: 0; }
+.admin-form-grid select { width: 100%; min-width: 0; max-width: 100%; }

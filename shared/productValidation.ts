@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const productPayloadSchema = z.object({
   categoryId: z.number().int().positive("Изберете категория на артикула."),
+  subcategoryIds: z.array(z.number().int().positive("Изберете валидна подкатегория.")).max(4, "Изберете най-много четири нива на подкатегории.").refine(ids => new Set(ids).size === ids.length, "Подкатегориите не могат да се повтарят.").optional(),
   slug: z.string().trim().min(3, "URL адресът трябва да има поне 3 знака.").max(160, "URL адресът е прекалено дълъг.").regex(/^[a-z0-9-]+$/, "URL адресът използва само малки латински букви, цифри и тирета."),
   seoTitle: z.string().trim().max(70, "SEO заглавието трябва да е до 70 знака.").nullable().optional(),
   seoDescription: z.string().trim().max(200, "SEO описанието трябва да е до 200 знака.").nullable().optional(),
@@ -24,7 +25,7 @@ export const productPayloadSchema = z.object({
 });
 
 const fieldLabels: Record<string, string> = {
-  name: "Име", categoryId: "Категория", description: "Описание", slug: "URL адрес",
+  name: "Име", categoryId: "Категория", subcategoryIds: "Подкатегория", description: "Описание", slug: "URL адрес",
   sku: "Вътрешен код", brand: "Марка", imageUrl: "Основна снимка", gallery: "Снимки",
   imageAlt: "Текст на снимките", priceEur: "Цена", oldPriceEur: "Стара цена",
   stockQuantity: "Количество", features: "Технически данни", availability: "Наличност",

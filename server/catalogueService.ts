@@ -6,6 +6,7 @@ import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
 import { splitProductDescription } from "./technicalSpecifications";
+import { buildProductCategoryOptions, canonicalSelectedSubcategoryPath, categoryPathNodes, legacyCategoryRootsByPublicSlug as categoryRootsByPublicSlug, validateSelectedSubcategoryPath, type ProductCategoryTreeRow } from "./productCategoryAssignments";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
@@ -16,6 +17,7 @@ type ReportingOrder = Pick<typeof orderRequests.$inferSelect, "createdAt" | "sta
 
 export type ProductPayload = {
   categoryId: number;
+  subcategoryIds?: number[];
   slug: string;
   seoTitle?: string | null;
   seoDescription?: string | null;
@@ -286,20 +288,16 @@ export type PublicCataloguePageInput = {
   sort?: "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
 };
 
-const legacyCategoryRootsByPublicSlug: Record<string, number[]> = {
-  instrumenti: [91], gradina: [93], banya: [95], "podovi-i-stenni-pokritiya": [90], "v-i-k": [97], osvetlenie: [163], "boi-lakove-mazilki": [92], "vrati-obkov-krepezhi": [199], "za-doma": [204], stroitelstvo: [178, 85], "rabotno-obleklo": [61],
-};
-
 const cyrillicToLatin: Record<string, string> = { а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sht", ъ: "a", ь: "y", ю: "yu", я: "ya" };
 const latinPathToken = (value: string) => Array.from(value.toLocaleLowerCase("bg-BG").normalize("NFD")).map((character) => cyrillicToLatin[character] ?? character).join("").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "category";
 
 type LegacyCategoryTreeRow = Pick<typeof catalogueCategories.$inferSelect, "legacyCategoryId" | "legacyParentCategoryId" | "name" | "sortOrder">;
 type LegacyCategoryBranchRow = Pick<typeof catalogueCategories.$inferSelect, "id" | "legacyCategoryId" | "legacyParentCategoryId">;
 
-function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: number[], depth = 2): Array<{ label: string; children?: Array<{ label: string; children?: Array<{ label: string }> }> }> {
+function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: number[], depth = 3): CategoryNode[] {
   if (!roots.length) return [];
   const childrenOf = (parents: number[]) => rows.filter((row) => row.legacyParentCategoryId != null && parents.includes(row.legacyParentCategoryId)).sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "bg"));
-  const build = (parents: number[], remainingDepth: number): Array<{ label: string; children?: Array<{ label: string; children?: Array<{ label: string }> }> }> => childrenOf(parents).map((row) => {
+  const build = (parents: number[], remainingDepth: number): CategoryNode[] => childrenOf(parents).map((row) => {
     const children = remainingDepth > 0 && row.legacyCategoryId != null ? build([row.legacyCategoryId], remainingDepth - 1) : [];
     return children.length ? { label: row.name, children } : { label: row.name };
   });
@@ -331,7 +329,7 @@ export function descendantCategoryIds(rows: LegacyCategoryBranchRow[], selectedI
 
 async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[], language: CatalogueLanguage) {
   if (!path.length) return [];
-  const roots = legacyCategoryRootsByPublicSlug[categorySlug] ?? [];
+  const roots = categoryRootsByPublicSlug[categorySlug] ?? [];
   if (!roots.length) return [];
   const db = await requireDb();
   let parentLegacyIds = roots;
@@ -343,7 +341,7 @@ async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[]
     matchedInternalIds = rows.map((row) => row.id);
     parentLegacyIds = rows.flatMap((row) => row.legacyCategoryId == null ? [] : [row.legacyCategoryId]);
   }
-  const treeRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId }).from(catalogueCategories).where(eq(catalogueCategories.isActive, true));
+  const treeRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId));
   return descendantCategoryIds(treeRows, matchedInternalIds);
 }
 
@@ -371,7 +369,7 @@ export function publicCatalogueConditions(input: PublicCataloguePageInput, categ
     const name = input.language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.name}, ${catalogueProducts.name})` : catalogueProducts.name;
     const brand = input.language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand;
     const features = input.language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.featuresJson}, ${catalogueProducts.featuresJson})` : catalogueProducts.featuresJson;
-    conditions.push(or(like(name, needle), like(brand, needle), like(features, needle))!);
+    conditions.push(or(like(name, needle), like(brand, needle), like(features, needle), like(catalogueProducts.sku, needle))!);
   }
   return conditions;
 }
@@ -391,9 +389,9 @@ export async function getPublicCatalogueMetadata(language: CatalogueLanguage = "
   const db = await requireDb();
   const [categoryRows, legacyRows] = await Promise.all([
     db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId))).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: language === "en" ? sql<string>`COALESCE(${catalogueCategoryEnglish.name}, ${catalogueCategories.name})` : catalogueCategories.name, sortOrder: catalogueCategories.sortOrder }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.slug))),
+    db.select({ legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: language === "en" ? sql<string>`COALESCE(${catalogueCategoryEnglish.name}, ${catalogueCategories.name})` : catalogueCategories.name, sortOrder: catalogueCategories.sortOrder }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(isNotNull(catalogueCategories.legacyCategoryId)),
   ]);
-  return { categories: categoryRows.map((row) => ({ ...publicCategory(row.category, row.english, language), subcategories: legacyTreeForPublicCategory(legacyRows, legacyCategoryRootsByPublicSlug[row.category.slug] ?? []) })) };
+  return { categories: categoryRows.map((row) => ({ ...publicCategory(row.category, row.english, language), subcategories: legacyTreeForPublicCategory(legacyRows, categoryRootsByPublicSlug[row.category.slug] ?? []) })) };
 }
 
 export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
@@ -479,6 +477,16 @@ export async function getAdminCategories() {
   return rows.map((category) => ({ ...publicCategory(category), sortOrder: category.sortOrder, isActive: category.isActive }));
 }
 
+export async function getAdminProductCategories() {
+  await ensureCatalogueSeeded();
+  const db = await requireDb();
+  const [rootRows, taxonomyRows] = await Promise.all([
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId))).orderBy(asc(catalogueCategories.sortOrder)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId)),
+  ]);
+  return buildProductCategoryOptions(rootRows, taxonomyRows);
+}
+
 export async function getAdminBrochures() {
   await ensureBrochureSeeded();
   const db = await requireDb();
@@ -489,8 +497,20 @@ export async function getAdminBrochures() {
 export async function getAdminProducts() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const rows = await db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).orderBy(desc(catalogueProducts.updatedAt));
-  return rows.map((row) => ({ ...publicProduct(row.product, row.category), seoTitle: row.product.legacyMetaTitleBg ?? "", seoDescription: row.product.legacyMetaDescriptionBg ?? "", seoKeywords: row.product.legacySeoKeywordBg ?? "", seoRobots: row.product.legacyMetaRobots === "noindex,follow" ? "noindex,follow" as const : "index,follow" as const, categoryId: row.product.categoryId, categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt }));
+  const [rows, taxonomyRows] = await Promise.all([
+    db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).orderBy(desc(catalogueProducts.updatedAt)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId)),
+  ]);
+  const linksByProduct = new Map<number, Array<{ categoryId: number; position: number | null }>>();
+  if (rows.length) {
+    const links = await db.select({ productId: catalogueProductCategoryLinks.productId, categoryId: catalogueProductCategoryLinks.categoryId, position: catalogueProductCategoryLinks.position }).from(catalogueProductCategoryLinks).where(inArray(catalogueProductCategoryLinks.productId, rows.map(({ product }) => product.id)));
+    for (const link of links) linksByProduct.set(link.productId, [...(linksByProduct.get(link.productId) ?? []), { categoryId: link.categoryId, position: link.position }]);
+  }
+  const taxonomy = taxonomyRows as ProductCategoryTreeRow[];
+  return rows.map((row) => {
+    const path = canonicalSelectedSubcategoryPath(taxonomy, categoryRootsByPublicSlug[row.category.slug] ?? [], linksByProduct.get(row.product.id) ?? []);
+    return { ...publicProduct(row.product, row.category), seoTitle: row.product.legacyMetaTitleBg ?? "", seoDescription: row.product.legacyMetaDescriptionBg ?? "", seoKeywords: row.product.legacySeoKeywordBg ?? "", seoRobots: row.product.legacyMetaRobots === "noindex,follow" ? "noindex,follow" as const : "index,follow" as const, categoryId: row.product.categoryId, subcategoryIds: path.map((item) => item.id), subcategoryPath: categoryPathNodes(path), categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt };
+  });
 }
 
 export async function getAdminOrders() {
@@ -652,9 +672,9 @@ export async function logAdminActivity(adminUserId: number, action: string, enti
   const db = await requireDb();
   await db.insert(adminActivities).values({ adminUserId, action, entityType, entityId: entityId ?? null, metadataJson: JSON.stringify(metadata) });
 }
+type CatalogueDbLike = any;
 
-async function assertAdminProductSlugAvailable(slug: string, excludingProductId?: number) {
-  const db = await requireDb();
+async function assertAdminProductSlugAvailableWithDb(db: CatalogueDbLike, slug: string, excludingProductId?: number) {
   const scope = excludingProductId
     ? and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug)), ne(catalogueProducts.id, excludingProductId))
     : or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug));
@@ -662,27 +682,60 @@ async function assertAdminProductSlugAvailable(slug: string, excludingProductId?
   if (conflict) throw new Error("Този URL адрес вече е зает от друг продукт или е запазен за стар адрес.");
 }
 
-export async function createAdminProduct(payload: ProductPayload, adminUserId: number) {
-  await assertAdminProductSlugAvailable(payload.slug);
+async function assertAdminProductSlugAvailable(slug: string, excludingProductId?: number) {
   const db = await requireDb();
-  const result = await db.insert(catalogueProducts).values({
-    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
+  await assertAdminProductSlugAvailableWithDb(db, slug, excludingProductId);
+}
+
+async function validateProductCategorySelection(db: CatalogueDbLike, categoryId: number, selectedSubcategoryIds?: number[]) {
+  const [root] = await db.select({ id: catalogueCategories.id, slug: catalogueCategories.slug, legacyCategoryId: catalogueCategories.legacyCategoryId, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(eq(catalogueCategories.id, categoryId)).limit(1);
+  if (!root) throw new Error("Избраната главна категория е невалидна.");
+  if (!root.isActive || root.legacyCategoryId !== null) throw new Error("Избраната главна категория не е активна.");
+  const taxonomyRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId));
+  const path = validateSelectedSubcategoryPath(taxonomyRows as ProductCategoryTreeRow[], categoryRootsByPublicSlug[root.slug] ?? [], selectedSubcategoryIds);
+  return { root, path };
+}
+
+async function insertProductAdminActivity(db: CatalogueDbLike, adminUserId: number, action: string, productId: number, metadata: Record<string, unknown>) {
+  await db.insert(adminActivities).values({ adminUserId, action, entityType: "product", entityId: productId, metadataJson: JSON.stringify(metadata) });
+}
+
+async function replaceProductSubcategoryLinks(db: CatalogueDbLike, productId: number, path: readonly ProductCategoryTreeRow[]) {
+  await db.delete(catalogueProductCategoryLinks).where(eq(catalogueProductCategoryLinks.productId, productId));
+  if (path.length) {
+    await db.insert(catalogueProductCategoryLinks).values(path.map((row, position) => ({ productId, categoryId: row.id, position })));
+  }
+}
+
+export async function createAdminProduct(payload: ProductPayload, adminUserId: number) {
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const { path } = await validateProductCategorySelection(tx, payload.categoryId, payload.subcategoryIds);
+    await assertAdminProductSlugAvailableWithDb(tx, payload.slug);
+    const result = await tx.insert(catalogueProducts).values({
+      categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
+    });
+    const id = Number(result[0].insertId);
+    await replaceProductSubcategoryLinks(tx, id, path);
+    await insertProductAdminActivity(tx, adminUserId, "product.created", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, subcategoryIds: path.map((row) => row.id) });
+    return id;
   });
-  const id = Number(result[0].insertId);
-  await logAdminActivity(adminUserId, "product.created", "product", id, { slug: payload.slug, name: payload.name });
-  return id;
 }
 
 export async function updateAdminProduct(id: number, payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
-  const [existing] = await db.select({ id: catalogueProducts.id, slug: catalogueProducts.slug }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1);
-  if (!existing) throw new Error("Продуктът не е намерен.");
-  if (existing.slug !== payload.slug) throw new Error("URL адресът на публикуван продукт не се променя, за да се запазят SEO адресите и външните връзки.");
-  await assertAdminProductSlugAvailable(payload.slug, id);
-  await db.update(catalogueProducts).set({
-    categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
-  }).where(eq(catalogueProducts.id, id));
-  await logAdminActivity(adminUserId, "product.updated", "product", id, { slug: payload.slug, name: payload.name });
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select({ id: catalogueProducts.id, slug: catalogueProducts.slug, categoryId: catalogueProducts.categoryId }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1).for("update");
+    if (!existing) throw new Error("Продуктът не е намерен.");
+    if (existing.slug !== payload.slug) throw new Error("URL адресът на публикуван продукт не се променя, за да се запазят SEO адресите и външните връзки.");
+    const { path } = await validateProductCategorySelection(tx, payload.categoryId, payload.subcategoryIds);
+    await assertAdminProductSlugAvailableWithDb(tx, payload.slug, id);
+    await tx.update(catalogueProducts).set({
+      categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
+    }).where(eq(catalogueProducts.id, id));
+    if (payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId) await replaceProductSubcategoryLinks(tx, id, path);
+    await insertProductAdminActivity(tx, adminUserId, "product.updated", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, ...(payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId ? { subcategoryIds: path.map((row) => row.id) } : {}) });
+  });
 }
 
 export async function adjustProductStock(id: number, delta: number, adminUserId: number) {

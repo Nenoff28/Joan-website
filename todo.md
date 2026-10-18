@@ -1,3 +1,614 @@
+- [x] Add a compliant customer-reviews section that does not fabricate ratings or testimonials.
+- [x] Add Bulgarian and English language switching for the extended customer journey.
+- [x] Build a client-side mock checkout with clear form validation and non-payment disclosure.
+- [x] Verify mobile layouts and save a delivery checkpoint.
+- [x] Fix homepage hero CTA overlap around “Разгледайте каталога” and verify responsive spacing.
+- [x] Identify a viable live product-feed source and connect the catalogue CTA to it.
+- [x] Build the live Joan catalogue bridge using verified real-store routes.
+- [x] Add accessible smooth scrolling to the homepage catalogue CTA.
+- [x] Verify CTA scrolling, external catalogue routing, and responsive behavior; save a delivery checkpoint.
+- [x] Add subtle hover and focus-visible animations to the live catalogue bridge cards.
+- [x] Verify desktop/mobile behavior and save the interaction refinement checkpoint.
+- [x] Replace the top-left header mark with the real Joan logo treatment.
+- [x] Remove the footer working-hours link and prevent contact self-links on the contact page.
+- [x] Connect the map action to the supplied Google Maps URL.
+- [x] Add practical visual treatments for all remaining category tiles.
+- [x] Verify links and responsive visual updates; save a delivery checkpoint.
+- [x] Retrieve the original Joan favicon and apply it to the browser tab.
+- [x] Verify the favicon reference and save the updated project version.
+- [x] Add at least five browseable test products to each Joan category.
+- [x] Verify category filters, product routes, cart/checkout handoffs, and language switching.
+- [x] Perform responsive, console, and production-build QA; fix defects found.
+- [x] Save the verified complete test catalogue checkpoint.
+- [x] Replace BG/EN text controls with accessible circular Bulgarian and English flag buttons.
+- [x] Verify active, hover, focus, desktop, and mobile language-toggle states; save a delivery checkpoint.
+- [x] Retrieve the original Joan About-page image and add it to the redesigned About section.
+- [x] Source and map real product photography for all 55 test-catalogue items where available.
+- [x] Verify image loading and responsive layouts, then save a media-update checkpoint.
+- [x] Replace all test labels with exact Joan catalogue product names and source data.
+- [x] Add zoomable multi-image galleries to product detail pages.
+- [x] Implement working brand, availability, price-range, search, and sorting controls in category listings.
+- [x] Run responsive functional QA and save the verified catalogue enhancement checkpoint.
+- [x] Add persistent client-side Favorites state for saved product IDs.
+- [x] Wire save/remove actions across product cards and product detail pages.
+- [x] Add a responsive Favorites page with empty, saved-product, remove, and checkout states.
+- [x] Verify persistence and responsive behavior, then save a delivery checkpoint.
+- [x] Define the administrator roles, product/category/order data model, and workflow boundaries.
+- [x] Upgrade the static storefront to authenticated database-backed infrastructure.
+- [x] Verify the full-stack build, public storefront routes, and tRPC provider after the upgrade.
+- [x] Verify the unauthenticated and administrator access boundaries for the upgraded authentication foundation.
+- [x] Add secure administrator APIs and persistence for products, categories, inventory, and order requests.
+- [x] Build a responsive administrator dashboard with overview, catalogue, and order-management views.
+- [x] Verify permissions, CRUD flows, customer catalogue continuity, and save an admin-platform checkpoint.
+- [x] Reconfirm authenticated owner access across the live administrator views and read paths.
+- [x] Perform a reversible live product/category update through the management service and verify public catalogue continuity without creating synthetic customer orders.
+- [x] Save the administrator platform checkpoint after final authenticated and live-data verification.
+- [x] Define the richer operational dashboard, stock-control, promotion, and order-workflow improvements.
+- [x] Add operational intelligence and fast management actions for catalogue quality, stock, promotions, and requests.
+- [x] Redesign administrator navigation and views into a more complete professional store-management workspace.
+- [x] Verify desktop/mobile workflows, data integrity, and save the professional admin upgrade checkpoint.
+- [x] Capture authenticated owner-session evidence for the upgraded operations console on desktop and mobile.
+- [x] Save the professional administrator workspace checkpoint after the final authenticated-session verification.
+- [x] Inspect and prepare the supplied brochure PDF for deployment-safe slideshow use.
+- [x] Remove the homepage store-visit action and retitle the brochure CTA with smooth scrolling.
+- [x] Replace the homepage current-catalogue module with an accessible brochure slideshow.
+- [x] Verify desktop/mobile brochure controls and save the homepage brochure update checkpoint.
+- [x] Define the managed brochure record, secure upload limits, activation rules, and public rendering contract.
+- [x] Add database-backed brochure storage metadata and administrator-only upload, replacement, activation, and archive procedures.
+- [x] Build a dedicated brochure-management workspace in the administrator panel and connect the homepage to the active brochure record.
+- [x] Verify brochure upload/replacement, active public slideshow behavior, responsive layout, and save the management-workflow checkpoint.
+- [x] Define the accessible 3D brochure-viewer motion, focus, and compact-navigation model.
+- [x] Replace the flat brochure stage and full thumbnail strip with a tactile 3D page experience and compact navigation.
+- [x] Verify the 3D viewer across desktop/mobile, reduced-motion preferences, and save the redesign checkpoint.
+- [x] Verify the 3D brochure viewer behavior when reduced motion is preferred.
+- [x] Run a browser-level reduced-motion rendering check for the 3D brochure viewer before the redesign checkpoint.
+- [x] Save the verified 3D brochure-viewer redesign checkpoint.
+- [x] Save the verified 3D brochure-viewer redesign checkpoint.
+- [x] Define fullscreen, swipe, focus-return, and adjacent-page crop behavior for the brochure viewer.
+- [x] Add fullscreen viewing controls and keyboard-safe exit behavior to the brochure viewer.
+- [x] Add mobile swipe page navigation and crop the adjacent-page previews to remove white page margins.
+- [x] Verify fullscreen, swipe, mobile, desktop, and accessibility behavior before saving the enhanced viewer checkpoint.
+- [x] Define and collect the required OpenCart export package for catalogue migration.
+- [x] Map OpenCart categories, products, images, stock, promotions, and SEO fields to the Joan storefront data model.
+- [x] Build a controlled import and validation workflow for the exported OpenCart catalogue.
+- [x] Reconcile imported catalogue data and media with the storefront and administrator workspace before publishing.
+- [ ] Confirm Zeron ERP API/export capabilities, authentication method, synchronization scope, and source-of-truth rules.
+- [ ] Map Zeron products, prices, stock, promotions, and relevant catalogue fields to the Joan storefront data model.
+- [ ] Build a secure controlled synchronization workflow with logging, retry handling, and administrator visibility.
+- [ ] Validate data accuracy and operational recovery paths before enabling the Zeron synchronization in production.
+- [x] Restore complete adjacent-page previews without visible upper white margins in the brochure viewer.
+- [x] Stabilize the brochure fullscreen layout and controls across desktop and mobile devices.
+- [x] Remove brochure pause controls and set automatic page rotation to seven seconds.
+- [x] Verify corrected brochure viewer visuals, fullscreen behavior, accessibility, and automatic rotation before publishing.
+- [x] Verify mobile fullscreen entry, layout stability, controls, and exit behavior for the brochure viewer.
+- [x] Complete and document post-refactor brochure accessibility QA for keyboard navigation, focus return, visible focus state, and labels.
+- [x] Verify the brochure viewer’s mobile fullscreen exit behavior and stable return to normal layout before publishing.
+- [x] Resume the OpenCart catalogue migration after the user provides the agreed Universal Export package with verified full image URLs.
+- [x] Replace the header category trigger with an icon-only red menu button that preserves category-menu access.
+- [x] Remove duplicate category links from the primary navigation bar.
+- [x] Rename the header links to “За нас” and “Контакти” and verify the routes remain correct.
+- [x] Verify the streamlined header navigation across desktop and mobile before publishing.
+- [x] Verify the mobile header drawer end-to-end for category access, renamed links, stable closing behavior, and no overflow.
+- [x] Keep OpenCart migration and Zeron ERP integration work suspended until the user explicitly resumes either initiative.
+- [x] Research and document the public Joan.bg category and subcategory hierarchy without importing product records.
+- [x] Extend the catalogue category model and administrator workflow to support nested subcategories and ordering.
+- [x] Build accessible responsive multi-level category navigation using the approved Joan hierarchy.
+- [x] Add category and subcategory routes with clear empty states for categories that do not yet contain imported products.
+- [x] Verify public hierarchy accuracy, routes, administrator controls, desktop/mobile behavior, and accessibility before publishing.
+- [ ] Verify the nested category editor with an authenticated administrator session, including a saved branch and public hierarchy update.
+- [ ] Re-run final category-hierarchy QA after authenticated administrator verification before publishing.
+- [ ] Resume the authenticated administrator-editor check when the browser session from the user’s signed-in computer is connected.
+- [ ] Await the user’s own live administrator-editor verification of nested category editing and public-menu updates.
+- [x] Remove the visible left and right white margins from the active main brochure page without distorting the printed page content.
+- [x] Verify the corrected main brochure framing on desktop, mobile, and fullscreen before publishing.
+- [x] Replace the main brochure image crop treatment with a non-cropping edge-to-edge frame that preserves complete printed content.
+- [x] Prove complete active-page content across multiple brochure pages on desktop, mobile, and fullscreen before publishing.
+- [x] Preserve the requested monthly-brochure heading copy while removing unintended broad inline typography styles.
+- [x] Verify the brochure heading, meta text, controls, and responsive viewer typography before publishing.
+- [x] Apply the requested 55px desktop hero heading and revised single-line hero copy through scoped responsive styling.
+- [x] Update the brochure index prompt to “Разгледайте офертите” and set the brochure-title badge to 15px through scoped styling.
+- [x] Remove unintended broad inline typography styles introduced by the visual editor while preserving the requested refinements.
+- [x] Verify hero and brochure copy, desktop/mobile typography, controls, and responsive behavior before publishing.
+- [x] Restore the previous large two-line hero composition while retaining only the removed comma and final period.
+- [x] Verify the restored hero composition on desktop and mobile before publishing.
+- [x] Create a dedicated all-products catalogue route that displays every available product rather than redirecting to a single category.
+- [x] Refine category and subcategory display on catalogue pages for clearer hierarchy, selection, and browsing.
+- [x] Update all relevant “Всички продукти” and catalogue navigation links to the complete catalogue route.
+- [x] Verify all-products navigation, category/subcategory interactions, filters, deep routes, desktop/mobile layout, and accessibility before publishing.
+- [x] Reset page scroll position to the top on every route transition, including catalogue and product-detail navigation.
+- [x] Verify top-of-page behavior for desktop and mobile route changes before publishing.
+- [x] Run browser-level desktop and mobile route-transition checks after scrolling down, confirming each newly opened page starts at scroll position zero.
+- [x] Research the original Joan.bg public return information and translate verified requirements into an appropriate redesigned return page.
+- [x] Add a dedicated “Връщане” page, route, and navigation links with clear return-request guidance and contact handoff.
+- [x] Add an accessible, responsive back-to-top control with smooth user-initiated motion and reduced-motion support.
+- [x] Verify the return page, navigation links, back-to-top interaction, desktop/mobile behavior, accessibility, TypeScript, tests, and production build before publishing.
+- [x] Replace every remaining inactive “Връщане” footer action with the dedicated return-information route.
+- [x] Improve footer text contrast on the charcoal background while preserving the Joan visual hierarchy.
+- [x] Add a clear accessible FAQ section for the return process to the “Връщане” page.
+- [x] Replace the footer’s textual Facebook link with a blue icon-only link that preserves an accessible label.
+- [x] Verify the footer actions, contrast, FAQ layout, Facebook link, desktop/mobile behavior, tests, and production build before publishing.
+- [x] Run browser-level desktop QA that follows the footer return link and confirms it opens `/returns` without the payment-security toast.
+- [x] Run browser-level desktop and mobile QA that activates the icon-only Facebook footer link and confirms it is focusable and opens the official Facebook destination.
+- [x] Upload and use the supplied blue Facebook icon in the footer without adjacent visible text.
+- [x] Add a visible FAQ link beside “Контакти” in the primary navigation that opens the return-process FAQ section.
+- [x] Verify the supplied Facebook icon and FAQ navigation link across desktop and mobile before publishing.
+- [x] Research the original Joan terms and conditions and identify the lawful public content to reproduce in the redesigned terms experience.
+- [x] Move all return-process FAQs from the return page into a distinct standalone FAQ page and route.
+- [x] Update desktop, mobile, footer, and contextual navigation to the dedicated FAQ page.
+- [x] Add database-backed contact enquiry persistence with schema migration, server procedure, admin visibility, and form validation.
+- [x] Replace the contact-page placeholder with a working direct enquiry form and clear submitted-state feedback.
+- [x] Build a dedicated readable terms page based on the original public Joan terms, opened only when the user chooses the terms link.
+- [x] Run end-to-end desktop/mobile QA for key public routes, catalogue, favourites, enquiry submission, FAQ, terms, return information, checkout disclosure, and navigation; fix any regressions before publishing.
+- [x] Add a contextual FAQ link from the Returns page to the dedicated FAQ route.
+- [x] Verify a temporary QA contact enquiry appears in the authenticated `/admin/enquiries` inbox with the correct reference and details, then remove it and re-verify cleanup.
+- [x] Connect to the user's authorized Brave browser session with the installed extension and complete the administrator-inbox visual verification there.
+- [x] Inspect and optimize the “Общи условия” page for a 375px mobile viewport, including readability, spacing, and overflow.
+- [x] Add clear visible contact-form submission feedback with an accessible loading state and an unmistakable success confirmation.
+- [x] Improve FAQ answer disclosure interactions so each answer visibly expands and collapses with accessible state feedback and reduced-motion support.
+- [x] Verify terms mobile layout, contact-form loading/success states, FAQ expand/collapse behavior, accessibility, TypeScript, tests, and production build before publishing.
+- [x] Run a real end-to-end contact-form QA submission and confirm the loading animation, disabled controls, success confirmation, reference number, persistence, admin visibility, and cleanup.
+- [x] Execute a detailed desktop functional and visual QA pass across home, catalogue, categories, product detail, favorites, checkout disclosure, delivery, returns, FAQ, terms, contacts, and administrator routes.
+- [x] Execute a detailed 375px mobile functional and visual QA pass across navigation, search, categories, catalogue, product detail, support pages, forms, and back-to-top behavior.
+- [x] Diagnose and fix all reproducible issues found in the detailed QA pass, then revalidate affected flows.
+- [x] Document prioritized desktop and mobile enhancement recommendations for future iterations after the verified QA pass.
+- [x] Replace the stale hard-coded checkout product slug found during QA so header and footer checkout links resolve to a real current catalogue product.
+- [x] Restore product search access on mobile by adding a usable search field and result path to the mobile navigation drawer.
+- [x] Shorten the header delivery message to “Експресна доставка”.
+- [x] Replace the header cart link with an accessible interactive mini-cart preview.
+- [x] Add mini-cart quantity increment, decrement, item removal, total, empty-state, and checkout navigation behavior.
+- [x] Verify mini-cart interactions and responsive desktop/mobile header presentation before publishing.
+
+- [x] Remove the extra “Жоан” label from the catalogue navigation heading.
+- [x] Convert expandable desktop category subgroups into plus-controlled dropdowns that reveal their child subcategories.
+- [x] Make the plus-controlled dropdown behavior consistent across all categories, including Баня, and preserve mobile disclosure accessibility.
+- [x] Verify nested dropdown interaction, keyboard states, mobile layout, TypeScript, tests, and production build before publishing.
+- [x] Add smooth accessible open/close motion to the plus-controlled category disclosures.
+- [x] Highlight the current category and subcategory in desktop and mobile navigation from the active route and hierarchy path.
+- [x] Verify disclosure motion, active route indicators, keyboard semantics, desktop/mobile layouts, tests, and production build before publishing.
+- [x] Rename the header FAQ label to “ЧЗВ” on desktop and mobile navigation.
+- [x] Remove the special red FAQ styling so the ЧЗВ link matches the other header navigation links.
+- [x] Remove the “ПРОМО / Виж предложенията” header navigation link.
+- [x] Verify the streamlined header across desktop/mobile, regression tests, and production build before publishing.
+- [x] Remove the redundant “Нужна е помощ? / Контакти” footer call-to-action block.
+- [x] Normalize the ЧЗВ and Връщане footer links, including removal of the red return marker.
+- [x] Move the map-linked address and smaller Facebook icon into the left contact block below phone and email.
+- [x] Remove the redundant store footer column after relocating its useful contact items.
+- [x] Prevent the back-to-top control from obscuring the footer’s online-catalogue notice on desktop and mobile.
+- [x] Verify footer links, map destination, responsive spacing, accessibility, tests, and production build before publishing.
+- [x] Improve the footer left contact block hierarchy and spacing for mobile scanning.
+- [x] Make the phone, email, and map address controls comfortably tappable on mobile.
+- [x] Verify contact block contrast, focus states, narrow-screen layout, tests, and production build before publishing.
+- [x] Match the Facebook footer icon footprint to the phone and email contact icons.
+- [x] Add accessible Instagram and TikTok future-profile placeholders without inactive external links.
+- [x] Verify social-control layout, labels, mobile presentation, tests, and production build before publishing.
+- [x] Prepare and publish the user-supplied Instagram and TikTok icon files as web-safe static assets.
+- [x] Replace temporary Instagram and TikTok footer symbols with the supplied branded images while preserving future-profile labels.
+- [x] Verify supplied social-icon rendering, compact sizing, responsive layout, tests, and production build before publishing.
+- [x] Restore phone, email, and map address to the prior simple inline footer contact presentation.
+- [x] Verify the restored contact presentation, map link, social-row separation, responsive layout, tests, and production build before publishing.
+- [x] Create transparent-background versions of the supplied Instagram and TikTok icons.
+- [x] Add a subtle hover enlargement effect to footer social icons while respecting reduced-motion preferences.
+- [x] Review and refine mobile social/contact spacing after the transparent icon update.
+- [x] Verify transparent assets, hover behavior, mobile layout, tests, and production build before publishing.
+- [x] Create a transparent version of the newly supplied TikTok icon.
+- [x] Replace the footer TikTok asset with the supplied replacement icon.
+- [x] Verify replacement TikTok icon rendering, hover effect, mobile footer layout, tests, and production build before publishing.
+- [x] Set Facebook, Instagram, and TikTok footer controls to one balanced medium visual size.
+- [x] Verify equal social-icon sizing and spacing on desktop and mobile, with tests and production build before publishing.
+- [x] Increase the Instagram and TikTok visual marks within their shared footer controls to match Facebook perceptually.
+- [x] Verify the adjusted social icon balance across desktop/mobile footer layouts, tests, and production build before publishing.
+- [x] Prepare and publish the newly supplied Facebook icon as a transparent footer asset.
+- [x] Correct the Instagram icon to a normal, brighter gradient treatment.
+- [x] Match Facebook, Instagram, and TikTok visually within the footer social row.
+- [x] Verify updated social icon colors, proportions, mobile spacing, tests, and production build before publishing.
+- [x] Produce genuine alpha-transparent Facebook and Instagram footer assets with no white outside area.
+- [x] Replace the current Facebook and Instagram footer files with verified transparent variants.
+- [x] Verify the dark footer shows through around both icons on desktop/mobile, with tests and production build before publishing.
+- [x] Increase only the TikTok footer mark until it matches Facebook and Instagram perceptually.
+- [x] Verify TikTok visual parity, responsive footer layout, tests, and production build before publishing.
+- [x] Reduce all three visually matched footer social icons by one small consistent step.
+- [x] Verify smaller social icons retain visual parity across footer layouts, tests, and production build before publishing.
+- [x] Reduce all three footer social icons by one further consistent small step.
+- [x] Verify the further reduced social icons retain alignment across footer layouts, tests, and production build before publishing.
+- [x] Reduce all three aligned footer social icons by one additional uniform small step.
+- [x] Verify the additional reduction preserves social icon alignment across footer layouts, tests, and production build before publishing.
+- [x] Inspect footer social icon size and spacing at a 375px mobile viewport.
+- [x] Apply and verify a targeted mobile footer social-icon correction only if the reviewed layout requires it.
+- [x] Reduce all three footer social icons by approximately 10% from their current matched size.
+- [x] Verify the reduced icons preserve mobile spacing, alignment, tests, and production build before publishing.
+- [x] Establish a safe OpenCart product export path after the full-catalogue export exceeded the legacy server memory limit by using Universal Import/Export Pro CSV with long-description support.
+- [x] Collect non-overlapping product export batches and validate that their combined ID ranges cover the complete OpenCart catalogue.
+- [x] Inventory the supplied OpenCart export archive and inspect each workbook's sheets, headers, and record counts.
+- [x] Validate product-batch coverage, category hierarchy, options, attributes, filters, and media references before beginning any catalogue import.
+- [x] Confirm from the complete Universal product CSV that no product IDs 1–49 are present and that the imported product range begins at legacy ID 50.
+- [x] Use the verified full legacy image URLs instead of a redundant server image-folder archive, and confirm a 12-image availability sample returns HTTP 200.
+- [x] Exclude the customer export from product/catalogue import and use it only through the protected customer-profile migration workflow, without importing legacy password, salt, token, IP, or browser fields.
+- [x] Audit the legacy customer and address workbook structure using aggregates only, without exposing customer records or password-related values.
+- [x] Design a secure legacy-customer migration that preserves customer profile and address data while separating it from the current Manus OAuth administrator identity system.
+- [x] Define and obtain approval for the customer first-login flow, including a mandatory password-reset or account-activation step if legacy password hashes are incompatible.
+- [x] Approve the customer first-login flow: preserve migrated profiles and addresses while requiring customers to set a new password through a protected email link.
+- [x] Add customer profile, address, credential, and single-use activation-token schema for imported OpenCart customers, separate from administrator OAuth identities.
+- [x] Build administrator-only preflight and import controls that process the legacy customer export without storing legacy password hashes.
+- [x] Build customer account activation, sign-in, password reset, and profile-access screens with secure token expiry and single-use semantics.
+- [ ] Connect verified transactional email delivery for customer activation and password-reset links.
+- [ ] Defer customer-account activation email configuration until after the catalogue image and price work is complete.
+- [x] Verify customer migration counts, credential security, protected account flows, and regression coverage before publishing.
+- [x] Audit the supplied Universal Import/Export Pro product CSV for parsing integrity, field coverage, image URL references, and import readiness.
+- [x] Identify any remaining product, category, manufacturer, order, or image export gaps before controlled catalogue migration.
+- [x] Collect Universal Import/Export Pro category and manufacturer exports to preserve taxonomy metadata and brand records alongside the verified product CSV.
+- [x] Collect the Universal Import/Export Pro order export if historical customer-order records should be preserved with migrated customer profiles.
+- [x] Inventory the supplied Universal Import/Export Pro archive and inspect each export file's structure, encoding, and record counts.
+- [x] Reconcile the Universal Import/Export Pro archive against the verified product CSV and customer migration requirements before starting controlled imports.
+- [x] Obtain an explicit decision on whether to migrate the 1,038 historical orders and the 7 genuine legacy reviews; neither will be published or imported automatically.
+- [x] Approve migration of the 1,038 historical orders to preserved customer profiles and exclude all 7 legacy reviews from import and publication.
+- [x] Add isolated historical-order and order-line records that preserve approved legacy order history without reintroducing payment details, IP data, or legacy credentials.
+- [x] Build administrator-only preflight and import controls for the approved Universal Import/Export Pro order CSV.
+- [x] Show migrated historical order history only to the matching active customer profile after account activation.
+- [x] Reconcile imported historical order counts, customer links, totals, and product-line counts before publishing.
+- [x] Approve the controlled import of legacy customer profiles, historical orders, categories, manufacturers, and the complete supplied OpenCart product catalogue.
+- [x] Create a pre-import restore point and revalidate all supplied customer, order, category, manufacturer, and product source files.
+- [x] Extend catalogue records and protected import tooling to retain legacy product/category/manufacturer identity and safely process the supplied full-URL image references.
+- [x] Import verified customer profiles, historical orders, categories, manufacturers, and all legacy product records in dependency order.
+- [x] Reconcile customer, order, category, manufacturer, product, price, stock, promotion, image-reference, and storefront counts after the combined import.
+- [x] Map and persist legacy BG/EN SEO keywords, meta titles, meta descriptions, and canonical metadata from the supplied OpenCart exports.
+- [x] Re-run the idempotent catalogue import with preserved legacy SEO metadata and verify public product/category metadata behavior.
+- [x] Reconcile imported image URLs beyond the initial 12-image sample and repair 320 empty legacy paths with the verified no-image asset.
+- [x] Verify imported categories, products, manufacturers, and historical orders through the administrator workspace after migration.
+- [x] Audit the supplied OpenCart product price fields against the imported EUR and BGN values before correcting any live prices.
+- [x] Transfer every valid legacy product image URL into managed storage and replace legacy `joan.bg` image references in primary images and galleries.
+- [x] Correct product and promotion prices using the verified legacy source field that represents EUR.
+- [x] Remove BGN price storage and presentation from storefront, checkout, cart, administration, and import tooling, leaving a EUR-only catalogue.
+- [x] Reconcile image-transfer coverage and EUR-only price accuracy before publishing the product-first update.
+- [x] Audit every imported product’s current and promotional EUR pricing against the approved OpenCart product export and identify all mismatches.
+- [x] Reconcile product prices and promotion states from the approved legacy source fields without inventing or retaining incorrect promotions.
+- [x] Convert imported HTML product descriptions into clean customer-readable text while preserving meaningful content.
+- [x] Reconcile the complete legacy category and subcategory hierarchy so category routes contain their correctly linked imported products.
+- [x] Replace full-catalogue client payload loading with efficient server-side catalogue pagination, filtering, and sorting.
+- [x] Add and run regression tests plus desktop/mobile verification for pricing, promotions, descriptions, category navigation, and catalogue performance.
+- [x] Verify every imported product’s visible EUR price and promotion state product-by-product against the live legacy Joan.bg catalogue, recording source URLs and exceptions before applying corrections.
+- [x] Reproduce and repair public subcategory selection so every selected legacy path changes the product results correctly.
+- [x] Repair category and search navigation so moving from one open category to another always updates route state and results.
+- [x] Optimize mobile catalogue, category hierarchy, filters, and product-navigation layouts for smooth use on narrow screens.
+- [x] Add and run regression tests plus desktop/mobile route verification for subcategories, category switching, search, and mobile catalogue behavior.
+- [x] Remove the internal “PDP—01” label from public product-detail pages.
+- [x] Show a neutral price label for standard products and a promotion label only when a verified old EUR price exists.
+- [x] Verify standard and promotional product-detail price presentation on desktop and mobile.
+- [x] Remove the expanded subcategory hierarchy from product-result pages after a specific subcategory path is selected.
+- [x] Add compact selected-path context with the main category, nested path, and helpful category description above the results.
+- [x] Verify faster product discovery on selected-subcategory pages across desktop and mobile.
+- [x] Move selected-subcategory context from the listing area into the category hero directly beneath the main category title and description.
+- [x] Verify the hero-embedded selected path remains concise and readable on desktop and mobile while products remain immediately accessible.
+- [x] Remove the “Подбрани продукти / Продукти в … / Продуктите са филтрирани…” listing heading from selected-subcategory pages.
+- [x] Verify selected-subcategory pages move directly from the hero into useful catalogue controls and product results on desktop and mobile.
+
+- [x] Remove the remaining “Категории” quick-links tab from selected-subcategory result pages.
+- [x] Verify the selected-subcategory results layout remains direct and usable on desktop and mobile after the quick-links removal.
+
+- [x] Rename the brand filter to “Производител”, keep it collapsed by default, and add in-filter manufacturer search.
+- [x] Remove the visible “ITEM” marker from every public product card.
+- [x] Remove the visible “CAT-FILTER” marker from catalogue controls.
+- [x] Remove the right-side “Категории” quick-links panel from catalogue product results.
+- [x] Verify the streamlined filter, product cards, and catalogue layout on desktop and mobile.
+
+- [x] Audit the reported `legacy-2432-record` availability against the approved OpenCart source and identify the exact migration discrepancy.
+- [x] Reconcile all public product availability states against the authoritative imported OpenCart stock/status data and correct only verified mismatches.
+- [x] Add regression coverage so availability labels always reflect the persisted public stock state.
+- [x] Audit every public product and category slug, canonical URL, title, description, and structured-data field for SEO gaps and non-Latin URL text.
+- [x] Implement permanent Latin-only public product/category slugs with compatibility handling for existing legacy URLs.
+- [x] Improve page metadata, canonical URLs, robots directives, sitemap, and structured data across public catalogue and product routes.
+- [x] Verify availability, Latin-only URLs, redirects, SEO tags, sitemap output, desktop/mobile routes, tests, and production build before publishing.
+
+- [x] Sort confirmed out-of-stock products last in every public catalogue, category, subcategory, and search result query.
+- [x] Add regression tests and desktop/mobile verification for out-of-stock-last ordering across sort modes.
+
+- [x] Remove the duplicate technical summary beneath the product title while retaining the lower product-description section.
+- [x] Verify the product-detail content hierarchy on desktop and mobile after the duplicate-summary removal.
+
+- [x] Audit all public product slugs and replace `legacy-…` product URLs with unique readable Latin SEO slugs, while preserving safe redirects from existing URLs.
+- [x] Make every imported category and nested subcategory independently browseable with products at that exact hierarchy level.
+- [x] Add pagination controls with page-number ranges, ellipses, and direct navigation to distant pages such as page 147.
+- [x] Perform a comprehensive 375px mobile visual QA across public pages and correct reproducible layout, spacing, touch-target, and overflow issues.
+- [x] Add regression coverage and verify legacy redirects, Latin-only product URLs, hierarchy routes, pagination, mobile layouts, TypeScript, tests, and production build before publishing.
+- [x] Add administrator-controlled Latin-only custom product slug entry with uniqueness validation and safe canonical URL updates.
+- [x] Add prepared product SEO metadata controls and preview guidance for future search optimization.
+- [x] Verify administrator product create/edit SEO workflow, validation errors, public canonical output, tests, and production build before publishing.
+- [x] Define dashboard daily, weekly, monthly, and yearly request metrics with an explicit distinction between requested value and confirmed profit.
+- [x] Add administrator dashboard views for period-specific request counts, order-status breakdowns, and available request-value totals.
+- [x] Verify dashboard calculations, empty states, responsive admin layout, tests, and production build before publishing.
+- [x] Build real daily and monthly request time series for the administrator dashboard, with requested-value data clearly labeled as non-payment revenue data.
+- [x] Add interactive dashboard charts for request volume and request value by day and month.
+- [x] Verify chart time-series calculations, tooltips, responsive layout, tests, and production build before publishing.
+- [x] Inventory the current application, managed data, media, authentication, and deployment dependencies for a self-hosted SuperHosting migration.
+- [ ] Confirm a SuperHosting server environment capable of running the application, database, storage, backups, and TLS under company control.
+- [ ] Prepare and validate a reversible migration and DNS cutover plan only after the owner approves the target SuperHosting environment.
+- [x] Document a full pre-migration database, media, source, configuration, and DNS backup procedure with restore validation steps.
+- [x] Document the minimum SuperHosting cPanel, SSH/SFTP, database, DNS, TLS, and deployment access required for a safe migration.
+- [x] Audit all public SEO outputs, structured data, crawler directives, duplicate-route handling, and internal discovery paths for safe improvements.
+- [x] Implement verified public SEO improvements without fabricating product, review, pricing, availability, or promotional data.
+- [x] Audit authentication, authorization, input validation, HTTP response headers, uploads, cookies, and public attack-surface controls.
+- [x] Apply security hardening that preserves public catalogue, administrator, customer, and request workflows.
+- [x] Run regression, dependency, security-header, crawlability, TypeScript, test, build, and desktop/mobile verification before publishing.
+- [x] Diagnose and repair the empty product result observed for the intermediate Инструменти → Електроинструменти category branch during final visual verification.
+- [x] Diagnose and fix the homepage SSR/client hydration mismatch reported for `/?from_webdev=1`, then verify production hydration and console output.
+- [x] Diagnose and restore product and catalogue image loading after the production security-header update, while preserving a least-privilege CSP policy.
+- [x] Compare the live production homepage SSR output with the first hydrated client render and eliminate the remaining reported hydration mismatch.
+- [x] Verify and resolve the confirmed SEO audit findings for canonicalization, page title and meta description, H1/body relevance, image alt text, 404 behavior, and JavaScript errors.
+- [x] Measure and improve homepage loading performance by addressing verified render-blocking assets, excessive payload, and avoidable requests without weakening CSP or managed media delivery.
+- [x] Assess external-service recommendations from the audit (analytics, social profiles, email DNS, and llms.txt) and apply only the user-approved, technically applicable items.
+- [x] Diagnose and restore homepage hero video playback and fallback visibility on the published site.
+- [x] Assess and address actionable homepage SEO audit findings for useful text content, Apple touch icon, semantic emphasis, accessible internal link text, and response latency.
+- [x] Add an “Актуални предложения” homepage module between hero and brochure with 12 real catalogue products in a 3-by-4 desktop grid.
+- [x] Add a “Най-продавани” homepage module between hero and brochure with 8 real catalogue products in a 2-by-4 desktop grid, using a non-fabricated deterministic selection rule.
+- [x] Verify homepage catalogue module data, desktop/mobile layouts, TypeScript, tests and production build before publishing.
+- [x] Audit all public routes and shared storefront components for Bulgarian static copy that remains when English is selected.
+- [x] Extend the English translation system across shared navigation, homepage, catalogue, product interactions, cart, checkout, forms, notices, and support pages without fabricating translations for imported catalogue data.
+- [x] Verify English language switching across desktop/mobile public routes, console, TypeScript, tests, and production build before publishing.
+- [x] Assess whether the current SuperHosting plan can host the existing full-stack application without an upgrade, and identify the minimum non-upgrade deployment path.
+- [ ] Verify whether the confirmed SuperHosting SuperPro plan provides a production-compatible Node.js environment for the existing SSR application without a VPS upgrade.
+- [x] Confirm that the current SuperHosting SuperPro server has no installed Node.js runtime and must not receive the full-stack application in public_html.
+- [ ] Prepare the joan.bg custom-domain DNS cutover from SuperHosting to the current managed Node hosting, including an approved rollback plan.
+- [ ] Complete a high-volume operational readiness assessment for backup, restore, availability monitoring, capacity and incident response before any production DNS cutover.
+- [x] Create and verify a portable local ZIP export with independent static media and documented local backend/database requirements.
+- [x] Create complete PRODUCTION_DEPLOYMENT.md with architecture, dependencies, commands, environment inventory, DNS, SEO and self-hosted compatibility requirements.
+- [x] Create complete DATABASE_MIGRATION.md with backup, restore, validation queries, record counts and zero-data-loss cutover procedure.
+- [x] Create complete DISASTER_RECOVERY.md with backup retention, incident escalation, DNS rollback and recovery verification procedure.
+- [x] Prepare portable SuperHosting deployment, rollback, and cPanel staging materials for both Node.js App and no-Node scenarios before cPanel access is available.
+- [ ] Audit every public catalogue category, product name, product description, feature and SEO field that remains Bulgarian when the English language mode is selected.
+- [ ] Add a reversible English catalogue-content model and generate reviewed English translations without modifying Bulgarian source data, prices, SKU values or product IDs.
+- [ ] Render English category, product-listing and product-detail content from the English catalogue fields while preserving Bulgarian output in BG mode.
+- [ ] Verify no Bulgarian catalogue copy remains in the English storefront through automated coverage, representative browser QA, TypeScript, tests and production build.
+- [x] Move the homepage hero video into the public “За нас” page and remove the video hero from the homepage without changing the media asset itself.
+- [x] Simplify the homepage hero headline to “Строителни материали” / “Building materials” and remove the second line about tools.
+- [x] Brighten and colour-balance the homepage generated category imagery while preserving readable overlay text and responsive crop behaviour.
+- [x] Remove category sequence numbers and remove the homepage “Планирате ремонт?” guide plus the two-image company statistic section shown in the supplied reference.
+- [x] Verify the homepage and “За нас” desktop/mobile layouts, TypeScript, tests and production build after the visual revisions.
+- [x] Replace the duplicate public category image so “За дома” and “Баня” use visually distinct assets in desktop and mobile category cards.
+- [x] Increase the brightness and colour richness of category cards with grey/dark imagery while keeping their overlay labels readable on desktop and mobile.
+- [x] Show the primary product image in full with contain-based sizing, without cropping the item or breaking gallery zoom on desktop and mobile.
+- [x] Replace the related-products grid with a compact four-item carousel that can rotate through additional real catalogue products using accessible controls.
+- [x] Replace the textual brand label above a product with the manufacturer logo when an approved logo asset is available, while retaining an accessible text fallback.
+- [x] Verify product detail image, brand logo and related-product carousel flows on desktop/mobile with regression coverage, TypeScript, tests and production build.
+- [x] Source and validate available manufacturer logo assets from the respective official manufacturer websites before using them in product detail presentation.
+- [x] Continue official-logo source verification for remaining brands in descending active-product volume, beginning with Premium, HARDY, Генковски, Kittfort, ЛЕКО, KAI, Dr Fresh, BSafe and Inter Ceramic.
+- [x] Store verified official logo URL, source URL and verification timestamp separately from legacy manufacturer image data, and render only verified official assets as product-page logos.
+- [x] Inventory the user-supplied logo archive, map its variants to exact catalogue manufacturers, and select only appropriate official assets.
+- [x] Verify provenance, upload approved supplied logo assets, update official metadata and audit trail, then run regression validation.
+- [x] Publish every user-supplied logo asset to its exact matching catalogue manufacturer, using the best supplied variant when a folder contains alternatives.
+- [x] Improve contrast and legibility for Makena, Legrand, HARDY, GRONE, FAYANS, CetaForm, Cerva, Ceresit, Генковски, Zvezda, York, Yaparlar, Vormann, SPIRIT and Moment logos in product-detail presentation.
+- [x] Remove the global logo background panel and apply contrast treatment only to manufacturer assets with white wordmarks.
+- [x] Render available verified manufacturer logos instead of brand text on all catalogue product cards, with accessible text fallback on missing or failed assets.
+- [x] Review manufacturer logo legibility on catalogue product cards and selectively enlarge marks that are too small to read.
+- [x] Remove the visible grid background from the primary product image area so only the product image remains on a clean background.
+- [x] Split recognised technical characteristics from product descriptions into structured technical-data rows across the active catalogue, while retaining the original source descriptions.
+- [x] Move the About page video to the top of the page and restore the former homepage video headline as an overlay.
+- [x] Fix catalogue logo contrast, sizing or supplied variants for Bertani, Cerva, CetaForm, Dupli-Color, Effect, Elite, Makena, Moment, Motip, Orient, Payper, Timmer, Vents, Yaparlar, York and Генковски.
+- [x] Render the official Joan logo for catalogue products with the exact brand value „ЖОАН“.
+- [x] Perform mobile QA across primary customer journeys, including catalogue product cards, filters, product detail, navigation and checkout.
+- [x] Correct all confirmed mobile layout and interaction issues found during the responsive QA review.
+- [x] Diagnose and fix desktop product and catalogue image loading failures without regressing the mobile layout.
+- [x] Replace the single manufacturer filter with a scrollable multi-select control that exposes roughly ten brands at a time.
+- [x] Audit and remove public links, copy and metadata that reference the former or original Joan website while retaining necessary internal migration documentation.
+- [x] Move the "От метали до всичко необходимо за ремонта." company split block to immediately precede the "Жоан днес" section on the About page while preserving the responsive layout.
+
+- [x] Grant admin-panel access to the existing user account ddeye32@gmail.com and verify the resulting role without changing other users.
+
+# Launch Readiness Audit — 20 точки
+
+- [x] Audit and complete the Privacy Policy for the actual data collected by the site.
+- [x] Audit and complete the Terms & Conditions page.
+- [x] Verify a clear visible CTA exists on every key customer-facing page and add missing CTAs.
+- [x] Audit and complete the standalone FAQ section/page.
+- [x] Create or correct robots.txt without blocking important public pages.
+- [x] Generate and expose sitemap.xml with all intended indexable public routes.
+- [x] Audit and complete the custom 404 page and correct 404 response behavior.
+- [x] Audit all customer-facing images and add meaningful alt text where missing.
+- [x] Audit analytics and connect a privacy-compatible analytics solution or document the configured alternative.
+- [x] Add unique meta titles for every public route.
+- [x] Add unique meta descriptions for every public route.
+- [x] Configure Open Graph and Twitter Card social preview metadata with title, description, URL, and image.
+- [x] Verify favicon and related browser icon declarations.
+- [x] Configure canonical URLs for public pages and parameterized catalogue views.
+- [x] Add a GDPR-aware cookie consent banner and gate non-essential analytics until consent.
+- [x] Test and correct mobile responsive layouts at representative phone, tablet, and desktop widths.
+- [x] Audit accessibility including contrast, keyboard navigation, focus states, and ARIA labels.
+- [x] Test all public forms and document or implement real delivery behavior for enquiries and account flows.
+- [x] Crawl and verify internal and external links, correcting broken destinations.
+- [x] Audit and improve performance, caching, image loading, and document the PageSpeed validation limitation or result.
+
+# Launch hardening follow-up
+
+- [x] Make Checkout and CustomerActivation URL parameter reads SSR-safe without hydration mismatch.
+- [x] Replace per-line order requests with one atomic multi-item order request and preserve admin compatibility.
+- [x] Increase brochure page presentation scale responsively while keeping controls and full-page content usable.
+
+- [x] Add the supplied Ideal Standard promotional banner as a homepage slideshow test slide; build a left category rail and right promotional carousel layout, then verify desktop/mobile and save a checkpoint.
+
+- [x] Replace the homepage opening with the supplied reference structure: remove the hero/promo copy panel, use a full clickable promotional banner on the right, add a Joan-red category rail on the left, and show click-open subcategory flyouts for every category.
+- [x] Round the homepage category rail and promotional slideshow containers to match the requested visual treatment.
+- [x] Replace hover-only category opening with accessible click-to-open controls and repair all category, subgroup, and child-subcategory links.
+- [x] Correct homepage subgroup links to the catalogue's canonical `?path=` route format and verify that first-level subcategory navigation no longer returns 404.
+- [x] Add automatic seven-second promotional rotation and a reduced-motion-safe transition effect when homepage slides change.
+- [x] Remove the homepage service-information strip below the promotional banner as requested.
+- [x] Add two rounded homepage CTA buttons below the promotional slideshow: brochure and promotional products.
+- [x] Reduce the homepage slideshow height and align the category menu bottom with the two CTA buttons below it.
+- [x] Increase the homepage slideshow height again while keeping the CTA buttons in the same position and reducing their visual size.
+- [x] Rewrite the About company description in first-person voice with stronger, customer-facing copy.
+- [x] Remove the redundant “Магазинът отвътре”, store/base caption text, and visible photo caption from About.
+- [x] Update the About stock statistic from 20 000+ to 90 000+.
+- [x] Add extra vertical spacing around the “За фирма Жоан” tab heading so it does not visually merge with adjacent text.
+
+# Contact page refinements
+- [x] Remove LOC-01 and the 01/02/03 decorative markers from the Contact page.
+- [x] Shorten the enquiry helper text to say the Joan team receives it directly.
+- [x] Restrict the phone field to digits and an optional leading plus sign.
+- [x] Block empty contact-form submissions and show the message „Не е попълнен формулярът.“.
+
+# FAQ copy refinement
+- [x] Rewrite the 14-day withdrawal answer in direct first-person wording: „Имате 14 дни… Вижте нашите условия…“.
+
+# Returns page refinements
+- [x] Rewrite the 14-day withdrawal conditions in first-person wording.
+- [x] Make „Посетете магазина“ open the store location directly in Google Maps.
+
+# Delivery page refinements
+- [x] Rewrite the Delivery intro, heading and all delivery boxes in direct first-person wording.
+- [x] Remove the visible 01/02/03 decorative numbers from the delivery boxes and their unused CSS.
+- [x] Remove „Жоан посочва“ and third-person references from the delivery copy and metadata.
+
+# Favorites page refinements
+- [x] Remove the LIST—00 label from the empty favorites panel.
+- [x] Remove the decorative square grid from the gray favorites panel.
+
+# Checkout address refinements
+- [x] Remove the decorative 01/02 checkout step labels.
+- [x] Restrict the checkout phone field to digits only.
+- [x] Add dependent offline selectors for all 28 Bulgarian regions and 5,351 cities/villages.
+- [x] Populate the postal code automatically from the selected settlement and persist the selected region with the atomic order request.
+- [x] Apply the nullable database migration for legacy order compatibility and show the region in the admin order card.
+
+# Header utility navigation refinement
+- [x] Replace the separate „Доставка“ utility button with „Експресна доставка“ linked to the Delivery page.
+- [x] Add „Магазин“ / “Store” linked directly to the Joan Google Maps location.
+- [x] Keep the revised utility navigation usable on mobile and desktop.
+
+# Footer redesign
+- [x] Reordered the footer into the requested three columns: „За клиенти“, „Жоан“ and „Обща информация“.
+- [x] Added the requested links for terms, FAQ, delivery and payment, returns, personal data, about, contact, careers, brochure and cookies.
+- [x] Removed the footer descriptions „Подредени категории за ремонт, дом, градина и професионална работа.“ and „Онлайн каталог с потвърждение на наличност и доставка от екипа на Жоан.“.
+- [x] Changed the footer to a light background with dark, readable text and responsive mobile stacking.
+- [x] Preserved phone, email, Google Maps, Facebook, Instagram and TikTok access in a compact contact row.
+
+# Back-to-top and cookie banner refinement
+- [x] Make „Към началото“ a rounded pill button and move it closer to the right edge on desktop and mobile so it covers less content.
+- [x] Remove the persistent „Поверителност“ floating button; after accepting or rejecting the initial cookie choice, the consent window disappears completely.
+- [x] Verify the final behavior visually and in-browser: BackToTop computed styles are fixed, right-aligned and `border-radius: 999px`; no persistent privacy trigger or consent dialog remains after consent.
+
+# Footer color and layout rollback
+- [x] Restore the previous dark Joan footer color treatment with white/light text.
+- [x] Restore the previous footer layout with the Joan logo, phone number, email, clickable Google Maps address, and social network icons grouped with the contact details.
+- [x] Restore the previous category and customer-information footer link columns and the original bottom footer copy.
+- [x] Validate desktop/mobile presentation, 175 Vitest tests, TypeScript, production client+SSR build, and git diff --check.
+
+# Back-to-top right alignment refinement
+- [x] Move „Към началото“ to a fixed bottom-right position with explicit `left: auto`, 20px desktop right inset and 12px mobile right inset, so it no longer appears centered over product cards.
+- [x] Verify computed browser position after scrolling: `position: fixed`, `right: 20px`, `left: auto`, `bottom: 76px`.
+
+# Footer three-column refinement
+- [x] Keep the Joan logo, phone, email, Google Maps address, and social icons in their existing left-side brand/contact block.
+- [x] Replace the former category and customer-information columns with the requested three information columns: For customers, Joan, and General information.
+- [x] Remove the two unwanted descriptive copy lines from the visible footer content.
+- [x] Make the new column links white and the column headings bold, with responsive desktop/mobile layout.
+- [x] Validate 175 Vitest tests, TypeScript, production client+SSR build, git diff --check, and desktop/mobile screenshots.
+
+# Footer visual edit verification
+- [x] Reviewed the deterministic footer edits.
+- [x] Replaced invalid `paddingBottom: "px"` with `0px` and merged duplicate style attributes into valid JSX style objects.
+- [x] Preserved the requested white footer text, bold column headings, white map/icon treatment, and footer layout.
+- [x] Verified desktop/mobile screenshots, 175 Vitest tests, TypeScript, production client+SSR build, and git diff --check.
+
+# Footer careers link removal
+- [x] Removed the „Кариери“ / “Careers” link from the Joan footer column without changing the other footer content.
+- [x] Added regression coverage; 175 tests, TypeScript, production build, and git diff --check passed.
+
+# Checkout address autocomplete refinement
+- [x] Replaced the region and city/village selects with square searchable combobox inputs; typing filters Bulgarian options by prefix, such as „В“ and „Бе“.
+- [x] Removed the „Изберете област“ and similar select options; the user now chooses from the filtered suggestions.
+- [x] Kept automatic postcode filling after a settlement selection while allowing the postcode to be manually edited and limited to four digits.
+- [x] Verified desktop/mobile presentation and interactive filtering/editing; 175 Vitest tests, TypeScript, production client+SSR build, and git diff --check passed.
+
+# Header masthead simplification
+- [x] Removed the entire secondary header bar containing Начало, За нас, Контакти and ЧЗВ.
+- [x] Moved the three-line category button into the masthead, between the logo and search field; on mobile it opens the category drawer.
+- [x] Shifted the logo slightly left and adjusted desktop/tablet/mobile grid spacing.
+- [x] Kept the mega category menu and nested routes functional; click testing confirmed the menu opens and shows category/subcategory links.
+- [x] Verified desktop/mobile screenshots, 175 Vitest tests, TypeScript, production client+SSR build, and git diff --check.
+
+# Product image presentation refinement
+- [x] Remove the decorative square/grid background from all product-card image areas and product detail galleries.
+- [x] Use a clean white image surface throughout the catalogue and product detail views.
+- [x] Preserve the complete source image with centered `object-fit: contain` sizing instead of cropping.
+- [x] Verify catalogue desktop, homepage desktop, and product-detail visual states; 50 Vitest files / 176 tests, TypeScript, production client+SSR build, and git diff --check passed.
+
+# Catalogue-wide product image background refinement
+- [x] Apply a high-specificity global override so `/products`, category listings, related-product cards, homepage product shelves, and detail galleries all use a clean white image surface.
+- [x] Disable every catalogue image-area `background-image` grid with `!important`, including the workbench-specific and related-section rules that previously overrode the first fix.
+- [x] Keep complete-image rendering with `object-fit: contain` for catalogue, related, and detail product images.
+- [x] Verify `/products` at desktop and mobile sizes; 50 Vitest files / 176 tests, TypeScript, production client+SSR build, and `git diff --check` passed.
+
+# По-спокойни цветове на категорийни снимки
+- [x] Намалена е наситеността само за Инструменти, Градина, Баня, В и К, Бои/Лакове/Мазилки и Работно облекло, без потъмняване или преминаване към черно-бяло.
+- [x] За дома, Осветление и ел. материали, Подови и стенни покрития, Врати/Обков/Крепежи и Строителство са оставени непроменени; продуктовите снимки, логото, цени, SKU и други продуктови данни не са променяни.
+- [x] Реалните CSS филтри на всичките 11 категории са проверени в браузъра; изпълнен е desktop/mobile визуален преглед. Преминаха 51 Vitest файла / 178 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Нови естествени категорийни снимки и четливи надписи
+- [x] Генерирани са пет нови различни снимки с естествена мека светлина и умерени цветове за Инструменти, Баня, В и К, Бои/Лакове/Мазилки и Работно облекло. Новите изображения не наследяват старите усилващи цветови филтри.
+- [x] Петте снимки са компресирани до 1200 × 675 JPEG, качени в managed storage и записани само в imageUrl за точно тези пет категории. Синхронизирани са съответните fallback изображения в storeData.ts. Градина и петте предварително одобрени категории не са подменяни.
+- [x] На всички 11 категории е добавен дискретен тъмен полупрозрачен панел със заобляне и сянка зад заглавието и описанието; текстът е бял. Продуктовите изображения, данни, цени, SKU и навигация не са променяни.
+- [x] Проверени са реалните image URLs, липсата на цветови усилване при новите снимки и белият текст върху тъмния панел на всички категории. Изпълнени са desktop/mobile визуални проверки; преминаха 51 Vitest файла / 180 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Спокойна палитра в началото на началната страница
+- [x] Премахнат е inline яркочервеният фон на категорийното меню; заменен е със светъл каменен тон, четлив графитен текст, приглушени виненочервени икони и тънък цветен акцент. Избраната категория получава дискретен неутрален фон вместо ярко червено поле.
+- [x] „Разгледайте брошурата“ е графитен с бял текст и мек сив hover. Размерите, заоблянето, позицията и подравняването на бутоните и slideshow-а са запазени. Логото, останалите фирмени цветове и продуктовите данни не са променяни.
+- [x] Добавени са проверки за новата палитра, AA контраст на текста, keyboard focus и запазени target-и на CTA действията. Проверени са desktop (1280px) и mobile (375px) изгледите. Преминаха 52 Vitest файла / 184 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Единен стил за двата бутона под slideshow-а
+- [x] „Разгледайте брошурата“ остава плътен графитен бутон с бял текст; иконата вече наследява същия бял цвят.
+- [x] „Продукти на промоция“ е със светъл каменен фон, графитен текст и сивографитен контур вместо червен. Двата CTA бутона споделят шрифт, размери, заобляне, сянка и focus оформление, но запазват визуална йерархия чрез плътен/контурен вариант. Hover на втория бутон е неутрален, не яркочервен.
+- [x] Одобреното категорийно меню, подредбата, линковете, снимките и продуктовите данни са непроменени. Проверени са desktop (1280px) и mobile (375px) изгледите; преминаха 52 Vitest файла / 185 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Скриване на броя категории в началното меню
+- [x] Премахнат е числовият индикатор „11“ от заглавието „Категории“ на началната страница. Самите 11 категории, менюто, иконите, подкатегориите и навигационните действия са запазени.
+- [x] Добавена е regression проверка, че броят не се визуализира. Проверено е на desktop и mobile; преминаха 52 Vitest файла / 185 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Собствени клиентски профили, Google вход и потребители/роли
+- [x] Добавяне на customer/operator/admin и персонализирани роли с избираеми права, backend permission checks и журнал на измененията.
+- [x] Секция „Потребители и роли“ за търсене на клиентски профили, назначаване на роли и редакция на персонализирани роли.
+- [x] Ограничени менюта, маршрутни проверки и read/write действия в административния панел; запазване на сегашния Manus администраторски достъп при прехода.
+- [x] Собствена публична регистрация и Google OpenID Connect вход; новите профили винаги са customer, без автоматично даване на административни права по имейл.
+- [x] Проверена schema миграция, regression тестове и визуален QA. Google live login изисква предоставени OAuth Client ID/Secret и разрешен callback URL; липсващи настройки не се заместват с фиктивни credentials.
+
+- [x] Отстранени са откритите при browser QA mobile overflow и SSR lazy/Suspense recoverable error на admin entry routes. Хедърът използва lean identity за „Профил“ след собствен вход. Privacy страницата отразява регистрацията, Google идентификаторите и служебните роли.
+- [x] Преминаха 58 Vitest файла / 220 теста, TypeScript, production client+SSR build и git diff --check. Изолираният browser QA с mock API потвърди създаване на custom роля, назначаване, операторски allowlist, пренасочване, отказ на забранен URL, read-only контролите и 375px mobile layout без page errors. Реалните анонимни admin заявки връщат 403. Тестови профили/поръчки не са записвани в production базата.
+- [x] Целевият production crawler SSR verifier премина за home, catalogue page 1, profile loading shell, privacy, admin entry routes, index redirect и реални 404. Документирани са употребата на роли, собственият admin преход и Google настройването в docs/users-roles.md и docs/google-login-setup.md.
+- [deferred] Активиране и live проверка на Google OAuth след предоставяне на GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET и разрешен callback; към момента configured=false и бутонът е явно неактивен.
+- [deferred] IP allowlist след предоставяне на точните разрешени IP адреси и проверка на доверения reverse proxy, без риск от admin lockout.
+- [deferred] Отделен SEO follow-up: съществуващият SSR canonical на /products?page=2 сочи към /products. Не е променян в задачата за роли и вход.
+
+# Заявки: detail страница и история на статусите
+- [x] Добавен е отделен защитен URL `/admin/requests/:id`; списъкът „Заявки“ вече води към него. Detail страницата показва всички артикули със снимка, име, SKU, количество, единична/обща цена и snapshot на наличните технически параметри. Legacy заявки без child артикули остават четими чрез съвместим fallback.
+- [x] Добавена е таблица `order_status_history` за неизтриваеми events. Всяко записване създава нов запис със статус, дата/час, автоматичен автор и коментар; предишните коментари не се променят и се показват в обратен хронологичен ред на всички роли с `orders.read`.
+- [x] Съществуващите `adminNote` стойности и статуси са мигрирани като първи history записи с автор „Система · миграция“, а параметрите на артикулите са backfill-нати в snapshot поле. Новата migration е приложена безопасно към базата.
+- [x] Преминаха 60 Vitest файла / 228 теста, TypeScript, production client+SSR build и git diff check. Изолираният browser QA с mock API потвърди операторско отваряне на заявка, всички артикули/параметри, append-only status comment, desktop/mobile layout и read-only роля без право за промяна; не са записвани тестови записи в реалната база.
+
+# Каталожен филтър „Промоция“
+- [x] Добавен е сървърен филтър за активни промоционални продукти: по-висока стара цена или непразен промоционален етикет. Прилага се преди count, пагинация и manufacturer facets и се комбинира с категория/подкатегория, производител, наличност, търсене и цена. Няма промени в продуктови данни, цени или SKU.
+- [x] Добавен е видим checkbox „Промоция“ в каталога и постоянен латински URL `/products?promotion=1`. Началният бутон „Продукти на промоция“ води към пълния каталог с активен филтър, вместо към кратката начална секция. Филтърът се запазва при презареждане и се премахва чрез checkbox или „Изчисти филтрите“.
+- [x] Поправено е преждевременното връщане към страница 1 при зареждане на друга страница. SSR prefetch и клиентският Wouter search snapshot са синхронизирани, така че началният филтър и HTML да не причиняват hydration mismatch.
+- [x] Реалният read-only QA обход потвърди 71 уникални промоционални артикула на 2 страници от общо 7 011 активни артикула; всички покриват промоционалния критерий и изчерпаните остават последни. Проверени са комбинирани филтри и празен резултат без тестови записи в базата.
+- [x] Browser QA потвърди началния CTA, втората страница, запазване след reload, включване/изключване, clear filters и mobile без horizontal overflow; няма page/hydration errors. Production SSR render потвърди 48 филтрирани карти на първата страница, правилно заглавие и canonical. Преминаха 62 Vitest файла / 240 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Админ: въвеждане на артикули
+- [x] Преработена е формата за продукт с ясни основни полета: име, вътрешен код, категория от падащ списък, цена, наличност и количество.
+- [x] Наличността и количеството са означени като ERP-готови полета; до интеграцията остават достъпни за текуща оперативна поддръжка.
+- [x] Описанието е отделено, а техническите данни вече се въвеждат в таблица „Параметър / Стойност“ с добавяне и премахване на редове.
+- [x] Добавено е качване на до 10 JPG/PNG/WEBP снимки наведнъж, до 10 MB всяка, с автоматична галерия, preview, основна снимка и премахване на отделна снимка.
+- [x] Добавени са ясни проверки за липсваща снимка, непълен технически ред и неподдържан/прекалено голям файл.
+- [x] QA: 63 Vitest файла / 244 теста, TypeScript, production client+SSR build, diff check и desktop/mobile visual checks преминаха.
+
+# Поправка: категории и качване на снимки в admin product editor
+- [x] Добавен е отделен защитен `productCategories` query: оператор с `products.write` вече може да зарежда категориите за dropdown-а, без да има отделно меню „Категории“.
+- [x] Формата вече не се блокира само заради липсващо `categories.read`, ако има налични категории и потребителят има `products.write`.
+- [x] Product create/update/image upload използват authenticated staff identity за audit/storage действията.
+- [x] При upload се показва конкретната server причина вместо общото съобщение „Качването прекъсна“.
+- [x] Regression suite: 63 тестови файла / 246 теста, TypeScript, production build и diff check преминаха. Реален browser upload не е извършван, защото текущата Sandbox browser сесия е без администраторски вход.
+
+# About статистика
+- [x] Показателят за поддържаните артикули е променен от 90 000+ на 50 000+; About regression тестът е синхронизиран.
+
+# Поправка: „Невалиден източник на административната заявка“
+- [x] Origin защитата вече разпознава host, x-forwarded-host, x-original-host и стандартен Forwarded header при reverse proxy.
+- [x] Чуждите Origin адреси продължават да се отхвърлят; добавен е regression тест за валиден proxy host и невалиден чужд host.
+- [x] Пълна проверка: 63 Vitest файла / 247 теста, TypeScript, production client+SSR build и diff check преминаха.
 
 # Поправка: upload квадратът не отваряше file picker
 - [x] Product editor fieldset-ът вече се блокира само при липса на `products.write`; липсващите категории не блокират избора на снимки.
@@ -13,3 +624,16 @@
 - [x] Browser QA: 3/3 сценария за admin, служител с products.read/write без categories.read и read-only, забавени категории, multi-upload, частичен неуспех/повторен upload, валидно/невалидно записване и 1280/375 px без хоризонтално излизане или browser runtime грешки.
 - [x] Реален storage smoke: качени PNG bytes, проверено byte-level връщане; през appRouter с точния съществуващ администратор са проверени отказ на кратко описание без insert, качване на две снимки, запис и update на един непубликуван QA артикул. Точно този артикул и неговите create/update audit записи са премахнати в finally; съществуващи продукти не са редактирани.
 - [x] Преминаха 65 Vitest файла / 258 теста, TypeScript, production client+SSR build и git diff --check. Вътрешни QA сценарии и резултати: /home/ubuntu/joan-role-qa/product-editor.mjs и storage-smoke.ts.
+
+# Видимост на нови артикули и зависими подкатегории
+- [x] Поправка на двата нови артикула test/test123: записани към неактивен legacy запис „Плочки“ (id 60032), без подкатегорийни връзки; свързани са с активна публична главна категория и правилната подкатегорийна връзка, без промяна на други продуктови данни.
+- [x] Отделен root-only списък „Категория“ и зависими падащи списъци за подкатегории на всички нива.
+- [x] Транзакционен запис на артикула и неговите подкатегорийни връзки; отказ при неактивна или несъвместима категория.
+- [x] След запис: видимо потвърждение с име/код и бутон към реалния продукт; инвалидиране на пагинирания каталог и търсене и по вътрешен код.
+- [x] Реален тест на видимостта в /products, търсене, главна категория, подкатегория и продуктовия URL; regression, browser, TypeScript и build проверки.
+- [x] Проверени са двата оригинални продукта test/test123 и търсенето по код 1235123. Поправени са само categoryId и подкатегорийните връзки; снимки, цени, имена, кодове, наличности и описания са непроменени. Предварителен snapshot и repair audit са налични.
+- [x] Реалният API smoke потвърди отказ на неактивна главна категория без insert, валидно създаване, публичен URL, търсене по име и код, всички родителски/листни категории, липса на изтичане към съседна категория, no-op edit без загуба на връзки и преместване към друга подкатегория. Единственият временен QA артикул и неговите връзки/преводи/audit записи са премахнати в finally.
+- [x] Browser QA: 3/3 сценария, native chooser, закъснели категории без загуба на данни, последваща редакция вместо дублирано създаване, read-only guard, desktop 1280 px и mobile 375 px без overflow или runtime errors. Преминаха 67 Vitest файла / 267 теста, TypeScript, production client+SSR build и git diff --check.
+
+# Възстановена проследимост
+- [x] Възстановена е пълната todo история от последната непокътната версия 18fcb74 и всички последващи записи; дублираните секции използват най-новия запис. Продуктовите файлове и отложените външни интеграции не са променяни от тази операция.
