@@ -119,7 +119,7 @@ describe("homepage SEO audit regressions", () => {
       "utf8"
     );
     expect(aboutSource).toContain("Ние развиваме своя асортимент");
-    expect(aboutSource).toContain("90 000+");
+    expect(aboutSource).toContain("50 000+");
     expect(aboutSource).not.toContain("Магазинът отвътре");
     expect(aboutSource).not.toContain("Кадър от магазина и базата");
     expect(aboutSource).not.toContain("<figcaption>");

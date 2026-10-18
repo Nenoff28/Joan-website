@@ -161,7 +161,7 @@ export default function About() {
             </div>
             <div>
               <PackageCheck />
-              <strong>90 000+</strong>
+              <strong>50 000+</strong>
               <span>
                 {en
                   ? "items maintained in stock"
