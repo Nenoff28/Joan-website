@@ -63,7 +63,7 @@ describe("granular administrator UI permission contract", () => {
       /enabled:\s*canReadCategories\s*\|\|\s*canWriteProducts/
     );
     expect(adminPage).toContain(
-      "trpc.admin.products.useQuery(undefined, { enabled: canReadProducts && catalogueReady })"
+      "trpc.admin.products.useQuery(showArchived ? { includeArchived: true } : undefined, { enabled: canReadProducts && catalogueReady })"
     );
     expect(adminPage).toContain(
       "trpc.admin.operations.useQuery(undefined, { enabled: canReadInventory })"

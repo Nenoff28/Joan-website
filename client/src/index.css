@@ -831,3 +831,17 @@ a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !im
 /* Native select options must not impose their intrinsic text width on the mobile form. */
 .admin-form-grid > label { min-width: 0; }
 .admin-form-grid select { width: 100%; min-width: 0; max-width: 100%; }
+
+/* Reversible product removal actions, distinct from cancelling an edit. */
+.admin-product-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.admin-product-remove { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; padding: .5rem .7rem; border: 1px solid #b45a5a; border-radius: 6px; color: #923a3a; background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; }
+.admin-product-remove:hover:not(:disabled) { background: #fff1f1; }
+.admin-product-remove:disabled { opacity: .5; cursor: not-allowed; }
+.admin-product-archived-label { color: #923a3a; font-weight: 700; }
+.admin-product-confirmation { background: #fff; color: #242a2d; padding: 24px; border: 1px solid #d8dbd9; border-radius: 12px; box-shadow: 0 20px 70px #0003; }
+.admin-product-confirmation [data-slot="alert-dialog-title"] { margin: 0; font-size: 1.25rem; line-height: 1.35; font-weight: 750; letter-spacing: -.015em; }
+.admin-product-confirmation [data-slot="alert-dialog-description"] { color: #535e59; font-size: .875rem; line-height: 1.6; }
+.admin-product-confirmation p + p { margin-top: .7rem; }
+.admin-product-confirmation button { min-height: 42px; padding: .65rem 1rem; border: 1px solid #303739; border-radius: 7px; background: #303739; color: #fff; font-size: .875rem; font-weight: 700; cursor: pointer; }
+.admin-product-confirmation button:first-child { border-color: #ced3d0; background: #f4f5f3; color: #303739; }
+.admin-product-confirmation button:disabled { opacity: .5; cursor: wait; }

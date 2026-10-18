@@ -494,11 +494,11 @@ export async function getAdminBrochures() {
   return rows.map(publicBrochure);
 }
 
-export async function getAdminProducts() {
+export async function getAdminProducts(options?: { includeArchived?: boolean }) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [rows, taxonomyRows] = await Promise.all([
-    db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).orderBy(desc(catalogueProducts.updatedAt)),
+    db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(options?.includeArchived ? undefined : eq(catalogueProducts.isArchived, false)).orderBy(desc(catalogueProducts.updatedAt)),
     db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId)),
   ]);
   const linksByProduct = new Map<number, Array<{ categoryId: number; position: number | null }>>();
@@ -509,7 +509,7 @@ export async function getAdminProducts() {
   const taxonomy = taxonomyRows as ProductCategoryTreeRow[];
   return rows.map((row) => {
     const path = canonicalSelectedSubcategoryPath(taxonomy, categoryRootsByPublicSlug[row.category.slug] ?? [], linksByProduct.get(row.product.id) ?? []);
-    return { ...publicProduct(row.product, row.category), seoTitle: row.product.legacyMetaTitleBg ?? "", seoDescription: row.product.legacyMetaDescriptionBg ?? "", seoKeywords: row.product.legacySeoKeywordBg ?? "", seoRobots: row.product.legacyMetaRobots === "noindex,follow" ? "noindex,follow" as const : "index,follow" as const, categoryId: row.product.categoryId, subcategoryIds: path.map((item) => item.id), subcategoryPath: categoryPathNodes(path), categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt };
+    return { ...publicProduct(row.product, row.category), isArchived: row.product.isArchived, seoTitle: row.product.legacyMetaTitleBg ?? "", seoDescription: row.product.legacyMetaDescriptionBg ?? "", seoKeywords: row.product.legacySeoKeywordBg ?? "", seoRobots: row.product.legacyMetaRobots === "noindex,follow" ? "noindex,follow" as const : "index,follow" as const, categoryId: row.product.categoryId, subcategoryIds: path.map((item) => item.id), subcategoryPath: categoryPathNodes(path), categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt };
   });
 }
 
@@ -725,8 +725,9 @@ export async function createAdminProduct(payload: ProductPayload, adminUserId: n
 export async function updateAdminProduct(id: number, payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
   return db.transaction(async (tx) => {
-    const [existing] = await tx.select({ id: catalogueProducts.id, slug: catalogueProducts.slug, categoryId: catalogueProducts.categoryId }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1).for("update");
+    const [existing] = await tx.select({ id: catalogueProducts.id, slug: catalogueProducts.slug, categoryId: catalogueProducts.categoryId, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1).for("update");
     if (!existing) throw new Error("Продуктът не е намерен.");
+    if (existing.isArchived) throw new Error("Артикулът е архивиран. Възстановете го първо, преди да го редактирате или публикувате.");
     if (existing.slug !== payload.slug) throw new Error("URL адресът на публикуван продукт не се променя, за да се запазят SEO адресите и външните връзки.");
     const { path } = await validateProductCategorySelection(tx, payload.categoryId, payload.subcategoryIds);
     await assertAdminProductSlugAvailableWithDb(tx, payload.slug, id);
@@ -735,6 +736,18 @@ export async function updateAdminProduct(id: number, payload: ProductPayload, ad
     }).where(eq(catalogueProducts.id, id));
     if (payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId) await replaceProductSubcategoryLinks(tx, id, path);
     await insertProductAdminActivity(tx, adminUserId, "product.updated", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, ...(payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId ? { subcategoryIds: path.map((row) => row.id) } : {}) });
+  });
+}
+
+export async function setAdminProductArchived(id: number, archived: boolean, actorId: number) {
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const [product] = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, slug: catalogueProducts.slug, sku: catalogueProducts.sku, isArchived: catalogueProducts.isArchived, isActive: catalogueProducts.isActive }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1).for("update");
+    if (!product) throw new Error("Продуктът не е намерен.");
+    if (product.isArchived === archived) return { id, isArchived: product.isArchived, isActive: product.isActive };
+    await tx.update(catalogueProducts).set({ isArchived: archived, isActive: false }).where(eq(catalogueProducts.id, id));
+    await insertProductAdminActivity(tx, actorId, archived ? "product.archived" : "product.restored", id, { name: product.name, slug: product.slug, sku: product.sku ?? null });
+    return { id, isArchived: archived, isActive: false };
   });
 }
 

@@ -120,6 +120,13 @@
       "when": 1792242137177,
       "tag": "0016_shocking_gravity",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1792313745566,
+      "tag": "0017_funny_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import AdminUsersRoles from "@/components/AdminUsersRoles";
 import { trpc } from "@/lib/trpc";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
 import { canVisitAdminSection, firstAdminPath, hasPermission, type Permission } from "@shared/permissions";
 import { productPayloadSchema, productFieldErrors, readableProductError } from "@shared/productValidation";
@@ -32,6 +33,7 @@ import {
   Tags,
   Trash2,
   UsersRound,
+  X,
 } from "lucide-react";
 import {
   GlobalWorkerOptions,
@@ -737,11 +739,14 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
   const canReadProducts = can(permissions, "products.read");
   const canWriteProducts = can(permissions, "products.write");
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<{ id: number; name: string; sku?: string | null; archived: boolean } | null>(null);
+  const [archiveError, setArchiveError] = useState("");
   const canReadCategories = can(permissions, "categories.read");
   // Fetch the small category list BEFORE batching the large catalogue queries.
   const categoriesQuery = trpc.admin.productCategories.useQuery(undefined, { enabled: canReadCategories || canWriteProducts, staleTime: 600_000, refetchOnWindowFocus: false });
   const catalogueReady = !canWriteProducts || Boolean(categoriesQuery.data);
-  const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadProducts && catalogueReady });
+  const productsQuery = trpc.admin.products.useQuery(showArchived ? { includeArchived: true } : undefined, { enabled: canReadProducts && catalogueReady });
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts && catalogueReady });
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -783,6 +788,20 @@ function AdminProducts({ permissions }: AdminPageProps) {
     onError: error => { const message = readableProductError(error); setFormErrors({ form: message }); toast.error(message); },
   });
   const [form, setForm] = useState<ProductForm>(() => emptyProductForm(0));
+  const archiveProduct = trpc.admin.setProductArchived.useMutation({
+    onSuccess: async (_result, input) => {
+      if (form.id === input.id) startNewProduct();
+      setArchiveTarget(null);
+      setArchiveError("");
+      await utils.admin.summary.invalidate();
+      await onSaved(input.archived ? "Артикулът е премахнат от сайта. Данните и поръчките са запазени." : "Артикулът е възстановен като непубликуван. Можете да го редактирате и публикувате.");
+    },
+    onError: error => setArchiveError(readableProductError(error)),
+  });
+  function requestArchive(product: { id: number; name: string; sku?: string | null }, archived: boolean) {
+    setArchiveError("");
+    setArchiveTarget({ id: product.id, name: product.name, sku: product.sku, archived });
+  }
   const [search, setSearch] = useState("");
   const [qualityOnly, setQualityOnly] = useState(false);
   const [page, setPage] = useState(1);
@@ -831,7 +850,8 @@ function AdminProducts({ permissions }: AdminPageProps) {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  const saving = createProduct.isPending || updateProduct.isPending;
+  const saving = createProduct.isPending || updateProduct.isPending || archiveProduct.isPending;
+  const editingProduct = form.id ? (productsQuery.data ?? []).find(product => product.id === form.id) ?? savedProduct : null;
   const suggestedSlug = form.name.trim() ? latinPathToken(form.name) : "";
   const galleryUrls = textLines(form.galleryText).slice(0, 10);
   const incompleteTechnicalRows = form.technicalRows.some(
@@ -1010,14 +1030,17 @@ function AdminProducts({ permissions }: AdminPageProps) {
             <h2>{form.id ? form.name || "Артикул" : "Нов артикул"}</h2>
           </div>
           {form.id && (
+            <div className="admin-product-actions">
+            {canWriteProducts && <button type="button" className="admin-product-remove" disabled={Boolean(uploadProgress) || saving} onClick={() => requestArchive({ id: form.id!, name: editingProduct?.name ?? form.name, sku: editingProduct?.sku ?? form.sku }, true)}><Trash2 size={15} /> Премахни артикула</button>}
             <button
               type="button"
               className="admin-text-action"
               disabled={Boolean(uploadProgress) || saving}
               onClick={startNewProduct}
             >
-              <Trash2 size={15} /> Откажи редакцията
+              <X size={15} /> Откажи редакцията
             </button>
+            </div>
           )}
         </div>
         <form className="admin-form" onSubmit={submit} noValidate>
@@ -1385,6 +1408,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
               <Filter size={15} /> Нужда от проверка (
               {operations.data?.qualityQueue.length ?? 0})
             </button>
+            <label className="admin-checkbox"><input type="checkbox" checked={showArchived} disabled={saving} onChange={event => { setShowArchived(event.target.checked); setPage(1); }} /> Покажи премахнатите</label>
           </div>
         </div>
         {productsQuery.isLoading ? (
@@ -1411,6 +1435,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
                           <img src={product.image} alt="" />
                           <span>
                             <b>{product.name}</b>
+                            {product.isArchived && <small className="admin-product-archived-label">Премахнат от сайта</small>}
                             <small>
                               {product.brand ?? "Без марка"}
                               {product.sku ? ` · ${product.sku}` : ""}
@@ -1440,13 +1465,19 @@ function AdminProducts({ permissions }: AdminPageProps) {
                       </td>
                       <td>
                         {canWriteProducts ? (
+                          <div className="admin-product-actions">
+                          {product.isArchived ? <button type="button" className="admin-text-action" disabled={saving || Boolean(uploadProgress)} onClick={() => requestArchive(product, false)}><History size={15} /> Възстанови</button> : <>
                           <button
                             type="button"
                             className="admin-text-action"
+                            disabled={saving || Boolean(uploadProgress)}
                             onClick={() => edit(product)}
                           >
                             Редакция <ArrowUpRight size={15} />
                           </button>
+                          <button type="button" className="admin-product-remove" disabled={saving || Boolean(uploadProgress)} onClick={() => requestArchive(product, true)} aria-label={`Премахни ${product.name}`}><Trash2 size={15} /> Премахни</button>
+                          </>}
+                          </div>
                         ) : (
                           <ReadOnlyBadge />
                         )}
@@ -1493,6 +1524,24 @@ function AdminProducts({ permissions }: AdminPageProps) {
           </>
         )}
       </section>
+      <AlertDialog open={Boolean(archiveTarget)} onOpenChange={open => { if (!open && !archiveProduct.isPending) setArchiveTarget(null); }}>
+        <AlertDialogContent className="admin-product-confirmation">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{archiveTarget?.archived ? "Премахване на артикул" : "Възстановяване на артикул"}</AlertDialogTitle>
+            <AlertDialogDescription asChild><div>
+              <p><strong>{archiveTarget?.name}</strong>{archiveTarget?.sku ? ` · Код: ${archiveTarget.sku}` : ""} · № {archiveTarget?.id}</p>
+              <p>{archiveTarget?.archived ? "Артикулът ще бъде скрит от сайта и преместен при премахнатите. Снимките, данните и историята на поръчките се запазват. Можете да го възстановите по-късно." : "Артикулът ще бъде върнат в списъка като непубликуван. След това можете да го редактирате и публикувате отново."}</p>
+            </div></AlertDialogDescription>
+          </AlertDialogHeader>
+          {archiveError && <p role="alert" className="admin-form-error">{archiveError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveProduct.isPending}>Отказ</AlertDialogCancel>
+            <AlertDialogAction disabled={archiveProduct.isPending || !canWriteProducts} onClick={event => { event.preventDefault(); if (archiveTarget && !archiveProduct.isPending) archiveProduct.mutate({ id: archiveTarget.id, archived: archiveTarget.archived }); }}>
+              {archiveProduct.isPending ? "Обработване…" : archiveTarget?.archived ? "Да, премахни" : "Да, възстанови"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
@@ -2875,6 +2924,8 @@ function ActivityLine({
   const label: Record<string, string> = {
     "product.created": "добави артикул",
     "product.updated": "обнови артикул",
+    "product.archived": "премахна артикул от сайта",
+    "product.restored": "възстанови артикул",
     "category.created": "добави категория",
     "category.updated": "обнови категория",
     "inventory.adjusted": "коригира наличност",

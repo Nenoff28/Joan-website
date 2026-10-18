@@ -26,6 +26,7 @@ const service = vi.hoisted(() => ({
   replaceAdminBrochure: vi.fn(),
   saveAdminCategory: vi.fn(),
   saveProductPromotion: vi.fn(),
+  setAdminProductArchived: vi.fn(),
   updateAdminProduct: vi.fn(),
   updateContactEnquiry: vi.fn(),
   updateOrderRequest: vi.fn(),
@@ -75,6 +76,12 @@ describe("administrator management procedures", () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.createProduct(productInput)).resolves.toBe(501);
     expect(service.createAdminProduct).toHaveBeenCalledWith(productInput, 17);
+  });
+  it("forwards product archival and the authenticated staff ID", async () => {
+    service.setAdminProductArchived.mockResolvedValueOnce(undefined);
+    const caller = appRouter.createCaller(adminContext());
+    await caller.admin.setProductArchived({ id: 501, archived: true });
+    expect(service.setAdminProductArchived).toHaveBeenCalledWith(501, true, 17);
   });
   it("allows a product writer to load the category options needed by the product editor", async () => {
     service.getAdminProductCategories.mockResolvedValueOnce([{ id: 4, label: "Инструменти" }]);

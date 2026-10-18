@@ -63,6 +63,7 @@ const fixtures = vi.hoisted(() => {
     replaceAdminBrochure: vi.fn(),
     saveAdminCategory: vi.fn(),
     saveProductPromotion: vi.fn(),
+    setAdminProductArchived: vi.fn(),
     updateAdminProduct: vi.fn(),
     updateContactEnquiry: vi.fn(),
     updateOrderRequest: vi.fn(),
@@ -319,6 +320,23 @@ describe("staff access resolution", () => {
 });
 
 describe("mapped admin tRPC permission procedures", () => {
+  it("denies both archive and restore to read-only product roles and operators", async () => {
+    for (const permissions of [["products.read"], OPERATOR_PERMISSIONS]) {
+      configureCustomerRole("limited-product-removal", permissions);
+      const caller = appRouter.createCaller(contextFor(null));
+      await expect(caller.admin.setProductArchived({ id: 501, archived: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(caller.admin.setProductArchived({ id: 501, archived: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    expect(fixtures.catalogueService.setAdminProductArchived).not.toHaveBeenCalled();
+  });
+
+  it("allows a product writer to archive with the server-resolved actor", async () => {
+    configureCustomerRole("product-writer", ["products.read", "products.write"]);
+    fixtures.catalogueService.setAdminProductArchived.mockResolvedValueOnce(undefined);
+    await appRouter.createCaller(contextFor(null)).admin.setProductArchived({ id: 501, archived: true });
+    expect(fixtures.catalogueService.setAdminProductArchived).toHaveBeenCalledWith(501, true, 41);
+  });
+
   it("allows the operator to read and update orders and enquiries, but not products or roles", async () => {
     configureCustomerRole("operator", OPERATOR_PERMISSIONS);
     fixtures.catalogueService.getAdminOrders.mockResolvedValueOnce({ kind: "orders" });

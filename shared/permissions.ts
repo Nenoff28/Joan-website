@@ -14,7 +14,7 @@ export const PERMISSION_GROUPS = [
       { key: "products.read", label: "Преглед на продукти" },
       {
         key: "products.write",
-        label: "Добавяне и редакция на продукти и снимки",
+        label: "Добавяне, редакция и премахване на продукти и снимки",
       },
     ],
   },

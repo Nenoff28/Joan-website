@@ -189,6 +189,7 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   legacyCanonicalUrl: text("legacyCanonicalUrl"),
   legacyMetaRobots: varchar("legacyMetaRobots", { length: 255 }),
   isActive: boolean("isActive").default(true).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("products_category_active_idx").on(table.categoryId, table.isActive), index("products_active_updated_idx").on(table.isActive, table.updatedAt)]);
