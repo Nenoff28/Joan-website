@@ -55,6 +55,7 @@ import { Link, useLocation } from "wouter";
 type Availability = "in_stock" | "on_request" | "out_of_stock";
 type OrderStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
 type ContactEnquiryStatus = "new" | "contacted" | "closed";
+type TechnicalRow = { label: string; value: string };
 type ProductForm = {
   id?: number;
   categoryId: number;
@@ -76,7 +77,7 @@ type ProductForm = {
   discountLabel: string;
   availability: Availability;
   stockQuantity: string;
-  featuresText: string;
+  technicalRows: TechnicalRow[];
   isActive: boolean;
 };
 type CategoryForm = {
@@ -189,6 +190,13 @@ const textLines = (value: string) =>
     .split("\n")
     .map(item => item.trim())
     .filter(Boolean);
+const parseTechnicalRows = (features: string[]): TechnicalRow[] => {
+  const rows = features.map(feature => {
+    const match = feature.match(/^\s*(.+?)\s*(?:[-–—:]\s+|\s{2,})(.+?)\s*$/);
+    return match ? { label: match[1].trim(), value: match[2].trim() } : { label: feature.trim(), value: "" };
+  });
+  return rows.length ? rows : [{ label: "", value: "" }];
+};
 const categoryTreeText = (
   nodes: CategoryNode[],
   trail: string[] = []
@@ -786,8 +794,20 @@ function AdminProducts({ permissions }: AdminPageProps) {
   );
   const saving = createProduct.isPending || updateProduct.isPending;
   const suggestedSlug = form.name.trim() ? latinPathToken(form.name) : "";
+  const galleryUrls = textLines(form.galleryText).slice(0, 10);
+  const incompleteTechnicalRows = form.technicalRows.some(
+    row => Boolean(row.label.trim()) !== Boolean(row.value.trim())
+  );
   function update<K extends keyof ProductForm>(key: K, value: ProductForm[K]) {
     setForm(current => ({ ...current, [key]: value }));
+  }
+  function updateTechnicalRow(index: number, key: keyof TechnicalRow, value: string) {
+    update("technicalRows", form.technicalRows.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row));
+  }
+  function removeGalleryImage(url: string) {
+    const nextGallery = galleryUrls.filter(item => item !== url);
+    update("galleryText", nextGallery.join("\n"));
+    update("imageUrl", nextGallery[0] ?? "");
   }
   function edit(product: AdminProduct) {
     setForm({
@@ -811,7 +831,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
       discountLabel: product.discount ?? "",
       availability: product.availabilityCode ?? "on_request",
       stockQuantity: String(product.stockQuantity ?? 0),
-      featuresText: product.features.join("\n"),
+      technicalRows: parseTechnicalRows(product.features),
       isActive: product.isActive,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -819,6 +839,14 @@ function AdminProducts({ permissions }: AdminPageProps) {
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!canEditProductForm) return;
+    if (!galleryUrls.length) {
+      toast.error("Добавете поне една снимка на артикула.");
+      return;
+    }
+    if (incompleteTechnicalRows) {
+      toast.error("Попълнете и параметър, и стойност за всеки технически ред.");
+      return;
+    }
     const payload = {
       categoryId: form.categoryId,
       slug: form.slug.trim(),
@@ -830,44 +858,52 @@ function AdminProducts({ permissions }: AdminPageProps) {
       brand: form.brand.trim() || null,
       name: form.name.trim(),
       description: form.description.trim(),
-      imageUrl: form.imageUrl.trim(),
-      gallery: textLines(form.galleryText),
+      imageUrl: galleryUrls[0] ?? form.imageUrl.trim(),
+      gallery: galleryUrls,
       imageAlt: form.imageAlt.trim(),
       priceEur: numericOrNull(form.priceEur),
       oldPriceEur: numericOrNull(form.oldPriceEur),
       discountLabel: form.discountLabel.trim() || null,
       availability: form.availability,
       stockQuantity: Math.max(0, Number(form.stockQuantity) || 0),
-      features: textLines(form.featuresText),
+      features: form.technicalRows.filter(row => row.label.trim() && row.value.trim()).map(row => `${row.label.trim()} — ${row.value.trim()}`),
       isActive: form.isActive,
     };
     if (form.id) updateProduct.mutate({ id: form.id, product: payload });
     else createProduct.mutate(payload);
   }
-  function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file || !canWriteProducts) return;
-    if (
-      !/^image\/(jpeg|png|webp)$/.test(file.type) ||
-      file.size > 4 * 1024 * 1024
-    ) {
-      toast("Изберете JPG, PNG или WEBP изображение до 4 MB.");
+  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length || !canWriteProducts) return;
+    if (files.length > 10) {
+      toast.error("Можете да качите най-много 10 снимки наведнъж.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () =>
-      uploadImage.mutate(
-        { dataUrl: String(reader.result), fileName: file.name },
-        {
-          onSuccess: stored => {
-            update("imageUrl", stored.url);
-            if (!form.galleryText.trim()) update("galleryText", stored.url);
-            toast("Снимката е качена.");
-          },
-          onError: () => toast("Снимката не можа да бъде качена."),
-        }
-      );
-    reader.readAsDataURL(file);
+    const accepted = files.filter(file => /^image\/(jpeg|png|webp)$/.test(file.type) && file.size <= 10 * 1024 * 1024);
+    if (accepted.length !== files.length) {
+      toast.error("Използвайте само JPG, PNG или WEBP снимки до 10 MB всяка.");
+      return;
+    }
+    try {
+      const stored = [] as Array<{ url: string }>;
+      for (const file of accepted) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("read"));
+          reader.readAsDataURL(file);
+        });
+        stored.push(await uploadImage.mutateAsync({ dataUrl, fileName: file.name }));
+      }
+      const gallery = [...textLines(form.galleryText), ...stored.map(item => item.url)].filter((url, index, all) => all.indexOf(url) === index).slice(0, 10);
+      update("imageUrl", gallery[0] ?? "");
+      update("galleryText", gallery.join("\n"));
+      if (!form.imageAlt.trim()) update("imageAlt", accepted[0]?.name.replace(/\.[^.]+$/, "") ?? "Продукт ЖОАН");
+      toast.success(`${stored.length} ${stored.length === 1 ? "снимка е качена" : "снимки са качени"}.`);
+    } catch {
+      toast.error("Качването прекъсна. Проверете снимките и опитайте отново.");
+    }
   }
   return (
     <section className="admin-workspace">
@@ -916,7 +952,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
           <fieldset disabled={!canEditProductForm}>
           <div className="admin-form-grid">
             <label>
-              Име на артикул
+              Име
               <input
                 required
                 value={form.name}
@@ -956,14 +992,14 @@ function AdminProducts({ permissions }: AdminPageProps) {
               />
             </label>
             <label>
-              Артикулен код
+              Вътрешен код
               <input
                 value={form.sku}
                 onChange={event => update("sku", event.target.value)}
               />
             </label>
             <label>
-              Наличност
+              Наличност <small>ERP готово поле</small>
               <select
                 value={form.availability}
                 onChange={event =>
@@ -980,7 +1016,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
               </select>
             </label>
             <label>
-              Количество
+              Количество <small>временно до ERP връзката</small>
               <input
                 type="number"
                 min="0"
@@ -1142,67 +1178,66 @@ function AdminProducts({ permissions }: AdminPageProps) {
               </label>
             </div>
           </section>
-          <label>
-            Описание
-            <textarea
-              required
-              value={form.description}
-              onChange={event => update("description", event.target.value)}
-            />
-          </label>
-          <div className="admin-form-grid">
+          <section className="admin-product-section" aria-labelledby="product-content-title">
+            <div className="admin-product-section-heading">
+              <div><p className="admin-kicker">СЪДЪРЖАНИЕ</p><h3 id="product-content-title">Описание и технически данни</h3></div>
+              <small>Видими за клиентите в продуктовата страница.</small>
+            </div>
             <label>
-              Основна снимка – URL
-              <input
-                required
-                value={form.imageUrl}
-                onChange={event => update("imageUrl", event.target.value)}
-              />
+              Описание
+              <textarea required rows={5} value={form.description} onChange={event => update("description", event.target.value)} placeholder="Опишете продукта с кратки, ясни изречения." />
             </label>
-            <label>
-              Alt текст
-              <input
-                required
-                value={form.imageAlt}
-                onChange={event => update("imageAlt", event.target.value)}
-              />
-            </label>
-          </div>
-          <div className="admin-upload-row">
-            <label className="admin-upload">
-              <ImagePlus size={17} />
-              <span>
-                {uploadImage.isPending ? "Качване..." : "Качи JPG / PNG / WEBP"}
-              </span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleImageUpload}
-                disabled={!canWriteProducts || uploadImage.isPending}
-              />
-            </label>
-            <small>
-              Изображенията се съхраняват защитено в S3. Максимален размер: 4
-              MB.
-            </small>
-          </div>
-          <div className="admin-form-grid">
-            <label>
-              Галерия – по един URL на ред
-              <textarea
-                required
-                value={form.galleryText}
-                onChange={event => update("galleryText", event.target.value)}
-              />
-            </label>
-            <label>
-              Характеристики – по една на ред
-              <textarea
-                value={form.featuresText}
-                onChange={event => update("featuresText", event.target.value)}
-              />
-            </label>
-          </div>
+            <div className="admin-technical-editor">
+              <div className="admin-technical-heading">
+                <div><b>Технически данни</b><small>Например: Височина · 190 см</small></div>
+                <button type="button" className="admin-secondary" onClick={() => update("technicalRows", [...form.technicalRows, { label: "", value: "" }])}><Plus size={15} /> Добави ред</button>
+              </div>
+              <div className="admin-technical-table" role="table" aria-label="Технически данни">
+                <div className="admin-technical-table-head" role="row"><span>Параметър</span><span>Стойност</span><span aria-hidden="true" /></div>
+                {form.technicalRows.map((row, index) => (
+                  <div className="admin-technical-row" role="row" key={`technical-row-${index}`}>
+                    <input aria-label={`Параметър ${index + 1}`} placeholder="Височина" value={row.label} onChange={event => updateTechnicalRow(index, "label", event.target.value)} />
+                    <input aria-label={`Стойност ${index + 1}`} placeholder="190 см" value={row.value} onChange={event => updateTechnicalRow(index, "value", event.target.value)} />
+                    <button type="button" className="admin-icon-action" aria-label={`Премахни ред ${index + 1}`} disabled={form.technicalRows.length === 1} onClick={() => update("technicalRows", form.technicalRows.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={15} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="admin-product-section" aria-labelledby="product-images-title">
+            <div className="admin-product-section-heading">
+              <div><p className="admin-kicker">МЕДИЯ</p><h3 id="product-images-title">Снимки на артикула</h3></div>
+              <small>{galleryUrls.length}/10 снимки · първата е основна</small>
+            </div>
+            <div className="admin-upload-row admin-upload-row-large">
+              <label className="admin-upload admin-upload-large">
+                <ImagePlus size={20} />
+                <span>{uploadImage.isPending ? "Качване на снимките..." : "Избери до 10 снимки"}<small>JPG, PNG или WEBP · до 10 MB всяка</small></span>
+                <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} disabled={!canWriteProducts || uploadImage.isPending || galleryUrls.length >= 10} />
+              </label>
+              <p>Снимките се качват наведнъж и се подреждат автоматично. Кликнете „Премахни“, ако искате да замените някоя.</p>
+            </div>
+            {galleryUrls.length ? (
+              <div className="admin-gallery-preview">
+                {galleryUrls.map((url, index) => (
+                  <figure key={url} className={index === 0 ? "is-primary" : ""}>
+                    <img src={url} alt={form.imageAlt || `Снимка ${index + 1}`} />
+                    <figcaption>{index === 0 ? "Основна снимка" : `Снимка ${index + 1}`}<button type="button" onClick={() => removeGalleryImage(url)}>Премахни</button></figcaption>
+                  </figure>
+                ))}
+              </div>
+            ) : <div className="admin-gallery-empty"><ImagePlus size={24} /><span>Още няма добавени снимки. Добавете поне една, за да запазите артикула.</span></div>}
+            <div className="admin-form-grid admin-media-meta">
+              <label>
+                Alt текст на снимките
+                <input required value={form.imageAlt} onChange={event => update("imageAlt", event.target.value)} placeholder="Например: Косачка TIMMER 450 мм" />
+              </label>
+              <label>
+                Ръчно добавяне на URL <small>по избор</small>
+                <textarea rows={3} value={form.galleryText} onChange={event => { const urls = textLines(event.target.value).slice(0, 10); update("galleryText", urls.join("\n")); update("imageUrl", urls[0] ?? ""); }} placeholder="Използвайте само ако вече имате managed URL-и, по един на ред." />
+              </label>
+            </div>
+          </section>
           <label className="admin-checkbox">
             <input
               type="checkbox"
@@ -2962,7 +2997,7 @@ function emptyProductForm(categoryId: number): ProductForm {
     discountLabel: "",
     availability: "on_request",
     stockQuantity: "0",
-    featuresText: "",
+    technicalRows: [{ label: "", value: "" }],
     isActive: true,
   };
 }

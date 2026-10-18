@@ -784,7 +784,7 @@ export async function uploadProductImage(input: { dataUrl: string; fileName: str
   if (!match) throw new Error("Only JPEG, PNG, and WEBP image uploads are supported");
   const contentType = match[1] as "image/jpeg" | "image/png" | "image/webp";
   const bytes = Buffer.from(match[2], "base64");
-  if (bytes.length === 0 || bytes.length > 4 * 1024 * 1024) throw new Error("Image files must be between 1 byte and 4 MB");
+  if (bytes.length === 0 || bytes.length > 10 * 1024 * 1024) throw new Error("Image files must be between 1 byte and 10 MB");
   assertUploadSignature(bytes, contentType);
   const extension = contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1];
   const safeName = input.fileName.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80) || "product";
