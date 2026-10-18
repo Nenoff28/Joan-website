@@ -28,15 +28,42 @@ function matchingFilterSelectors(value: string) {
 }
 
 describe("natural category photography and readable captions", () => {
-  it("disables vivid-photo boosting only for the five replacement photographs", () => {
+  it("uses distinct calm assets for home and construction without replacing other categories", () => {
+    const images = Object.fromEntries(
+      categories.map(category => [category.slug, category.image])
+    );
+    expect(images["za-doma"]).toBe(
+      "/manus-storage/joan-home-calm-20261018_cf212abf.jpg"
+    );
+    expect(images.stroitelstvo).toBe(
+      "/manus-storage/joan-construction-calm-20261018_4d80e6ca.jpg"
+    );
+    expect(images).toMatchObject({
+      instrumenti: "/manus-storage/joan-tools-natural-20261017_514b8fe3.jpg",
+      gradina: "/manus-storage/joan-garden-materials_4dda013b.jpg",
+      banya: "/manus-storage/joan-bathroom-natural-20261017_e0d5874f.jpg",
+      osvetlenie: "/manus-storage/joan-lighting-electrical_530229da.jpg",
+      "podovi-i-stenni-pokritiya":
+        "/manus-storage/joan-floor-wall-surfaces_a5ee519f.jpg",
+      "v-i-k": "/manus-storage/joan-plumbing-natural-20261017_46488f92.jpg",
+      "vrati-obkov-krepezhi":
+        "/manus-storage/joan-doors-fittings-fasteners_7b8c2d09.jpg",
+      "boi-lakove-mazilki":
+        "/manus-storage/joan-paints-natural-20261017_4567cf1a.jpg",
+      "rabotno-obleklo":
+        "/manus-storage/joan-workwear-natural-20261017_f45a7361.jpg",
+    });
+  });
+
+  it("disables vivid-photo boosting only for the seven replacement photographs", () => {
     expect(matchingFilterSelectors("none").sort()).toEqual(
-      replacementSlugs
+      [...replacementSlugs, "za-doma", "stroitelstvo"]
         .map(slug => `a.feature-category-card[href="/category/${slug}"] img`)
         .sort()
     );
   });
 
-  it("keeps the garden and the five approved photos at their previous treatment", () => {
+  it("keeps the garden and the other approved photos at their previous treatment", () => {
     expect(
       matchingFilterSelectors("saturate(.8) brightness(1.42) contrast(1.02)")
     ).toContain('a.feature-category-card[href="/category/gradina"] img');

@@ -731,7 +731,9 @@ a.feature-category-card[href="/category/instrumenti"] img,
 a.feature-category-card[href="/category/banya"] img,
 a.feature-category-card[href="/category/v-i-k"] img,
 a.feature-category-card[href="/category/boi-lakove-mazilki"] img,
-a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !important; }
+a.feature-category-card[href="/category/rabotno-obleklo"] img,
+a.feature-category-card[href="/category/za-doma"] img,
+a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !important; }
 
 /* Calm homepage entrance: warm stone navigation, graphite brochure CTA, restrained red accents. */
 .homepage-entrance { --home-menu-surface: #f7f5f2; --home-menu-ink: #303739; --home-menu-muted: #626b6e; --home-menu-accent: #955456; --home-menu-line: #dedbd6; --home-menu-selected: #eee5e3; --home-cta-surface: #303739; --home-cta-hover: #424b4e; }
