@@ -808,3 +808,13 @@ a.feature-category-card[href="/category/rabotno-obleklo"] img { filter: none !im
   .admin-gallery-preview img { height: 145px; }
   .admin-media-meta { grid-template-columns: 1fr; }
 }
+
+/* Product editor: reliable native file picker, no transparent overlays. */
+.admin-product-file-input { display: none; }
+.admin-product-upload-button { cursor: pointer; text-align: left; border-radius: 8px; font: inherit; }
+.admin-product-upload-button:disabled, .admin-gallery-empty-button:disabled { opacity: .65; cursor: not-allowed; }
+.admin-gallery-empty-button { width: 100%; cursor: pointer; text-align: left; font: inherit; }
+.admin-product-upload-button:focus-visible, .admin-gallery-empty-button:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+.admin-upload-progress { color: var(--charcoal); font-size: 13px; }
+.admin-product-validation { width: 100%; padding: 12px 16px; background: #fff2f1; border: 1px solid #e6bbb8; border-radius: 8px; }
+.admin-product-validation p { margin: 6px 0 0; }

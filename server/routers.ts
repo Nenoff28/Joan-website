@@ -6,6 +6,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
 import { accessRouter, staffRouter } from "./accessRouter";
+import { productPayloadSchema } from "../shared/productValidation";
+export { productPayloadSchema } from "../shared/productValidation";
 import {
   adjustProductStock,
   createAdminProduct,
@@ -75,29 +77,6 @@ const categoryNodeSchema: z.ZodType<CategoryNodeInput> = z.lazy(() => z.object({
   label: z.string().trim().min(1).max(160),
   children: z.array(categoryNodeSchema).max(24).optional(),
 }));
-
-export const productPayloadSchema = z.object({
-  categoryId: z.number().int().positive(),
-  slug: z.string().trim().min(3).max(160).regex(/^[a-z0-9-]+$/, "URL адресът използва само малки латински букви, цифри и тирета."),
-  seoTitle: z.string().trim().max(70).nullable().optional(),
-  seoDescription: z.string().trim().max(200).nullable().optional(),
-  seoKeywords: z.string().trim().max(255).nullable().optional(),
-  seoRobots: z.enum(["index,follow", "noindex,follow"]).optional(),
-  sku: z.string().trim().max(96).nullable().optional(),
-  brand: z.string().trim().max(160).nullable().optional(),
-  name: z.string().trim().min(3).max(500),
-  description: z.string().trim().min(10),
-  imageUrl: z.string().trim().min(1),
-  gallery: z.array(z.string().trim().min(1)).min(1).max(10),
-  imageAlt: z.string().trim().min(3),
-  priceEur: z.number().nonnegative().nullable().optional(),
-  oldPriceEur: z.number().nonnegative().nullable().optional(),
-  discountLabel: z.string().trim().max(48).nullable().optional(),
-  availability: availabilitySchema,
-  stockQuantity: z.number().int().min(0).max(999999),
-  features: z.array(z.string().trim().min(1).max(180)).max(30),
-  isActive: z.boolean(),
-});
 
 const categoryPayloadSchema = z.object({
   slug: z.string().trim().min(3).max(128).regex(/^[a-z0-9-]+$/),

@@ -15,6 +15,7 @@ describe("admin product entry workflow", () => {
     resolve(process.cwd(), "server/catalogueService.ts"),
     "utf8"
   );
+  const validationSource = readFileSync(resolve(process.cwd(), "shared/productValidation.ts"), "utf8");
   const stylesheet = readFileSync(
     resolve(process.cwd(), "client/src/index.css"),
     "utf8"
@@ -58,8 +59,8 @@ describe("admin product entry workflow", () => {
     expect(adminSource).toContain(
       "`${row.label.trim()} — ${row.value.trim()}`"
     );
-    expect(routerSource).toContain(
-      "features: z.array(z.string().trim().min(1).max(180)).max(30)"
-    );
+    expect(validationSource).toContain("features: z.array(");
+    expect(validationSource).toContain('.max(180, "Всеки технически ред');
+    expect(validationSource).toContain('.max(30, "Добавете най-много 30');
   });
 });

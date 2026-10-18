@@ -4,6 +4,8 @@ import AdminUsersRoles from "@/components/AdminUsersRoles";
 import { trpc } from "@/lib/trpc";
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
 import { canVisitAdminSection, firstAdminPath, hasPermission, type Permission } from "@shared/permissions";
+import { productPayloadSchema, productFieldErrors, readableProductError } from "@shared/productValidation";
+import { uploadProductImagesSequentially } from "@/lib/productImageUpload";
 import {
   AlertTriangle,
   Archive,
@@ -36,7 +38,7 @@ import {
   getDocument,
 } from "pdfjs-dist/legacy/build/pdf.mjs";
 import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs?url";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -732,10 +734,17 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const canReadProducts = can(permissions, "products.read");
   const canWriteProducts = can(permissions, "products.write");
   const canReadCategories = can(permissions, "categories.read");
-  const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadProducts });
-  const categoriesQuery = trpc.admin.productCategories.useQuery(undefined, { enabled: canReadCategories || canWriteProducts });
-  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts });
+  // Fetch the small category list BEFORE batching the large catalogue queries.
+  const categoriesQuery = trpc.admin.productCategories.useQuery(undefined, { enabled: canReadCategories || canWriteProducts, staleTime: 600_000, refetchOnWindowFocus: false });
+  const catalogueReady = !canWriteProducts || Boolean(categoriesQuery.data);
+  const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadProducts && catalogueReady });
+  const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts && catalogueReady });
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadingRef = useRef(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [uploadError, setUploadError] = useState("");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const onSaved = async (message: string) => {
     await Promise.all([
       utils.admin.products.invalidate(),
@@ -746,28 +755,28 @@ function AdminProducts({ permissions }: AdminPageProps) {
   };
   const createProduct = trpc.admin.createProduct.useMutation({
     onSuccess: () => onSaved("Артикулът е добавен."),
-    onError: error => toast.error(error.message),
+    onError: error => { const message = readableProductError(error); setFormErrors({ form: message }); toast.error(message); },
   });
   const updateProduct = trpc.admin.updateProduct.useMutation({
     onSuccess: () => onSaved("Промените са записани."),
-    onError: error => toast.error(error.message),
+    onError: error => { const message = readableProductError(error); setFormErrors({ form: message }); toast.error(message); },
   });
   const [form, setForm] = useState<ProductForm>(() => emptyProductForm(0));
   const [search, setSearch] = useState("");
   const [qualityOnly, setQualityOnly] = useState(false);
   const [page, setPage] = useState(1);
   const categoryOptions = useMemo(() => {
-    if (canReadCategories) return (categoriesQuery.data ?? []).map(category => ({ id: category.id, label: category.label }));
+    if (canReadCategories || canWriteProducts) return (categoriesQuery.data ?? []).map(category => ({ id: category.id, label: category.label }));
     const derived = new Map<number, { id: number; label: string }>();
     (productsQuery.data ?? []).forEach(product => {
       if (!derived.has(product.categoryId)) derived.set(product.categoryId, { id: product.categoryId, label: product.categoryName });
     });
     return Array.from(derived.values());
-  }, [canReadCategories, categoriesQuery.data, productsQuery.data]);
+  }, [canReadCategories, canWriteProducts, categoriesQuery.data, productsQuery.data]);
   const canEditProductForm = canWriteProducts && categoryOptions.length > 0;
   useEffect(() => {
     if (form.categoryId === 0 && categoryOptions[0])
-      setForm(emptyProductForm(categoryOptions[0].id));
+      setForm(current => current.categoryId === 0 ? { ...current, categoryId: categoryOptions[0].id } : current);
   }, [categoryOptions, form.categoryId]);
   const issueIds = useMemo(
     () =>
@@ -800,6 +809,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   );
   function update<K extends keyof ProductForm>(key: K, value: ProductForm[K]) {
     setForm(current => ({ ...current, [key]: value }));
+    setFormErrors(current => { const next = { ...current }; delete next[key]; delete next.form; return next; });
   }
   function updateTechnicalRow(index: number, key: keyof TechnicalRow, value: string) {
     update("technicalRows", form.technicalRows.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row));
@@ -839,11 +849,15 @@ function AdminProducts({ permissions }: AdminPageProps) {
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!canEditProductForm) return;
+    if (uploadingRef.current || saving) return;
+    setFormErrors({});
     if (!galleryUrls.length) {
+      setFormErrors({ gallery: "Добавете поне една снимка на артикула." });
       toast.error("Добавете поне една снимка на артикула.");
       return;
     }
     if (incompleteTechnicalRows) {
+      setFormErrors({ features: "Попълнете и параметър, и стойност за всеки технически ред." });
       toast.error("Попълнете и параметър, и стойност за всеки технически ред.");
       return;
     }
@@ -869,41 +883,49 @@ function AdminProducts({ permissions }: AdminPageProps) {
       features: form.technicalRows.filter(row => row.label.trim() && row.value.trim()).map(row => `${row.label.trim()} — ${row.value.trim()}`),
       isActive: form.isActive,
     };
-    if (form.id) updateProduct.mutate({ id: form.id, product: payload });
-    else createProduct.mutate(payload);
+    const parsed = productPayloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      const errors = productFieldErrors(parsed.error.issues);
+      setFormErrors(errors);
+      toast.error(Object.values(errors)[0]);
+      return;
+    }
+    if (!categoryOptions.some(category => category.id === parsed.data.categoryId)) {
+      setFormErrors({ categoryId: "Изберете валидна категория на артикула." });
+      return;
+    }
+    if (form.id) updateProduct.mutate({ id: form.id, product: parsed.data });
+    else createProduct.mutate(parsed.data);
   }
   async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!files.length || !canWriteProducts) return;
+    if (!files.length || !canWriteProducts || uploadingRef.current) return;
     if (files.length > 10) {
       toast.error("Можете да качите най-много 10 снимки наведнъж.");
       return;
     }
-    const accepted = files.filter(file => /^image\/(jpeg|png|webp)$/.test(file.type) && file.size <= 10 * 1024 * 1024);
-    if (accepted.length !== files.length) {
-      toast.error("Използвайте само JPG, PNG или WEBP снимки до 10 MB всяка.");
-      return;
-    }
+    uploadingRef.current = true;
+    setUploadError("");
+    setUploadProgress({ current: 0, total: files.length });
     try {
-      const stored = [] as Array<{ url: string }>;
-      for (const file of accepted) {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(new Error("read"));
-          reader.readAsDataURL(file);
-        });
-        stored.push(await uploadImage.mutateAsync({ dataUrl, fileName: file.name }));
-      }
-      const gallery = [...textLines(form.galleryText), ...stored.map(item => item.url)].filter((url, index, all) => all.indexOf(url) === index).slice(0, 10);
-      update("imageUrl", gallery[0] ?? "");
-      update("galleryText", gallery.join("\n"));
-      if (!form.imageAlt.trim()) update("imageAlt", accepted[0]?.name.replace(/\.[^.]+$/, "") ?? "Продукт ЖОАН");
-      toast.success(`${stored.length} ${stored.length === 1 ? "снимка е качена" : "снимки са качени"}.`);
+      const count = await uploadProductImagesSequentially(files, galleryUrls.length,
+        input => uploadImage.mutateAsync(input),
+        (image, file) => setForm(current => {
+          const gallery = Array.from(new Set([...textLines(current.galleryText), image.url])).slice(0, 10);
+          return { ...current, imageUrl: gallery[0], galleryText: gallery.join("\n"), imageAlt: current.imageAlt.trim() || current.name.trim() || file.name.replace(/\.[^.]+$/, "") || "Продукт ЖОАН" };
+        }),
+        (current, total) => setUploadProgress({ current, total }),
+      );
+      setFormErrors(current => { const next = { ...current }; delete next.gallery; return next; });
+      toast.success(`${count} ${count === 1 ? "снимка е качена" : "снимки са качени"}.`);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "неизвестна грешка";
-      toast.error(`Качването прекъсна: ${reason}`);
+      setUploadError(reason);
+      toast.error(reason);
+    } finally {
+      uploadingRef.current = false;
+      setUploadProgress(null);
     }
   }
   return (
@@ -917,6 +939,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
             <button
               type="button"
               className="admin-primary"
+              disabled={Boolean(uploadProgress) || saving}
               onClick={() =>
                 setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
               }
@@ -948,7 +971,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
             </button>
           )}
         </div>
-        <form className="admin-form" onSubmit={submit}>
+        <form className="admin-form" onSubmit={submit} noValidate>
           <fieldset disabled={!canWriteProducts}>
           <div className="admin-form-grid">
             <label>
@@ -972,12 +995,14 @@ function AdminProducts({ permissions }: AdminPageProps) {
               Категория
               <select
                 required
+                aria-label="Категория"
                 value={form.categoryId}
                 disabled={!categoryOptions.length}
                 onChange={event =>
                   update("categoryId", Number(event.target.value))
                 }
               >
+                {!categoryOptions.length && <option value={0}>{categoriesQuery.isError ? "Категориите не се заредиха" : "Зареждане на категориите…"}</option>}
                 {categoryOptions.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.label}
@@ -985,6 +1010,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 ))}
               </select>
             </label>
+            {categoriesQuery.isError && <div className="admin-form-error" role="alert">Не успяхме да заредим категориите. Въведените данни са запазени. <button type="button" className="admin-secondary" onClick={() => categoriesQuery.refetch()}>Опитай отново</button></div>}
             <label>
               Марка
               <input
@@ -1186,7 +1212,9 @@ function AdminProducts({ permissions }: AdminPageProps) {
             </div>
             <label>
               Описание
-              <textarea required rows={5} value={form.description} onChange={event => update("description", event.target.value)} placeholder="Опишете продукта с кратки, ясни изречения." />
+              <textarea required minLength={10} rows={5} aria-label="Описание" aria-invalid={Boolean(formErrors.description)} aria-describedby="product-description-help product-description-error" value={form.description} onChange={event => update("description", event.target.value)} placeholder="Опишете продукта с кратки, ясни изречения (поне 10 знака)." />
+              <small id="product-description-help">Минимум 10 знака · въведени {form.description.trim().length}</small>
+              {formErrors.description && <span id="product-description-error" className="admin-form-error" role="alert">{formErrors.description}</span>}
             </label>
             <div className="admin-technical-editor">
               <div className="admin-technical-heading">
@@ -1211,23 +1239,25 @@ function AdminProducts({ permissions }: AdminPageProps) {
               <small>{galleryUrls.length}/10 снимки · първата е основна</small>
             </div>
             <div className="admin-upload-row admin-upload-row-large">
-              <label className="admin-upload admin-upload-large">
+              <input ref={fileInputRef} type="file" className="admin-product-file-input" multiple accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} disabled={!canWriteProducts || Boolean(uploadProgress) || saving || galleryUrls.length >= 10} aria-label="Избор на продуктови снимки" />
+              <button type="button" className="admin-upload admin-upload-large admin-product-upload-button" onClick={() => fileInputRef.current?.click()} disabled={!canWriteProducts || Boolean(uploadProgress) || saving || galleryUrls.length >= 10}>
                 <ImagePlus size={20} />
-                <span>{uploadImage.isPending ? "Качване на снимките..." : "Избери до 10 снимки"}<small>JPG, PNG или WEBP · до 10 MB всяка</small></span>
-                <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} disabled={!canWriteProducts || uploadImage.isPending || galleryUrls.length >= 10} />
-              </label>
+                <span>{uploadProgress ? `Качване ${uploadProgress.current}/${uploadProgress.total}…` : "Избери до 10 снимки"}<small>JPG, PNG или WEBP · до 10 MB всяка</small></span>
+              </button>
               <p>Снимките се качват наведнъж и се подреждат автоматично. Кликнете „Премахни“, ако искате да замените някоя.</p>
             </div>
+            {uploadProgress && <p className="admin-upload-progress" role="status">Качване на снимка {uploadProgress.current} от {uploadProgress.total}. Изчакайте преди запазване.</p>}
+            {uploadError && <p className="admin-form-error" role="alert">{uploadError}</p>}
             {galleryUrls.length ? (
               <div className="admin-gallery-preview">
                 {galleryUrls.map((url, index) => (
                   <figure key={url} className={index === 0 ? "is-primary" : ""}>
                     <img src={url} alt={form.imageAlt || `Снимка ${index + 1}`} />
-                    <figcaption>{index === 0 ? "Основна снимка" : `Снимка ${index + 1}`}<button type="button" onClick={() => removeGalleryImage(url)}>Премахни</button></figcaption>
+                    <figcaption>{index === 0 ? "Основна снимка" : `Снимка ${index + 1}`}<button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => removeGalleryImage(url)}>Премахни</button></figcaption>
                   </figure>
                 ))}
               </div>
-            ) : <div className="admin-gallery-empty"><ImagePlus size={24} /><span>Още няма добавени снимки. Добавете поне една, за да запазите артикула.</span></div>}
+            ) : <button type="button" className="admin-gallery-empty admin-gallery-empty-button" onClick={() => fileInputRef.current?.click()} disabled={!canWriteProducts || Boolean(uploadProgress) || saving}><ImagePlus size={24} /><span>Още няма добавени снимки. Натиснете тук, за да изберете снимки.</span></button>}
             <div className="admin-form-grid admin-media-meta">
               <label>
                 Alt текст на снимките
@@ -1235,7 +1265,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
               </label>
               <label>
                 Ръчно добавяне на URL <small>по избор</small>
-                <textarea rows={3} value={form.galleryText} onChange={event => { const urls = textLines(event.target.value).slice(0, 10); update("galleryText", urls.join("\n")); update("imageUrl", urls[0] ?? ""); }} placeholder="Използвайте само ако вече имате managed URL-и, по един на ред." />
+                <textarea rows={3} disabled={Boolean(uploadProgress) || saving} value={form.galleryText} onChange={event => { const urls = textLines(event.target.value).slice(0, 10); update("galleryText", urls.join("\n")); update("imageUrl", urls[0] ?? ""); }} placeholder="Използвайте само ако вече имате managed URL-и, по един на ред." />
               </label>
             </div>
           </section>
@@ -1248,7 +1278,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
             Публикуван в публичния каталог
           </label>
           <div className="admin-form-actions">
-            {canWriteProducts && <button type="submit" className="admin-primary" disabled={saving || !canEditProductForm}>
+            {canWriteProducts && <button type="submit" className="admin-primary" disabled={saving || Boolean(uploadProgress) || !canEditProductForm}>
               {saving ? (
                 <Loader2 size={17} className="animate-spin" />
               ) : (
@@ -1257,10 +1287,11 @@ function AdminProducts({ permissions }: AdminPageProps) {
               {saving ? "Записване..." : "Запази артикула"}
             </button>}
             {!canWriteProducts && <ReadOnlyBadge text="Само преглед · редакцията е недостъпна" />}
-            {(createProduct.error || updateProduct.error) && (
-              <p className="admin-form-error">
-                {createProduct.error?.message || updateProduct.error?.message}
-              </p>
+            {Object.keys(formErrors).length > 0 && (
+              <div className="admin-form-error admin-product-validation" role="alert">
+                <b>Проверете данните преди запис:</b>
+                {Object.values(formErrors).map(message => <p key={message}>{message}</p>)}
+              </div>
             )}
           </div>
           </fieldset>
