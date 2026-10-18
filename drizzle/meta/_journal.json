@@ -127,6 +127,13 @@
       "when": 1792313745566,
       "tag": "0017_funny_yellow_claw",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1792325398413,
+      "tag": "0018_special_ogun",
+      "breakpoints": true
     }
   ]
 }

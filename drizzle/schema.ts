@@ -139,6 +139,7 @@ export const catalogueCategories = mysqlTable("catalogue_categories", {
   id: int("id").autoincrement().primaryKey(),
   legacyCategoryId: int("legacyCategoryId").unique(),
   legacyParentCategoryId: int("legacyParentCategoryId"),
+  parentId: int("parentId").references((): any => catalogueCategories.id),
   slug: varchar("slug", { length: 128 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),

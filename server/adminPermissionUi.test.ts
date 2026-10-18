@@ -11,6 +11,10 @@ const orderDetailPage = readFileSync(
   resolve(process.cwd(), "client/src/pages/AdminOrderDetail.tsx"),
   "utf8"
 );
+const categoryEditor = readFileSync(
+  resolve(process.cwd(), "client/src/components/AdminCategoriesEditor.tsx"),
+  "utf8"
+);
 
 function functionSource(name: string, nextName: string) {
   const start = adminPage.indexOf(`function ${name}`);
@@ -98,7 +102,9 @@ describe("granular administrator UI permission contract", () => {
     expect(adminPage).toContain("disabled={!categoryOptions.length}");
     expect(adminPage).toMatch(/if\s*\(canWriteInventory\)\s*adjust\.mutate/);
     expect(adminPage).toContain("if (!canWrite) return;");
-    expect(adminPage).toContain("fieldset disabled={!canWriteCategories}");
+    expect(categoryEditor).toContain("fieldset disabled={!canWrite || busy}");
+    expect(categoryEditor).toContain('hasPermission(permissions, "categories.write")');
+    expect(categoryEditor).toContain("if (!canWrite || busy || uploadBusy.current) return;");
     expect(orderDetailPage).toContain(
       'const canWrite = Boolean(staff.data?.permissions.includes("orders.write"));'
     );

@@ -13,7 +13,7 @@ vi.mock("./db", () => ({
   getDb: getDbMock,
 }));
 
-import { uploadProductImage } from "./catalogueService";
+import { uploadCategoryImage, uploadProductImage } from "./catalogueService";
 
 const PNG_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 const pngDataUrl = (bytes: Buffer = PNG_BYTES) => `data:image/png;base64,${bytes.toString("base64")}`;
@@ -79,5 +79,22 @@ describe("uploadProductImage backend workflow boundaries", () => {
     ).rejects.toThrow("simulated audit persistence failure");
     expect(storagePutMock).toHaveBeenCalledTimes(1);
     expect(insertMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("uploadCategoryImage backend workflow boundaries", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getDbMock.mockResolvedValue(successfulAuditDb());
+    storagePutMock.mockResolvedValue({ key: "category-key", url: "/manus-storage/category-key" });
+  });
+
+  it("rejects category image payloads larger than 10 MB before storage or audit persistence", async () => {
+    const overLimitBytes = Buffer.alloc(10 * 1024 * 1024 + 1, 0);
+    await expect(
+      uploadCategoryImage({ dataUrl: pngDataUrl(overLimitBytes), fileName: "too-large.png" }, 41),
+    ).rejects.toThrow("между 1 байт и 10 MB");
+    expect(storagePutMock).not.toHaveBeenCalled();
+    expect(getDbMock).not.toHaveBeenCalled();
   });
 });

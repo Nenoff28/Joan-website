@@ -7,6 +7,7 @@ import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
 import { splitProductDescription } from "./technicalSpecifications";
 import { buildProductCategoryOptions, canonicalSelectedSubcategoryPath, categoryPathNodes, legacyCategoryRootsByPublicSlug as categoryRootsByPublicSlug, validateSelectedSubcategoryPath, type ProductCategoryTreeRow } from "./productCategoryAssignments";
+import type { CategoryPayload as SharedCategoryPayload } from "../shared/categoryValidation";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
@@ -39,16 +40,7 @@ export type ProductPayload = {
   isActive: boolean;
 };
 
-export type CategoryPayload = {
-  slug: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  icon: string;
-  subcategories: CategoryNode[];
-  sortOrder: number;
-  isActive: boolean;
-};
+export type CategoryPayload = SharedCategoryPayload;
 
 const availabilityLabels: Record<ProductAvailability, string> = {
   in_stock: "На склад",
@@ -199,7 +191,7 @@ async function seedBrochure() {
 type PublicCategoryTranslation = typeof catalogueCategoryEnglish.$inferSelect | null | undefined;
 type PublicProductTranslation = typeof catalogueProductEnglish.$inferSelect | null | undefined;
 
-function publicCategory(category: typeof catalogueCategories.$inferSelect, english?: PublicCategoryTranslation, language: CatalogueLanguage = "bg") {
+function publicCategory(category: typeof catalogueCategories.$inferSelect, english?: PublicCategoryTranslation, language: CatalogueLanguage = "bg", nestedSubcategories?: CategoryNode[]) {
   const translated = language === "en" ? english : undefined;
   return {
     id: category.id,
@@ -208,12 +200,106 @@ function publicCategory(category: typeof catalogueCategories.$inferSelect, engli
     description: translated?.description ?? category.description,
     image: category.imageUrl,
     icon: category.icon,
-    subcategories: parseCategoryTree(translated?.subcategoriesJson ?? category.subcategoriesJson),
+    subcategories: nestedSubcategories ?? parseCategoryTree(translated?.subcategoriesJson ?? category.subcategoriesJson),
     metaTitle: translated?.seoTitle ?? category.legacyMetaTitleBg ?? undefined,
     metaDescription: translated?.seoDescription ?? category.legacyMetaDescriptionBg ?? undefined,
     canonicalUrl: category.legacyCanonicalUrl ?? undefined,
     metaRobots: category.legacyMetaRobots ?? undefined,
   };
+}
+
+
+type CategoryRow = typeof catalogueCategories.$inferSelect;
+type CategoryEnglishMap = Map<number, NonNullable<PublicCategoryTranslation>>;
+
+function categoryRowsSorted(rows: CategoryRow[]) {
+  return rows.slice().sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "bg") || left.id - right.id);
+}
+
+function isNativeChild(row: CategoryRow) {
+  return row.legacyCategoryId == null && row.parentId != null;
+}
+
+function effectiveParentId(row: CategoryRow, rows: CategoryRow[]) {
+  if (isNativeChild(row)) return row.parentId!;
+  if (row.legacyCategoryId == null) return null;
+  // Imported source roots are collapsed into public roots. Resolve that mapping
+  // before the source parent, otherwise existing children become orphaned in
+  // the admin tree even though the storefront correctly displays them.
+  for (const [slug, roots] of Object.entries(categoryRootsByPublicSlug)) {
+    if (roots.includes(row.legacyParentCategoryId ?? -1)) return rows.find((candidate) => candidate.slug === slug && candidate.legacyCategoryId == null && candidate.parentId == null)?.id ?? null;
+  }
+  return row.legacyParentCategoryId == null ? null : rows.find((candidate) => candidate.legacyCategoryId === row.legacyParentCategoryId)?.id ?? null;
+}
+
+function categoryChildren(rows: CategoryRow[], parent: CategoryRow, publicOnly = true) {
+  const roots = categoryRootsByPublicSlug[parent.slug] ?? [];
+  return categoryRowsSorted(rows.filter((row) => {
+    if (isNativeChild(row)) return row.parentId === parent.id;
+    if (row.legacyCategoryId == null) return false;
+    if (parent.legacyCategoryId != null) return row.legacyParentCategoryId === parent.legacyCategoryId;
+    return row.legacyParentCategoryId != null && roots.includes(row.legacyParentCategoryId);
+  }).filter((row) => !publicOnly || row.legacyCategoryId != null || row.isActive));
+}
+
+function categoryTreeForRows(rows: CategoryRow[], parent: CategoryRow, publicOnly: boolean, language: CatalogueLanguage = "bg", englishById: CategoryEnglishMap = new Map(), depth = 0): CategoryNode[] {
+  if (depth >= 4) return [];
+  return categoryChildren(rows, parent, publicOnly).map((child) => {
+    const translated = language === "en" ? englishById.get(child.id)?.name : undefined;
+    const nested = categoryTreeForRows(rows, child, publicOnly, language, englishById, depth + 1);
+    const label = translated ?? child.name;
+    return nested.length ? { label, children: nested } : { label };
+  });
+}
+
+function rootCategories(rows: CategoryRow[], activeOnly = false) {
+  return categoryRowsSorted(rows.filter((row) => row.legacyCategoryId == null && row.parentId == null && (!activeOnly || row.isActive)));
+}
+
+function categoryMeta(rows: CategoryRow[]) {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const meta = new Map<number, { parentId: number | null; rootId: number | null; depth: number; isMain: boolean; path: CategoryRow[] }>();
+  const resolve = (row: CategoryRow, seen = new Set<number>()): { parentId: number | null; rootId: number | null; depth: number; isMain: boolean; path: CategoryRow[] } => {
+    const cached = meta.get(row.id);
+    if (cached) return cached;
+    if (seen.has(row.id)) return { parentId: null, rootId: null, depth: 0, isMain: false, path: [] };
+    seen.add(row.id);
+    const parentId = effectiveParentId(row, rows);
+    if (parentId == null) {
+      const value = { parentId: null, rootId: row.legacyCategoryId == null ? row.id : null, depth: 0, isMain: row.legacyCategoryId == null, path: [row] };
+      meta.set(row.id, value);
+      return value;
+    }
+    const parent = byId.get(parentId);
+    if (!parent) {
+      const value = { parentId, rootId: null, depth: 0, isMain: false, path: [row] };
+      meta.set(row.id, value);
+      return value;
+    }
+    const parentMeta = resolve(parent, seen);
+    const value = { parentId, rootId: parentMeta.rootId, depth: parentMeta.depth + 1, isMain: false, path: [...parentMeta.path, row] };
+    meta.set(row.id, value);
+    return value;
+  };
+  rows.forEach((row) => resolve(row));
+  return meta;
+}
+
+function hasPublicCategoryBranch(row: CategoryRow, rows: CategoryRow[], meta: ReturnType<typeof categoryMeta>) {
+  const info = meta.get(row.id);
+  if (!info?.rootId) return false;
+  const root = rows.find((candidate) => candidate.id === info.rootId);
+  if (!root?.isActive) return false;
+  return info.path.every((candidate) => candidate.legacyCategoryId != null || candidate.isActive);
+}
+
+function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: ReturnType<typeof categoryMeta>) {
+  const info = meta.get(row.id);
+  if (!info?.rootId || !hasPublicCategoryBranch(row, rows, meta)) return null;
+  const root = rows.find((candidate) => candidate.id === info.rootId);
+  if (!root) return null;
+  const labels = info.path.slice(1).map((candidate) => latinPathToken(candidate.name));
+  return `/category/${root.slug}${labels.length ? `?path=${labels.join("~")}` : ""}`;
 }
 
 function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null) {
@@ -266,10 +352,13 @@ export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [categoryRows, productRows] = await Promise.all([
-    db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(eq(catalogueCategories.isActive, true)).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true))).orderBy(desc(catalogueProducts.updatedAt)),
+    db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).orderBy(asc(catalogueCategories.sortOrder)),
+    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(desc(catalogueProducts.updatedAt)),
   ]);
-  return { categories: categoryRows.map((row) => publicCategory(row.category, row.english, language)), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)) };
+  const rows = categoryRows.map((row) => row.category);
+  const englishById: CategoryEnglishMap = new Map(categoryRows.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
+  const roots = rootCategories(rows, true);
+  return { categories: roots.map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)) };
 }
 
 export type PublicCataloguePageInput = {
@@ -304,45 +393,45 @@ function legacyTreeForPublicCategory(rows: LegacyCategoryTreeRow[], roots: numbe
   return build(roots, depth);
 }
 
-export function descendantCategoryIds(rows: LegacyCategoryBranchRow[], selectedInternalIds: number[]) {
+export type CategoryBranchRow = Pick<CategoryRow, "id" | "legacyCategoryId" | "legacyParentCategoryId" | "parentId">;
+
+export function descendantCategoryIds(rows: CategoryBranchRow[], selectedInternalIds: number[]) {
+  const byId = new Map(rows.map((row) => [row.id, row]));
   const selected = new Set(selectedInternalIds);
-  const childrenByParent = new Map<number, LegacyCategoryBranchRow[]>();
-  const selectedLegacyIds = rows.filter((row) => selected.has(row.id)).flatMap((row) => row.legacyCategoryId == null ? [] : [row.legacyCategoryId]);
-  for (const row of rows) {
-    if (row.legacyParentCategoryId == null) continue;
-    const children = childrenByParent.get(row.legacyParentCategoryId) ?? [];
-    children.push(row);
-    childrenByParent.set(row.legacyParentCategoryId, children);
-  }
-  const pending = [...selectedLegacyIds];
+  const pending = [...selectedInternalIds];
   while (pending.length) {
-    const legacyParentId = pending.shift();
-    if (legacyParentId == null) continue;
-    for (const child of childrenByParent.get(legacyParentId) ?? []) {
-      if (selected.has(child.id)) continue;
+    const parentId = pending.shift()!;
+    const parent = byId.get(parentId);
+    for (const child of rows) {
+      const nativeChild = child.parentId != null && child.parentId === parentId;
+      const legacyChild = parent?.legacyCategoryId != null && child.legacyParentCategoryId === parent.legacyCategoryId;
+      if (!nativeChild && !legacyChild || selected.has(child.id)) continue;
       selected.add(child.id);
-      if (child.legacyCategoryId != null) pending.push(child.legacyCategoryId);
+      pending.push(child.id);
     }
   }
   return Array.from(selected);
 }
 
-async function resolveLegacyPathCategoryIds(categorySlug: string, path: string[], language: CatalogueLanguage) {
+async function resolvePublicPathCategoryIds(category: CategoryRow, path: string[], language: CatalogueLanguage) {
   if (!path.length) return [];
-  const roots = categoryRootsByPublicSlug[categorySlug] ?? [];
-  if (!roots.length) return [];
   const db = await requireDb();
-  let parentLegacyIds = roots;
-  let matchedInternalIds: number[] = [];
-  for (const label of path) {
-    const candidates = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, name: language === "en" ? sql<string>`COALESCE(${catalogueCategoryEnglish.name}, ${catalogueCategories.name})` : catalogueCategories.name }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(inArray(catalogueCategories.legacyParentCategoryId, parentLegacyIds));
-    const rows = candidates.filter((row) => row.name === label || latinPathToken(row.name) === label);
-    if (!rows.length) return [];
-    matchedInternalIds = rows.map((row) => row.id);
-    parentLegacyIds = rows.flatMap((row) => row.legacyCategoryId == null ? [] : [row.legacyCategoryId]);
+  const rowsWithEnglish = await db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id));
+  const rows = rowsWithEnglish.map((row) => row.category);
+  const englishById: CategoryEnglishMap = new Map(rowsWithEnglish.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
+  let candidates: CategoryRow[] = [category];
+  for (const token of path) {
+    const normalized = token.trim();
+    const next = candidates.flatMap((parent) => categoryChildren(rows, parent, true)).filter((row, index, all) => {
+      if (all.findIndex((candidate) => candidate.id === row.id) !== index) return false;
+      const label = language === "en" ? englishById.get(row.id)?.name ?? row.name : row.name;
+      return row.slug === normalized || label === normalized || row.name === normalized || latinPathToken(label) === normalized || latinPathToken(row.name) === normalized;
+    });
+    if (!next.length) return [];
+    candidates = next;
   }
-  const treeRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId));
-  return descendantCategoryIds(treeRows, matchedInternalIds);
+  const branchRows = rows.map((row) => ({ id: row.id, legacyCategoryId: row.legacyCategoryId, legacyParentCategoryId: row.legacyParentCategoryId, parentId: row.parentId }));
+  return descendantCategoryIds(branchRows, candidates.map((row) => row.id));
 }
 
 export function publicCataloguePromotionPredicate() {
@@ -387,11 +476,10 @@ function publicCatalogueOrder(sort: PublicCataloguePageInput["sort"], language: 
 export async function getPublicCatalogueMetadata(language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const [categoryRows, legacyRows] = await Promise.all([
-    db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId))).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: language === "en" ? sql<string>`COALESCE(${catalogueCategoryEnglish.name}, ${catalogueCategories.name})` : catalogueCategories.name, sortOrder: catalogueCategories.sortOrder }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).where(isNotNull(catalogueCategories.legacyCategoryId)),
-  ]);
-  return { categories: categoryRows.map((row) => ({ ...publicCategory(row.category, row.english, language), subcategories: legacyTreeForPublicCategory(legacyRows, categoryRootsByPublicSlug[row.category.slug] ?? []) })) };
+  const rowsWithEnglish = await db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).orderBy(asc(catalogueCategories.sortOrder));
+  const rows = rowsWithEnglish.map((row) => row.category);
+  const englishById: CategoryEnglishMap = new Map(rowsWithEnglish.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
+  return { categories: rootCategories(rows, true).map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))) };
 }
 
 export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
@@ -400,17 +488,17 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
   const language = input.language ?? "bg";
   const page = Math.max(1, input.page);
   const pageSize = Math.min(48, Math.max(1, input.pageSize));
-  const category = input.categorySlug ? (await db.select().from(catalogueCategories).where(and(eq(catalogueCategories.slug, input.categorySlug), eq(catalogueCategories.isActive, true))).limit(1))[0] : undefined;
-  const pathCategoryIds = category && input.path?.length ? await resolveLegacyPathCategoryIds(category.slug, input.path, language) : [];
+  const category = input.categorySlug ? (await db.select().from(catalogueCategories).where(and(eq(catalogueCategories.slug, input.categorySlug), eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).limit(1))[0] : undefined;
+  const pathCategoryIds = category && input.path?.length ? await resolvePublicPathCategoryIds(category, input.path, language) : [];
   if (category && input.path?.length && !pathCategoryIds.length) return { products: [], total: 0, page, pageSize, brands: [] as string[] };
   const conditions = publicCatalogueConditions(input, category && !input.path?.length ? category.id : undefined);
   const order = publicCatalogueOrder(input.sort, language);
   const withPath = pathCategoryIds.length > 0;
   const selectProducts = withPath
-    ? db.selectDistinct({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
+    ? db.selectDistinct({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, eq(catalogueProducts.categoryId, category!.id), inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
     : db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(...conditions)).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize);
   const countRows = withPath
-    ? await db.select({ total: countDistinct(catalogueProducts.id) }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
+    ? await db.select({ total: countDistinct(catalogueProducts.id) }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, eq(catalogueProducts.categoryId, category!.id), inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
     : await db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...conditions));
   const [rows, brandRows] = await Promise.all([
     selectProducts,
@@ -464,8 +552,8 @@ export async function getPublicSitemapEntries() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [categories, products] = await Promise.all([
-    db.select({ slug: catalogueCategories.slug, updatedAt: catalogueCategories.updatedAt }).from(catalogueCategories).where(eq(catalogueCategories.isActive, true)),
-    db.select({ slug: catalogueProducts.slug, updatedAt: catalogueProducts.updatedAt }).from(catalogueProducts).where(eq(catalogueProducts.isActive, true)),
+    db.select({ slug: catalogueCategories.slug, updatedAt: catalogueCategories.updatedAt }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))),
+    db.select({ slug: catalogueProducts.slug, updatedAt: catalogueProducts.updatedAt }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))),
   ]);
   return { categories, products };
 }
@@ -473,16 +561,30 @@ export async function getPublicSitemapEntries() {
 export async function getAdminCategories() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
-  const rows = await db.select().from(catalogueCategories).orderBy(asc(catalogueCategories.sortOrder));
-  return rows.map((category) => ({ ...publicCategory(category), sortOrder: category.sortOrder, isActive: category.isActive }));
+  const rows = await db.select().from(catalogueCategories).orderBy(asc(catalogueCategories.sortOrder), asc(catalogueCategories.id));
+  const meta = categoryMeta(rows);
+  return rows.map((category) => {
+    const info = meta.get(category.id) ?? { parentId: null, rootId: null, depth: 0, isMain: false, path: [category] };
+    return {
+      ...publicCategory(category, undefined, "bg", categoryTreeForRows(rows, category, false)),
+      parentId: info.parentId,
+      rootId: info.rootId,
+      depth: info.depth,
+      isMain: info.isMain,
+      legacyCategoryId: category.legacyCategoryId,
+      publicUrl: publicUrlForCategory(category, rows, meta),
+      sortOrder: category.sortOrder,
+      isActive: category.isActive,
+    };
+  });
 }
 
 export async function getAdminProductCategories() {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [rootRows, taxonomyRows] = await Promise.all([
-    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId))).orderBy(asc(catalogueCategories.sortOrder)),
-    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(asc(catalogueCategories.sortOrder)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, slug: catalogueCategories.slug, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId))),
   ]);
   return buildProductCategoryOptions(rootRows, taxonomyRows);
 }
@@ -499,7 +601,7 @@ export async function getAdminProducts(options?: { includeArchived?: boolean }) 
   const db = await requireDb();
   const [rows, taxonomyRows] = await Promise.all([
     db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(options?.includeArchived ? undefined : eq(catalogueProducts.isArchived, false)).orderBy(desc(catalogueProducts.updatedAt)),
-    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId)),
+    db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId))),
   ]);
   const linksByProduct = new Map<number, Array<{ categoryId: number; position: number | null }>>();
   if (rows.length) {
@@ -508,7 +610,7 @@ export async function getAdminProducts(options?: { includeArchived?: boolean }) 
   }
   const taxonomy = taxonomyRows as ProductCategoryTreeRow[];
   return rows.map((row) => {
-    const path = canonicalSelectedSubcategoryPath(taxonomy, categoryRootsByPublicSlug[row.category.slug] ?? [], linksByProduct.get(row.product.id) ?? []);
+    const path = canonicalSelectedSubcategoryPath(taxonomy, categoryRootsByPublicSlug[row.category.slug] ?? [], linksByProduct.get(row.product.id) ?? [], row.category.id);
     return { ...publicProduct(row.product, row.category), isArchived: row.product.isArchived, seoTitle: row.product.legacyMetaTitleBg ?? "", seoDescription: row.product.legacyMetaDescriptionBg ?? "", seoKeywords: row.product.legacySeoKeywordBg ?? "", seoRobots: row.product.legacyMetaRobots === "noindex,follow" ? "noindex,follow" as const : "index,follow" as const, categoryId: row.product.categoryId, subcategoryIds: path.map((item) => item.id), subcategoryPath: categoryPathNodes(path), categoryName: row.category.name, createdAt: row.product.createdAt, updatedAt: row.product.updatedAt };
   });
 }
@@ -688,11 +790,11 @@ async function assertAdminProductSlugAvailable(slug: string, excludingProductId?
 }
 
 async function validateProductCategorySelection(db: CatalogueDbLike, categoryId: number, selectedSubcategoryIds?: number[]) {
-  const [root] = await db.select({ id: catalogueCategories.id, slug: catalogueCategories.slug, legacyCategoryId: catalogueCategories.legacyCategoryId, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(eq(catalogueCategories.id, categoryId)).limit(1);
+  const [root] = await db.select({ id: catalogueCategories.id, slug: catalogueCategories.slug, legacyCategoryId: catalogueCategories.legacyCategoryId, parentId: catalogueCategories.parentId, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(eq(catalogueCategories.id, categoryId)).limit(1);
   if (!root) throw new Error("Избраната главна категория е невалидна.");
-  if (!root.isActive || root.legacyCategoryId !== null) throw new Error("Избраната главна категория не е активна.");
-  const taxonomyRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(isNotNull(catalogueCategories.legacyCategoryId));
-  const path = validateSelectedSubcategoryPath(taxonomyRows as ProductCategoryTreeRow[], categoryRootsByPublicSlug[root.slug] ?? [], selectedSubcategoryIds);
+  if (!root.isActive || root.legacyCategoryId !== null || root.parentId !== null) throw new Error("Избраната главна категория не е активна.");
+  const taxonomyRows = await db.select({ id: catalogueCategories.id, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, name: catalogueCategories.name, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive }).from(catalogueCategories).where(or(isNotNull(catalogueCategories.legacyCategoryId), isNotNull(catalogueCategories.parentId)));
+  const path = validateSelectedSubcategoryPath(taxonomyRows as ProductCategoryTreeRow[], categoryRootsByPublicSlug[root.slug] ?? [], selectedSubcategoryIds, root.id);
   return { root, path };
 }
 
@@ -770,18 +872,64 @@ export async function saveProductPromotion(input: { id: number; priceEur: number
   await logAdminActivity(adminUserId, "promotion.updated", "product", input.id, { slug: product.slug, name: product.name, discountLabel: input.discountLabel ?? null });
 }
 
+function categoryDepthAndParent(rows: CategoryRow[], id: number) {
+  const meta = categoryMeta(rows).get(id);
+  return { parentId: meta?.parentId ?? null, rootId: meta?.rootId ?? null, depth: meta?.depth ?? 0, isMain: meta?.isMain ?? false };
+}
+
+function assertCategoryParentInPublicTree(rows: CategoryRow[], parentId: number | null, editingId?: number) {
+  if (parentId == null) return;
+  if (editingId === parentId) throw new Error("Категорията не може да бъде свой родител.");
+  const meta = categoryMeta(rows);
+  const parent = rows.find((row) => row.id === parentId);
+  if (!parent || !hasPublicCategoryBranch(parent, rows, meta)) throw new Error("Родителят не принадлежи към публичното дърво.");
+  const parentInfo = meta.get(parent.id);
+  if (!parentInfo || parentInfo.depth >= 4) throw new Error("Категориите могат да имат най-много четири нива на деца.");
+  if (editingId != null && parentInfo.path.some((row) => row.id === editingId)) throw new Error("Не може да се създаде цикъл в категорийното дърво.");
+}
+
+async function assertCategorySlugAvailable(db: CatalogueDbLike, slug: string, excludingId?: number) {
+  const scope = excludingId ? and(eq(catalogueCategories.slug, slug), ne(catalogueCategories.id, excludingId)) : eq(catalogueCategories.slug, slug);
+  const [conflict] = await db.select({ id: catalogueCategories.id }).from(catalogueCategories).where(scope).limit(1);
+  if (conflict) throw new Error("Този URL адрес вече се използва от друга категория.");
+}
+
+async function categoryHasDependants(db: CatalogueDbLike, id: number) {
+  const [product] = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).where(eq(catalogueProducts.categoryId, id)).limit(1);
+  if (product) return true;
+  const [link] = await db.select({ id: catalogueProductCategoryLinks.id }).from(catalogueProductCategoryLinks).where(eq(catalogueProductCategoryLinks.categoryId, id)).limit(1);
+  return Boolean(link);
+}
+
 export async function saveAdminCategory(id: number | undefined, payload: CategoryPayload, adminUserId: number) {
   const db = await requireDb();
-  const values = { slug: payload.slug, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, icon: payload.icon, subcategoriesJson: JSON.stringify(payload.subcategories), sortOrder: payload.sortOrder, isActive: payload.isActive };
-  if (id) {
-    await db.update(catalogueCategories).set(values).where(eq(catalogueCategories.id, id));
-    await logAdminActivity(adminUserId, "category.updated", "category", id, { slug: payload.slug, name: payload.name });
-    return id;
-  }
-  const result = await db.insert(catalogueCategories).values(values);
-  const categoryId = Number(result[0].insertId);
-  await logAdminActivity(adminUserId, "category.created", "category", categoryId, { slug: payload.slug, name: payload.name });
-  return categoryId;
+  return db.transaction(async (tx) => {
+    const rows = await tx.select().from(catalogueCategories).orderBy(asc(catalogueCategories.id));
+    const existing = id == null ? undefined : rows.find((row) => row.id === id);
+    if (id != null && !existing) throw new Error("Категорията не е намерена.");
+    const meta = categoryMeta(rows);
+    const current = existing ? categoryDepthAndParent(rows, existing.id) : { parentId: null, rootId: null, depth: -1, isMain: true };
+    const desiredParentId = payload.parentId === undefined ? current.parentId : payload.parentId;
+    assertCategoryParentInPublicTree(rows, desiredParentId, id);
+    const desiredIsMain = desiredParentId == null;
+    if (desiredIsMain && !payload.imageUrl) throw new Error("Главната категория изисква снимка.");
+    if (existing && existing.legacyCategoryId != null && desiredParentId !== current.parentId) throw new Error("Родителят на внесена legacy категория не може да се променя.");
+    if (existing && existing.legacyCategoryId != null && current.parentId == null && desiredIsMain) throw new Error("Типът на внесена legacy категория не може да се променя.");
+    if (existing && desiredParentId !== current.parentId && (await categoryHasDependants(tx, existing.id) || rows.some((row) => categoryDepthAndParent(rows, row.id).parentId === existing.id))) throw new Error("Типът или родителят на категория с деца или свързани продукти не може да се променя.");
+    if (existing && existing.legacyCategoryId == null && existing.parentId == null && categoryRootsByPublicSlug[existing.slug] && existing.slug !== payload.slug) throw new Error("URL адресът на legacy публична главна категория не може да се променя.");
+    await assertCategorySlugAvailable(tx, payload.slug, id);
+    const subcategoriesJson = payload.subcategories === undefined ? undefined : JSON.stringify(payload.subcategories);
+    const values = { slug: payload.slug, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, icon: payload.icon, sortOrder: payload.sortOrder, isActive: payload.isActive, ...(subcategoriesJson === undefined ? {} : { subcategoriesJson }), ...(existing ? {} : { parentId: desiredParentId }) };
+    if (existing) {
+      await tx.update(catalogueCategories).set({ ...values, ...(existing.legacyCategoryId == null ? { parentId: desiredParentId } : {}) }).where(eq(catalogueCategories.id, existing.id));
+      await tx.insert(adminActivities).values({ adminUserId, action: "category.updated", entityType: "category", entityId: existing.id, metadataJson: JSON.stringify({ slug: payload.slug, name: payload.name, parentId: desiredParentId }) });
+      return existing.id;
+    }
+    const result = await tx.insert(catalogueCategories).values({ ...values, parentId: desiredParentId, legacyCategoryId: null, legacyParentCategoryId: null, subcategoriesJson: subcategoriesJson ?? "[]" });
+    const categoryId = Number(result[0].insertId);
+    await tx.insert(adminActivities).values({ adminUserId, action: "category.created", entityType: "category", entityId: categoryId, metadataJson: JSON.stringify({ slug: payload.slug, name: payload.name, parentId: desiredParentId }) });
+    return categoryId;
+  });
 }
 
 export async function updateOrderRequest(id: number, status: OrderRequestStatus, adminNote: string | null, adminUserId: number, adminName: string) {
@@ -856,6 +1004,21 @@ export async function uploadProductImage(input: { dataUrl: string; fileName: str
   const safeName = input.fileName.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80) || "product";
   const stored = await storagePut(`catalogue/admin/${safeName}.${extension}`, bytes, contentType);
   await logAdminActivity(adminUserId, "product_image.uploaded", "product_image", null, { key: stored.key });
+  return stored;
+}
+
+
+export async function uploadCategoryImage(input: { dataUrl: string; fileName: string }, adminUserId: number) {
+  const match = input.dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) throw new Error("Поддържат се само JPEG, PNG и WEBP снимки.");
+  const contentType = match[1] as "image/jpeg" | "image/png" | "image/webp";
+  const bytes = Buffer.from(match[2], "base64");
+  if (bytes.length === 0 || bytes.length > 10 * 1024 * 1024) throw new Error("Снимката трябва да е между 1 байт и 10 MB.");
+  assertUploadSignature(bytes, contentType);
+  const extension = contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1];
+  const safeName = input.fileName.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80) || "category";
+  const stored = await storagePut(`catalogue/categories/${safeName}.${extension}`, bytes, contentType);
+  await logAdminActivity(adminUserId, "category_image.uploaded", "category_asset", null, { key: stored.key, contentType, bytes: bytes.length });
   return stored;
 }
 

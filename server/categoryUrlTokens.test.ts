@@ -21,6 +21,6 @@ describe("Latin-only public category path tokens", () => {
   it("builds and consumes selected subcategory routes with Latin tokens only", () => {
     expect(categorySource).toContain('categoryPathTokens(labels).join("~")');
     expect(navigationSource).toContain('categoryPathTokens(labels).join("~")');
-    expect(serviceSource).toContain('latinPathToken(row.name) === label');
+    expect(serviceSource).toContain('latinPathToken(row.name) === normalized');
   });
 });

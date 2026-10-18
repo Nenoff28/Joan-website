@@ -7,7 +7,9 @@ import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
+import { categoryPayloadSchema } from "../shared/categoryValidation";
 export { productPayloadSchema } from "../shared/productValidation";
+export { categoryPayloadSchema } from "../shared/categoryValidation";
 import {
   adjustProductStock,
   createAdminProduct,
@@ -41,6 +43,7 @@ import {
   updateOrderRequest,
   uploadAdminBrochure,
   uploadProductImage,
+  uploadCategoryImage,
   logAdminActivity,
 } from "./catalogueService";
 import {
@@ -74,23 +77,6 @@ const publicCataloguePageSchema = z.object({
   maxPrice: z.number().nonnegative().max(1_000_000).optional(),
   sort: catalogueSortSchema.optional(),
 });
-type CategoryNodeInput = { label: string; children?: CategoryNodeInput[] };
-const categoryNodeSchema: z.ZodType<CategoryNodeInput> = z.lazy(() => z.object({
-  label: z.string().trim().min(1).max(160),
-  children: z.array(categoryNodeSchema).max(24).optional(),
-}));
-
-const categoryPayloadSchema = z.object({
-  slug: z.string().trim().min(3).max(128).regex(/^[a-z0-9-]+$/),
-  name: z.string().trim().min(2).max(255),
-  description: z.string().trim().min(10),
-  imageUrl: z.string().trim().min(1),
-  icon: z.string().trim().min(2).max(64),
-  subcategories: z.array(categoryNodeSchema).max(24),
-  sortOrder: z.number().int().min(0).max(999),
-  isActive: z.boolean(),
-});
-
 export const appRouter = router({
   system: systemRouter,
   staff: staffRouter,
@@ -173,7 +159,8 @@ export const appRouter = router({
     replaceBrochure: permissionProcedure("brochures.write").input(z.object({ title: z.string().trim().min(3).max(255), pageUrls: z.array(z.string().startsWith("/manus-storage/")).min(1).max(16) })).mutation(({ input, ctx }) => replaceAdminBrochure(input, ctx.user.id)),
     activateBrochure: permissionProcedure("brochures.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => activateAdminBrochure(input.id, ctx.user.id)),
     archiveBrochure: permissionProcedure("brochures.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => archiveAdminBrochure(input.id, ctx.user.id)),
-    saveCategory: permissionProcedure("categories.write").input(z.object({ id: z.number().int().positive().optional(), category: categoryPayloadSchema })).mutation(({ input, ctx }) => saveAdminCategory(input.id, input.category, ctx.user.id)),
+    saveCategory: permissionProcedure("categories.write").input(z.object({ id: z.number().int().positive().optional(), category: categoryPayloadSchema })).mutation(({ input, ctx }) => saveAdminCategory(input.id, input.category, ctx.staff.id ?? ctx.user.id)),
+    uploadCategoryImage: permissionProcedure("categories.write").input(z.object({ dataUrl: z.string().min(32).max(15_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadCategoryImage(input, ctx.staff.id ?? ctx.user.id)),
     updateOrder: permissionProcedure("orders.write").input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => { const actorId = ctx.staff.id; if (!actorId) throw new Error("Липсва идентичност на оператора."); return updateOrderRequest(input.id, input.status, input.adminNote, actorId, ctx.staff.name); }),
     updateContactEnquiry: permissionProcedure("enquiries.write").input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.user.id)),
   }),

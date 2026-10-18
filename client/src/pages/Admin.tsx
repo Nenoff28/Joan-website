@@ -1,6 +1,7 @@
 /** Joan operations console: live store control without invented customer, sales, or stock data. */
 import DashboardLayout from "@/components/DashboardLayout";
 import AdminUsersRoles from "@/components/AdminUsersRoles";
+import AdminCategoriesEditor from "@/components/AdminCategoriesEditor";
 import { trpc } from "@/lib/trpc";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
@@ -87,17 +88,7 @@ type ProductForm = {
   technicalRows: TechnicalRow[];
   isActive: boolean;
 };
-type CategoryForm = {
-  id?: number;
-  slug: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  icon: string;
-  subcategoriesText: string;
-  sortOrder: string;
-  isActive: boolean;
-};
+
 type AdminProduct = {
   id: number;
   categoryId: number;
@@ -204,38 +195,6 @@ const parseTechnicalRows = (features: string[]): TechnicalRow[] => {
     return match ? { label: match[1].trim(), value: match[2].trim() } : { label: feature.trim(), value: "" };
   });
   return rows.length ? rows : [{ label: "", value: "" }];
-};
-const categoryTreeText = (
-  nodes: CategoryNode[],
-  trail: string[] = []
-): string[] =>
-  nodes.flatMap(node => {
-    const path = [...trail, node.label];
-    return [path.join(" > "), ...categoryTreeText(node.children ?? [], path)];
-  });
-const categoryTreeFromText = (value: string): CategoryNode[] => {
-  const roots: CategoryNode[] = [];
-  for (const line of textLines(value)) {
-    const path = line
-      .split(">")
-      .map(part => part.trim())
-      .filter(Boolean)
-      .slice(0, 3);
-    let level = roots;
-    for (const label of path) {
-      let node = level.find(
-        item =>
-          item.label.toLocaleLowerCase("bg") === label.toLocaleLowerCase("bg")
-      );
-      if (!node) {
-        node = { label };
-        level.push(node);
-      }
-      node.children ??= [];
-      level = node.children;
-    }
-  }
-  return roots;
 };
 const categoryNodeCount = (nodes: CategoryNode[]): number =>
   nodes.reduce(
@@ -1877,247 +1836,7 @@ function PromotionEditor({ product, canWrite }: { product: AdminProduct; canWrit
 }
 
 function AdminCategories({ permissions }: AdminPageProps) {
-  const utils = trpc.useUtils();
-  const canReadCategories = can(permissions, "categories.read");
-  const canWriteCategories = can(permissions, "categories.write");
-  const categories = trpc.admin.categories.useQuery(undefined, { enabled: canReadCategories });
-  const save = trpc.admin.saveCategory.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        utils.admin.categories.invalidate(),
-        utils.catalogue.list.invalidate(),
-        utils.admin.operations.invalidate(),
-      ]);
-      toast("Категорията е записана.");
-    },
-  });
-  const [form, setForm] = useState<CategoryForm>(emptyCategoryForm());
-  function update<K extends keyof CategoryForm>(
-    key: K,
-    value: CategoryForm[K]
-  ) {
-    setForm(current => ({ ...current, [key]: value }));
-  }
-  function edit(category: NonNullable<typeof categories.data>[number]) {
-    setForm({
-      id: category.id,
-      slug: category.slug,
-      name: category.label,
-      description: category.description,
-      imageUrl: category.image,
-      icon: category.icon,
-      subcategoriesText: categoryTreeText(category.subcategories).join("\n"),
-      sortOrder: String(category.sortOrder),
-      isActive: category.isActive,
-    });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  return (
-    <section className="admin-workspace">
-      <ShellHeading
-        section="КАТЕГОРИИ"
-        title="Структура на каталога"
-        text="Поддържайте категориите, визуалните им записи и работните подкатегории, които клиентите виждат в навигацията."
-        action={
-          canWriteCategories ? (
-            <button
-              type="button"
-              className="admin-primary"
-              onClick={() => setForm(emptyCategoryForm())}
-            >
-              <Plus size={17} /> Нова категория
-            </button>
-          ) : (
-            <ReadOnlyBadge />
-          )
-        }
-      />
-      <section className="admin-edit-panel">
-        <div className="admin-panel-head">
-          <div>
-            <p className="admin-kicker">{form.id ? "РЕДАКЦИЯ" : "НОВ ЗАПИС"}</p>
-            <h2>{form.id ? form.name : "Нова категория"}</h2>
-          </div>
-        </div>
-        <form
-          className="admin-form"
-          onSubmit={event => {
-            event.preventDefault();
-            if (!canWriteCategories) return;
-            save.mutate({
-              id: form.id,
-              category: {
-                slug: form.slug.trim(),
-                name: form.name.trim(),
-                description: form.description.trim(),
-                imageUrl: form.imageUrl.trim(),
-                icon: form.icon.trim(),
-                subcategories: categoryTreeFromText(form.subcategoriesText),
-                sortOrder: Math.max(0, Number(form.sortOrder) || 0),
-                isActive: form.isActive,
-              },
-            });
-          }}
-        >
-          <fieldset disabled={!canWriteCategories}>
-          <div className="admin-form-grid">
-            <label>
-              Име
-              <input
-                required
-                value={form.name}
-                onChange={event => update("name", event.target.value)}
-              />
-            </label>
-            <label>
-              URL адрес (slug)
-              <input
-                required
-                pattern="[a-z0-9-]+"
-                value={form.slug}
-                onChange={event =>
-                  update("slug", event.target.value.toLowerCase())
-                }
-              />
-            </label>
-            <label>
-              Икона
-              <select
-                value={form.icon}
-                onChange={event => update("icon", event.target.value)}
-              >
-                {[
-                  "drill",
-                  "trees",
-                  "house",
-                  "bath",
-                  "lamp",
-                  "panels-top-left",
-                  "waves",
-                  "lock-keyhole",
-                  "paint-roller",
-                  "brick-wall",
-                  "hard-hat",
-                ].map(icon => (
-                  <option key={icon} value={icon}>
-                    {icon}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Пореден номер
-              <input
-                type="number"
-                min="0"
-                value={form.sortOrder}
-                onChange={event => update("sortOrder", event.target.value)}
-              />
-            </label>
-          </div>
-          <label>
-            Описание
-            <textarea
-              required
-              value={form.description}
-              onChange={event => update("description", event.target.value)}
-            />
-          </label>
-          <div className="admin-form-grid">
-            <label>
-              URL на изображение
-              <input
-                required
-                value={form.imageUrl}
-                onChange={event => update("imageUrl", event.target.value)}
-              />
-            </label>
-            <label>
-              Подкатегории – по една на ред
-              <textarea
-                value={form.subcategoriesText}
-                placeholder={
-                  "Електроинструменти\nЕлектроинструменти > Бормашини\nРъчни инструменти\nРъчни инструменти > Бъркалки"
-                }
-                onChange={event =>
-                  update("subcategoriesText", event.target.value)
-                }
-              />
-              <small>
-                Използвайте <b>&gt;</b> за подкатегория. Поддържат се до три
-                нива.
-              </small>
-            </label>
-          </div>
-          <label className="admin-checkbox">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={event => update("isActive", event.target.checked)}
-            />{" "}
-            Активна в публичния каталог
-          </label>
-          <div className="admin-form-actions">
-            {canWriteCategories && <button
-              type="submit"
-              className="admin-primary"
-              disabled={save.isPending}
-            >
-              {save.isPending ? (
-                <Loader2 size={17} className="animate-spin" />
-              ) : (
-                <Save size={17} />
-              )}{" "}
-              Запази категорията
-            </button>}
-            {!canWriteCategories && <ReadOnlyBadge text="Само преглед · редакцията е недостъпна" />}
-          </div>
-          </fieldset>
-        </form>
-      </section>
-      <section className="admin-panel">
-        <div className="admin-panel-head">
-          <div>
-            <p className="admin-kicker">НАВИГАЦИЯ</p>
-            <h2>Активни записи</h2>
-          </div>
-        </div>
-        {categories.isLoading ? (
-          <LoadingState />
-        ) : (
-          <div className="admin-category-grid">
-            {(categories.data ?? []).map(category => (
-              <article key={category.id}>
-                <img src={category.image} alt="" />
-                <div>
-                  <span>
-                    {category.isActive ? "Активна" : "Скрита"} · 0
-                    {category.sortOrder + 1}
-                  </span>
-                  <h3>{category.label}</h3>
-                  <p>
-                    {categoryNodeCount(category.subcategories)} навигационни
-                    записа
-                  </p>
-                  {canWriteCategories ? (
-                    <button
-                      type="button"
-                      className="admin-text-action"
-                      onClick={() => edit(category)}
-                    >
-                      Редакция <ArrowUpRight size={15} />
-                    </button>
-                  ) : (
-                    <ReadOnlyBadge />
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </section>
-  );
+  return <AdminCategoriesEditor permissions={permissions} />;
 }
 
 function AdminOrders({ permissions }: AdminPageProps) {
@@ -3144,18 +2863,7 @@ function emptyProductForm(categoryId: number): ProductForm {
     isActive: true,
   };
 }
-function emptyCategoryForm(): CategoryForm {
-  return {
-    slug: "",
-    name: "",
-    description: "",
-    imageUrl: "",
-    icon: "drill",
-    subcategoriesText: "",
-    sortOrder: "0",
-    isActive: true,
-  };
-}
+
 function AdminWorkspace({
   staff,
   isLoading,

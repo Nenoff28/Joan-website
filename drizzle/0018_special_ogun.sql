@@ -1,0 +1,2 @@
+ALTER TABLE `catalogue_categories` ADD `parentId` int;--> statement-breakpoint
+ALTER TABLE `catalogue_categories` ADD CONSTRAINT `catalogue_categories_parentId_catalogue_categories_id_fk` FOREIGN KEY (`parentId`) REFERENCES `catalogue_categories`(`id`) ON DELETE no action ON UPDATE no action;

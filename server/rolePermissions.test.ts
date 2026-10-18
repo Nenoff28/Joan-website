@@ -68,6 +68,7 @@ const fixtures = vi.hoisted(() => {
     updateContactEnquiry: vi.fn(),
     updateOrderRequest: vi.fn(),
     uploadAdminBrochure: vi.fn(),
+    uploadCategoryImage: vi.fn(),
     uploadBrochurePage: vi.fn(),
     uploadProductImage: vi.fn(),
   };
@@ -361,6 +362,22 @@ describe("mapped admin tRPC permission procedures", () => {
     await expect(caller.admin.orders()).resolves.toEqual({ kind: "read-only-orders" });
     await expect(caller.admin.updateOrder({ id: 1, status: "contacted", adminNote: null })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.admin.products()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("gates category image upload on categories.write and forwards the staff actor", async () => {
+    const input = {
+      dataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
+      fileName: "category.png",
+    };
+    configureCustomerRole("category-reader", ["categories.read"]);
+    const readOnlyCaller = appRouter.createCaller(contextFor(null));
+    await expect(readOnlyCaller.admin.uploadCategoryImage(input)).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    configureCustomerRole("category-writer", ["categories.write"]);
+    fixtures.catalogueService.uploadCategoryImage.mockResolvedValueOnce({ key: "category-key", url: "/manus-storage/category-key" });
+    const writerCaller = appRouter.createCaller(contextFor(null));
+    await expect(writerCaller.admin.uploadCategoryImage(input)).resolves.toEqual({ key: "category-key", url: "/manus-storage/category-key" });
+    expect(fixtures.catalogueService.uploadCategoryImage).toHaveBeenCalledWith(input, 41);
   });
 
   it("rejects an invalid permission at the access-router input boundary", async () => {
