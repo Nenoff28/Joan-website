@@ -164,6 +164,7 @@ export const appRouter = router({
     operations: anyPermissionProcedure(["dashboard.read", "products.read", "inventory.read", "promotions.read", "orders.read", "activity.read"]).query(({ ctx }) => getAdminOperations(ctx.staff.permissions)),
     products: anyPermissionProcedure(["products.read", "inventory.read", "promotions.read"]).query(() => getAdminProducts()),
     categories: permissionProcedure("categories.read").query(() => getAdminCategories()),
+    productCategories: anyPermissionProcedure(["categories.read", "products.write"]).query(() => getAdminCategories()),
     orders: permissionProcedure("orders.read").query(() => getAdminOrders()),
     orderDetail: permissionProcedure("orders.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getAdminOrderDetail(input.id)),
     contactEnquiries: permissionProcedure("enquiries.read").query(() => getAdminContactEnquiries()),
@@ -180,11 +181,11 @@ export const appRouter = router({
       await logAdminActivity(ctx.user.id, "customer_orders.imported", "legacy_customer_order_import", null, { importedOrders: result.importedOrders, importedOrderLines: result.importedOrderLines, linkedByLegacyCustomerId: result.linkedByLegacyCustomerId, linkedByEmail: result.linkedByEmail, unlinkedGuestOrRemoved: result.unlinkedGuestOrRemoved });
       return result;
     }),
-    createProduct: permissionProcedure("products.write").input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.user.id)),
-    updateProduct: permissionProcedure("products.write").input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.user.id)),
+    createProduct: permissionProcedure("products.write").input(productPayloadSchema).mutation(({ input, ctx }) => createAdminProduct(input, ctx.staff.id ?? ctx.user.id)),
+    updateProduct: permissionProcedure("products.write").input(z.object({ id: z.number().int().positive(), product: productPayloadSchema })).mutation(({ input, ctx }) => updateAdminProduct(input.id, input.product, ctx.staff.id ?? ctx.user.id)),
     adjustStock: permissionProcedure("inventory.write").input(z.object({ id: z.number().int().positive(), delta: z.number().int().min(-999999).max(999999).refine((value) => value !== 0) })).mutation(({ input, ctx }) => adjustProductStock(input.id, input.delta, ctx.user.id)),
     savePromotion: permissionProcedure("promotions.write").input(z.object({ id: z.number().int().positive(), priceEur: z.number().nonnegative().nullable(), oldPriceEur: z.number().nonnegative().nullable(), discountLabel: z.string().trim().max(48).nullable() })).mutation(({ input, ctx }) => saveProductPromotion(input, ctx.user.id)),
-    uploadProductImage: permissionProcedure("products.write").input(z.object({ dataUrl: z.string().min(32).max(15_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadProductImage(input, ctx.user.id)),
+    uploadProductImage: permissionProcedure("products.write").input(z.object({ dataUrl: z.string().min(32).max(15_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadProductImage(input, ctx.staff.id ?? ctx.user.id)),
     uploadBrochure: permissionProcedure("brochures.write").input(z.object({ title: z.string().trim().min(3).max(255), sourcePdf: z.object({ dataUrl: z.string().min(32).max(28_000_000), fileName: z.string().trim().min(1).max(160) }).optional(), pages: z.array(z.object({ dataUrl: z.string().min(32).max(4_500_000), fileName: z.string().trim().min(1).max(160) })).min(1).max(16) })).mutation(({ input, ctx }) => uploadAdminBrochure(input, ctx.user.id)),
     uploadBrochurePage: permissionProcedure("brochures.write").input(z.object({ dataUrl: z.string().min(32).max(4_500_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadBrochurePage(input, ctx.user.id)),
     replaceBrochure: permissionProcedure("brochures.write").input(z.object({ title: z.string().trim().min(3).max(255), pageUrls: z.array(z.string().startsWith("/manus-storage/")).min(1).max(16) })).mutation(({ input, ctx }) => replaceAdminBrochure(input, ctx.user.id)),

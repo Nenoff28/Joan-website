@@ -75,7 +75,19 @@ describe("administrator management procedures", () => {
     await expect(caller.admin.createProduct(productInput)).resolves.toBe(501);
     expect(service.createAdminProduct).toHaveBeenCalledWith(productInput, 17);
   });
-
+  it("allows a product writer to load the category options needed by the product editor", async () => {
+    service.getAdminCategories.mockResolvedValueOnce([{ id: 4, label: "Инструменти" }]);
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.productCategories()).resolves.toEqual([{ id: 4, label: "Инструменти" }]);
+    expect(service.getAdminCategories).toHaveBeenCalled();
+  });
+  it("forwards the authenticated staff identity when uploading a product image", async () => {
+    service.uploadProductImage.mockResolvedValueOnce({ key: "catalogue/admin/test.jpg", url: "/manus-storage/catalogue/admin/test.jpg" });
+    const caller = appRouter.createCaller(adminContext());
+    const input = { dataUrl: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==", fileName: "test.jpg" };
+    await expect(caller.admin.uploadProductImage(input)).resolves.toEqual({ key: "catalogue/admin/test.jpg", url: "/manus-storage/catalogue/admin/test.jpg" });
+    expect(service.uploadProductImage).toHaveBeenCalledWith(input, 17);
+  });
   it("rejects a custom product slug that is not Latin-only", async () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.createProduct({ ...productInput, slug: "артикул-за-проверка" })).rejects.toMatchObject({ code: "BAD_REQUEST" });

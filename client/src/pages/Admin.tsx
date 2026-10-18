@@ -733,7 +733,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const canWriteProducts = can(permissions, "products.write");
   const canReadCategories = can(permissions, "categories.read");
   const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadProducts });
-  const categoriesQuery = trpc.admin.categories.useQuery(undefined, { enabled: canReadCategories });
+  const categoriesQuery = trpc.admin.productCategories.useQuery(undefined, { enabled: canReadCategories || canWriteProducts });
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts });
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
   const onSaved = async (message: string) => {
@@ -764,7 +764,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
     });
     return Array.from(derived.values());
   }, [canReadCategories, categoriesQuery.data, productsQuery.data]);
-  const canEditProductForm = canWriteProducts && canReadCategories;
+  const canEditProductForm = canWriteProducts && categoryOptions.length > 0;
   useEffect(() => {
     if (form.categoryId === 0 && categoryOptions[0])
       setForm(emptyProductForm(categoryOptions[0].id));
@@ -901,8 +901,9 @@ function AdminProducts({ permissions }: AdminPageProps) {
       update("galleryText", gallery.join("\n"));
       if (!form.imageAlt.trim()) update("imageAlt", accepted[0]?.name.replace(/\.[^.]+$/, "") ?? "Продукт ЖОАН");
       toast.success(`${stored.length} ${stored.length === 1 ? "снимка е качена" : "снимки са качени"}.`);
-    } catch {
-      toast.error("Качването прекъсна. Проверете снимките и опитайте отново.");
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "неизвестна грешка";
+      toast.error(`Качването прекъсна: ${reason}`);
     }
   }
   return (
@@ -916,7 +917,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
             <button
               type="button"
               className="admin-primary"
-              disabled={!canReadCategories || !categoryOptions.length}
+              disabled={!categoryOptions.length}
               onClick={() =>
                 setForm(emptyProductForm(categoryOptions[0]?.id ?? 0))
               }

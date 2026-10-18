@@ -58,8 +58,9 @@ describe("granular administrator UI permission contract", () => {
   });
 
   it("gates data queries with the matching granular read permission", () => {
-    expect(adminPage).toContain(
-      "trpc.admin.categories.useQuery(undefined, { enabled: canReadCategories })"
+    expect(adminPage).toContain("trpc.admin.productCategories.useQuery");
+    expect(adminPage).toMatch(
+      /enabled:\s*canReadCategories\s*\|\|\s*canWriteProducts/
     );
     expect(adminPage).toContain(
       "trpc.admin.products.useQuery(undefined, { enabled: canReadProducts })"
@@ -94,7 +95,7 @@ describe("granular administrator UI permission contract", () => {
   it("makes mutation controls read-only without dispatching mutations", () => {
     expect(adminPage).toContain("if (!canEditProductForm) return;");
     expect(adminPage).toContain("fieldset disabled={!canEditProductForm}");
-    expect(adminPage).toContain("if (canWriteInventory) adjust.mutate");
+    expect(adminPage).toMatch(/if\s*\(canWriteInventory\)\s*adjust\.mutate/);
     expect(adminPage).toContain("if (!canWrite) return;");
     expect(adminPage).toContain("fieldset disabled={!canWriteCategories}");
     expect(orderDetailPage).toContain(

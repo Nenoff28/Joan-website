@@ -43,9 +43,8 @@ describe("admin product entry workflow", () => {
   });
 
   it("accepts up to ten selected images and keeps a primary gallery image", () => {
-    expect(adminSource).toContain(
-      'multiple accept="image/jpeg,image/png,image/webp"'
-    );
+    expect(adminSource).toContain("multiple");
+    expect(adminSource).toContain('accept="image/jpeg,image/png,image/webp"');
     expect(adminSource).toContain("files.length > 10");
     expect(adminSource).toContain("galleryUrls[0]");
     expect(adminSource).toContain("Снимките се качват наведнъж");
