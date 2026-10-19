@@ -18,6 +18,9 @@ describe("company invoice data in checkout requests", () => {
     expect(checkout).toContain("Име на фирмата *");
     expect(checkout).toContain("ЕИК/БУЛСТАТ *");
     expect(checkout).toContain("ИН по ЗДДС");
+    expect(checkout).toContain("function updateInvoiceEik");
+    expect(checkout).toContain("`BG${invoiceEik}`");
+    expect(checkout).toContain("previousGeneratedVat");
     expect(checkout).toContain("МОЛ *");
     expect(checkout).toContain("invoiceRegion");
     expect(checkout).toContain("Град/село *");
@@ -42,6 +45,7 @@ describe("company invoice data in checkout requests", () => {
     expect(router).toContain("invoiceRequested: z.boolean().default(false)");
     expect(checkout).toContain("/^(?:\\d{9}|\\d{13})$/");
     expect(checkout).toContain("maxLength={13}");
+    expect(checkout).toContain("onChange={event => updateInvoiceEik(event.target.value)}");
     expect(router).toContain("invoiceEik: z.string().trim().regex(/^(?:\\d{9}|\\d{13})$/");
     expect(router).toContain("superRefine((input, ctx)");
     expect(router).toContain("Invoice address is required");

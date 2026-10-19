@@ -370,6 +370,24 @@ export default function Checkout() {
       invoicePostcode: undefined,
     }));
   }
+  function updateInvoiceEik(rawValue: string) {
+    const invoiceEik = rawValue.replace(/\D/g, "").slice(0, 13);
+    setValues(current => {
+      const previousGeneratedVat = current.invoiceEik
+        ? `BG${current.invoiceEik}`
+        : "";
+      const hasManualVat = Boolean(
+        current.invoiceVatNumber && current.invoiceVatNumber !== previousGeneratedVat
+      );
+      const generatedVat = /^(?:\d{9}|\d{13})$/.test(invoiceEik)
+        ? `BG${invoiceEik}`
+        : hasManualVat
+          ? current.invoiceVatNumber
+          : "";
+      return { ...current, invoiceEik, invoiceVatNumber: generatedVat };
+    });
+    setErrors(current => ({ ...current, invoiceEik: undefined }));
+  }
   function validate() {
     const next: FormErrors = {};
     if (values.fullName.trim().length < 3) next.fullName = t("validationName");
@@ -739,12 +757,12 @@ export default function Checkout() {
                         <div className="checkout-two-col">
                           <label>
                             {language === "bg" ? "ЕИК/БУЛСТАТ *" : "EIK/BULSTAT *"}
-                            <input inputMode="numeric" maxLength={13} value={values.invoiceEik} onChange={event => update("invoiceEik", event.target.value.replace(/\D/g, "").slice(0, 13))} placeholder={language === "bg" ? "ЕИК/БУЛСТАТ" : "EIK/BULSTAT"} aria-invalid={Boolean(errors.invoiceEik)} />
+                            <input inputMode="numeric" maxLength={13} value={values.invoiceEik} onChange={event => updateInvoiceEik(event.target.value)} placeholder={language === "bg" ? "ЕИК/БУЛСТАТ" : "EIK/BULSTAT"} aria-invalid={Boolean(errors.invoiceEik)} />
                             {errors.invoiceEik && <small className="field-error">{errors.invoiceEik}</small>}
                           </label>
                           <label>
                             {language === "bg" ? "ИН по ЗДДС" : "VAT number"}
-                            <input value={values.invoiceVatNumber} onChange={event => update("invoiceVatNumber", event.target.value)} placeholder={language === "bg" ? "ИН по ЗДДС" : "VAT number"} />
+                            <input value={values.invoiceVatNumber} onChange={event => update("invoiceVatNumber", event.target.value.toUpperCase())} placeholder={language === "bg" ? "BG + ЕИК/БУЛСТАТ" : "BG + EIK/BULSTAT"} />
                           </label>
                         </div>
                         <label>
