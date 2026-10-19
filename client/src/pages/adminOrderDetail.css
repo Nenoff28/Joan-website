@@ -73,6 +73,13 @@
 .ord-customer-card a:hover { color: var(--ord-red); }
 .ord-customer-card a svg,.ord-address svg { color: var(--ord-red); flex: 0 0 auto; margin-top: .1rem; }
 .ord-address { border-top: 1px solid var(--ord-line); margin-top: .15rem; padding-top: .7rem; }
+.ord-invoice-card { padding: 1rem 1.05rem; }
+.ord-invoice-card > p { color: var(--ord-red); font-family: "Manrope", Arial, sans-serif; font-size: .66rem; font-weight: 800; letter-spacing: .13em; margin: 0; text-transform: uppercase; }
+.ord-invoice-card h2 { font-family: "Manrope", Arial, sans-serif; font-size: 1.05rem; letter-spacing: -.03em; margin: .3rem 0 .75rem; }
+.ord-invoice-details { display: grid; gap: .52rem; margin: 0; }
+.ord-invoice-details > div { border-top: 1px solid var(--ord-line); display: grid; gap: .2rem; padding-top: .45rem; }
+.ord-invoice-details dt { color: var(--ord-muted); font-size: .65rem; font-weight: 800; }
+.ord-invoice-details dd { color: var(--ord-ink); font-size: .74rem; margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .ord-status-form-card > div { border-bottom: 1px solid var(--ord-line); padding: 1rem 1.05rem .82rem; }
 .ord-status-form-card > div > span { color: var(--ord-muted); display: block; font-size: .68rem; line-height: 1.45; margin-top: .4rem; }
 .ord-status-form-card fieldset { border: 0; display: grid; gap: .65rem; margin: 0; padding: 1rem 1.05rem; }

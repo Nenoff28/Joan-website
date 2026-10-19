@@ -1099,7 +1099,28 @@ export async function deleteContactEnquiry(id: number, adminUserId: number, admi
 }
 
 export type OrderRequestItemInput = { productSlug: string; quantity: number };
-export type OrderRequestInput = { items?: OrderRequestItemInput[]; productSlug?: string; quantity?: number; fullName: string; email: string; phone: string; address: string; region?: string; city: string; postcode: string };
+export type OrderRequestInput = {
+  items?: OrderRequestItemInput[];
+  productSlug?: string;
+  quantity?: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  region?: string;
+  city: string;
+  postcode: string;
+  invoiceRequested?: boolean;
+  invoiceCompanyName?: string | null;
+  invoiceEik?: string | null;
+  invoiceVatNumber?: string | null;
+  invoiceMol?: string | null;
+  invoiceCity?: string | null;
+  invoicePostcode?: string | null;
+  invoiceAddress?: string | null;
+  invoiceAddressAdditional?: string | null;
+  invoiceAdditionalInfo?: string | null;
+};
 
 export async function createOrderRequest(input: OrderRequestInput) {
   await ensureCatalogueSeeded();
@@ -1120,7 +1141,7 @@ export async function createOrderRequest(input: OrderRequestInput) {
     const total = resolvedItems.every((item) => item.total !== null) ? resolvedItems.reduce((sum, item) => sum + (item.total ?? 0), 0) : null;
     const first = resolvedItems[0];
     const [header] = await tx.insert(orderRequests).values({
-      requestNumber, productId: first.product.id, productName: resolvedItems.length > 1 ? `${first.product.name} + още ${resolvedItems.length - 1}` : first.product.name, productSku: first.product.sku, productImageUrl: first.product.imageUrl, quantity: totalQuantity, priceEur: resolvedItems.length === 1 ? asDecimal(first.price) : null, totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, region: input.region ?? null, city: input.city, postcode: input.postcode, status: "new", adminNote: null,
+      requestNumber, productId: first.product.id, productName: resolvedItems.length > 1 ? `${first.product.name} + още ${resolvedItems.length - 1}` : first.product.name, productSku: first.product.sku, productImageUrl: first.product.imageUrl, quantity: totalQuantity, priceEur: resolvedItems.length === 1 ? asDecimal(first.price) : null, totalEur: asDecimal(total), fullName: input.fullName, email: input.email, phone: input.phone, address: input.address, region: input.region ?? null, city: input.city, postcode: input.postcode, invoiceRequested: input.invoiceRequested ?? false, invoiceCompanyName: input.invoiceRequested ? input.invoiceCompanyName?.trim() || null : null, invoiceEik: input.invoiceRequested ? input.invoiceEik?.trim() || null : null, invoiceVatNumber: input.invoiceRequested ? input.invoiceVatNumber?.trim() || null : null, invoiceMol: input.invoiceRequested ? input.invoiceMol?.trim() || null : null, invoiceCity: input.invoiceRequested ? input.invoiceCity?.trim() || null : null, invoicePostcode: input.invoiceRequested ? input.invoicePostcode?.trim() || null : null, invoiceAddress: input.invoiceRequested ? input.invoiceAddress?.trim() || null : null, invoiceAddressAdditional: input.invoiceRequested ? input.invoiceAddressAdditional?.trim() || null : null, invoiceAdditionalInfo: input.invoiceRequested ? input.invoiceAdditionalInfo?.trim() || null : null, status: "new", adminNote: null,
     });
     const orderRequestId = Number(header.insertId);
     await tx.insert(orderRequestItems).values(resolvedItems.map((item) => ({ orderRequestId, productId: item.product.id, productName: item.product.name, productSku: item.product.sku, productImageUrl: item.product.imageUrl, quantity: item.quantity, priceEur: asDecimal(item.price), totalEur: asDecimal(item.total) })));

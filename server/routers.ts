@@ -114,7 +114,28 @@ export const appRouter = router({
       region: z.string().trim().min(2).max(160).optional(),
       city: z.string().trim().min(2).max(160),
       postcode: z.string().trim().min(4).max(20),
-    }).refine((input) => Boolean(input.items?.length || (input.productSlug && input.quantity)), { message: "At least one product is required", path: ["items"] })).mutation(({ input }) => createOrderRequest(input)),
+      invoiceRequested: z.boolean().default(false),
+      invoiceCompanyName: z.string().trim().min(2).max(255).nullable().optional(),
+      invoiceEik: z.string().trim().min(5).max(32).nullable().optional(),
+      invoiceVatNumber: z.string().trim().max(32).nullable().optional(),
+      invoiceMol: z.string().trim().min(2).max(255).nullable().optional(),
+      invoiceCity: z.string().trim().min(2).max(160).nullable().optional(),
+      invoicePostcode: z.string().trim().regex(/^\d{4}$/).nullable().optional(),
+      invoiceAddress: z.string().trim().min(3).max(1200).nullable().optional(),
+      invoiceAddressAdditional: z.string().trim().max(1200).nullable().optional(),
+      invoiceAdditionalInfo: z.string().trim().max(4000).nullable().optional(),
+    }).refine((input) => Boolean(input.items?.length || (input.productSlug && input.quantity)), { message: "At least one product is required", path: ["items"] }).superRefine((input, ctx) => {
+      if (!input.invoiceRequested) return;
+      const required: Array<[keyof typeof input, string]> = [
+        ["invoiceCompanyName", "Company name is required"],
+        ["invoiceEik", "EIK/BULSTAT is required"],
+        ["invoiceMol", "Authorized person is required"],
+        ["invoiceCity", "Invoice city is required"],
+        ["invoicePostcode", "Invoice postcode is required"],
+        ["invoiceAddress", "Invoice address is required"],
+      ];
+      for (const [path, message] of required) if (!input[path]) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+    })).mutation(({ input }) => createOrderRequest(input)),
   }),
   contact: router({
     createEnquiry: publicProcedure.input(z.object({

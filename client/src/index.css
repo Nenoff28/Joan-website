@@ -873,3 +873,12 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
   .admin-stock-editor { grid-column: span 2; justify-items: stretch; margin-top: .25rem; }
   .admin-stock-editor input { width: 100%; }
 }
+
+/* Company invoice details: explicit choice first, compact fields after opting in. */
+.invoice-choice-group { display: flex; flex-wrap: wrap; gap: .55rem 1rem; margin-bottom: .9rem; }
+.invoice-choice { align-items: center; background: #f5f6f3; border: 1px solid var(--line); display: flex; font-size: .78rem; font-weight: 700; gap: .45rem; padding: .62rem .75rem; }
+.invoice-choice:has(input:checked) { border-color: var(--red); box-shadow: 0 0 0 2px rgba(215,25,32,.08); }
+.invoice-choice input { accent-color: var(--red); margin: 0; }
+.invoice-fields { border-left: 3px solid var(--red); display: grid; gap: .8rem; padding-left: .85rem; }
+.invoice-fields textarea { border: 1px solid var(--line); border-radius: 0; font: inherit; min-height: 82px; padding: .65rem .7rem; resize: vertical; width: 100%; }
+.invoice-fields input:focus, .invoice-fields textarea:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.1); outline: none; }

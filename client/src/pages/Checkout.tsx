@@ -33,6 +33,16 @@ type FormValues = {
   city: string;
   postcode: string;
   locationKey: string;
+  invoiceRequested: boolean;
+  invoiceCompanyName: string;
+  invoiceEik: string;
+  invoiceVatNumber: string;
+  invoiceMol: string;
+  invoiceCity: string;
+  invoicePostcode: string;
+  invoiceAddress: string;
+  invoiceAddressAdditional: string;
+  invoiceAdditionalInfo: string;
   consent: boolean;
 };
 type FormErrors = Partial<Record<keyof FormValues, string>>;
@@ -119,6 +129,16 @@ export default function Checkout() {
     city: "",
     postcode: "",
     locationKey: "",
+    invoiceRequested: false,
+    invoiceCompanyName: "",
+    invoiceEik: "",
+    invoiceVatNumber: "",
+    invoiceMol: "",
+    invoiceCity: "",
+    invoicePostcode: "",
+    invoiceAddress: "",
+    invoiceAddressAdditional: "",
+    invoiceAdditionalInfo: "",
     consent: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -266,6 +286,20 @@ export default function Checkout() {
       next.city = t("validationCity");
     if (!/^\d{4}$/.test(values.postcode))
       next.postcode = t("validationPostcode");
+    if (values.invoiceRequested) {
+      if (values.invoiceCompanyName.trim().length < 2)
+        next.invoiceCompanyName = language === "bg" ? "Въведете име на фирмата." : "Enter the company name.";
+      if (values.invoiceEik.trim().length < 5)
+        next.invoiceEik = language === "bg" ? "Въведете валиден ЕИК/БУЛСТАТ." : "Enter a valid EIK/BULSTAT.";
+      if (values.invoiceMol.trim().length < 2)
+        next.invoiceMol = language === "bg" ? "Въведете МОЛ." : "Enter the authorized person.";
+      if (values.invoiceCity.trim().length < 2)
+        next.invoiceCity = language === "bg" ? "Въведете населено място." : "Enter a city or village.";
+      if (!/^\d{4}$/.test(values.invoicePostcode))
+        next.invoicePostcode = language === "bg" ? "Въведете 4-цифрен пощенски код." : "Enter a 4-digit postcode.";
+      if (values.invoiceAddress.trim().length < 3)
+        next.invoiceAddress = language === "bg" ? "Въведете адрес." : "Enter an address.";
+    }
     if (!values.consent)
       next.consent =
         language === "bg"
@@ -291,6 +325,16 @@ export default function Checkout() {
         region: values.region.trim(),
         city: values.city.trim(),
         postcode: values.postcode.trim(),
+        invoiceRequested: values.invoiceRequested,
+        invoiceCompanyName: values.invoiceRequested ? values.invoiceCompanyName.trim() : null,
+        invoiceEik: values.invoiceRequested ? values.invoiceEik.trim() : null,
+        invoiceVatNumber: values.invoiceRequested ? values.invoiceVatNumber.trim() || null : null,
+        invoiceMol: values.invoiceRequested ? values.invoiceMol.trim() : null,
+        invoiceCity: values.invoiceRequested ? values.invoiceCity.trim() : null,
+        invoicePostcode: values.invoiceRequested ? values.invoicePostcode.trim() : null,
+        invoiceAddress: values.invoiceRequested ? values.invoiceAddress.trim() : null,
+        invoiceAddressAdditional: values.invoiceRequested ? values.invoiceAddressAdditional.trim() || null : null,
+        invoiceAdditionalInfo: values.invoiceRequested ? values.invoiceAdditionalInfo.trim() || null : null,
       });
       setRequestNumbers([result.requestNumber]);
       clearCart();
@@ -559,6 +603,82 @@ export default function Checkout() {
                         <small className="field-error">{errors.postcode}</small>
                       )}
                     </label>
+                  </fieldset>
+                  <fieldset className="invoice-fieldset">
+                    <legend>{language === "bg" ? "Данни за фактура" : "Invoice details"}</legend>
+                    <div className="invoice-choice-group" role="radiogroup" aria-label={language === "bg" ? "Желаете ли фактура" : "Do you want an invoice"}>
+                      <label className="invoice-choice">
+                        <input
+                          type="radio"
+                          name="invoiceRequested"
+                          checked={values.invoiceRequested}
+                          onChange={() => update("invoiceRequested", true)}
+                        />
+                        <span>{language === "bg" ? "Желая фактура за фирма" : "I want a company invoice"}</span>
+                      </label>
+                      <label className="invoice-choice">
+                        <input
+                          type="radio"
+                          name="invoiceRequested"
+                          checked={!values.invoiceRequested}
+                          onChange={() => {
+                            update("invoiceRequested", false);
+                            setErrors(current => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith("invoice"))) as FormErrors);
+                          }}
+                        />
+                        <span>{language === "bg" ? "Не желая фактура" : "I do not want an invoice"}</span>
+                      </label>
+                    </div>
+                    {values.invoiceRequested && (
+                      <div className="invoice-fields">
+                        <label>
+                          {language === "bg" ? "Име на фирмата *" : "Company name *"}
+                          <input value={values.invoiceCompanyName} onChange={event => update("invoiceCompanyName", event.target.value)} placeholder={language === "bg" ? "Име на фирмата" : "Company name"} aria-invalid={Boolean(errors.invoiceCompanyName)} />
+                          {errors.invoiceCompanyName && <small className="field-error">{errors.invoiceCompanyName}</small>}
+                        </label>
+                        <div className="checkout-two-col">
+                          <label>
+                            {language === "bg" ? "ЕИК/БУЛСТАТ *" : "EIK/BULSTAT *"}
+                            <input value={values.invoiceEik} onChange={event => update("invoiceEik", event.target.value)} placeholder={language === "bg" ? "ЕИК/БУЛСТАТ" : "EIK/BULSTAT"} aria-invalid={Boolean(errors.invoiceEik)} />
+                            {errors.invoiceEik && <small className="field-error">{errors.invoiceEik}</small>}
+                          </label>
+                          <label>
+                            {language === "bg" ? "ИН по ЗДДС" : "VAT number"}
+                            <input value={values.invoiceVatNumber} onChange={event => update("invoiceVatNumber", event.target.value)} placeholder={language === "bg" ? "ИН по ЗДДС" : "VAT number"} />
+                          </label>
+                        </div>
+                        <label>
+                          {language === "bg" ? "МОЛ *" : "Authorized person *"}
+                          <input value={values.invoiceMol} onChange={event => update("invoiceMol", event.target.value)} placeholder={language === "bg" ? "МОЛ" : "Authorized person"} aria-invalid={Boolean(errors.invoiceMol)} />
+                          {errors.invoiceMol && <small className="field-error">{errors.invoiceMol}</small>}
+                        </label>
+                        <div className="checkout-two-col">
+                          <label>
+                            {language === "bg" ? "Населено място *" : "City/village *"}
+                            <input value={values.invoiceCity} onChange={event => update("invoiceCity", event.target.value)} placeholder={language === "bg" ? "Населено място" : "City or village"} aria-invalid={Boolean(errors.invoiceCity)} />
+                            {errors.invoiceCity && <small className="field-error">{errors.invoiceCity}</small>}
+                          </label>
+                          <label>
+                            {language === "bg" ? "Пощенски код *" : "Postcode *"}
+                            <input inputMode="numeric" value={values.invoicePostcode} onChange={event => update("invoicePostcode", event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={language === "bg" ? "Пощенски код" : "Postcode"} aria-invalid={Boolean(errors.invoicePostcode)} />
+                            {errors.invoicePostcode && <small className="field-error">{errors.invoicePostcode}</small>}
+                          </label>
+                        </div>
+                        <label>
+                          {language === "bg" ? "Адрес *" : "Address *"}
+                          <input value={values.invoiceAddress} onChange={event => update("invoiceAddress", event.target.value)} placeholder={language === "bg" ? "Адрес" : "Address"} aria-invalid={Boolean(errors.invoiceAddress)} />
+                          {errors.invoiceAddress && <small className="field-error">{errors.invoiceAddress}</small>}
+                        </label>
+                        <label>
+                          {language === "bg" ? "Адрес допълнително" : "Additional address"}
+                          <input value={values.invoiceAddressAdditional} onChange={event => update("invoiceAddressAdditional", event.target.value)} placeholder={language === "bg" ? "Адрес допълнително" : "Additional address"} />
+                        </label>
+                        <label>
+                          {language === "bg" ? "Допълнителна информация" : "Additional information"}
+                          <textarea value={values.invoiceAdditionalInfo} onChange={event => update("invoiceAdditionalInfo", event.target.value)} placeholder={language === "bg" ? "Допълнителна информация" : "Additional information"} rows={3} />
+                        </label>
+                      </div>
+                    )}
                   </fieldset>
                   <label className="checkout-consent">
                     <input

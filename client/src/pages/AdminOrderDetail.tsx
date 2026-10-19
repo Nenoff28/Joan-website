@@ -56,6 +56,16 @@ type OrderDetail = {
   region: string | null;
   city: string;
   postcode: string;
+  invoiceRequested: boolean;
+  invoiceCompanyName: string | null;
+  invoiceEik: string | null;
+  invoiceVatNumber: string | null;
+  invoiceMol: string | null;
+  invoiceCity: string | null;
+  invoicePostcode: string | null;
+  invoiceAddress: string | null;
+  invoiceAddressAdditional: string | null;
+  invoiceAdditionalInfo: string | null;
   status: OrderStatus;
   isDeleted: boolean;
   quantity: number;
@@ -320,6 +330,24 @@ function RequestDetailContent() {
                 {order.postcode} {order.city}
               </span>
             </div>
+          </section>
+
+          <section className="ord-detail-card ord-invoice-card">
+            <p>ФАКТУРА</p>
+            <h2>{order.invoiceRequested ? "Желана фактура за фирма" : "Не е заявена фактура"}</h2>
+            {order.invoiceRequested ? (
+              <dl className="ord-invoice-details">
+                <div><dt>Име на фирмата</dt><dd>{order.invoiceCompanyName || "—"}</dd></div>
+                <div><dt>ЕИК/БУЛСТАТ</dt><dd>{order.invoiceEik || "—"}</dd></div>
+                <div><dt>ИН по ЗДДС</dt><dd>{order.invoiceVatNumber || "—"}</dd></div>
+                <div><dt>МОЛ</dt><dd>{order.invoiceMol || "—"}</dd></div>
+                <div><dt>Населено място</dt><dd>{order.invoiceCity || "—"}</dd></div>
+                <div><dt>Пощенски код</dt><dd>{order.invoicePostcode || "—"}</dd></div>
+                <div><dt>Адрес</dt><dd>{order.invoiceAddress || "—"}</dd></div>
+                {order.invoiceAddressAdditional && <div><dt>Адрес допълнително</dt><dd>{order.invoiceAddressAdditional}</dd></div>}
+                {order.invoiceAdditionalInfo && <div><dt>Допълнителна информация</dt><dd>{order.invoiceAdditionalInfo}</dd></div>}
+              </dl>
+            ) : <p className="ord-history-empty">Клиентът е избрал да не получава фактура.</p>}
           </section>
 
           <section className="ord-detail-card ord-status-form-card">
