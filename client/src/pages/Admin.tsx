@@ -1687,6 +1687,7 @@ function AdminPromotions({ permissions }: AdminPageProps) {
           <p>Артикула са без цена и изискват допълване преди предложение.</p>
         </div>
       </section>
+      <PromotionCampaignPanel products={availableProducts} canWrite={canWritePromotions} />
       {selected ? (
         <PromotionEditor product={selected} canWrite={canWritePromotions} />
       ) : (
@@ -1746,6 +1747,85 @@ function AdminPromotions({ permissions }: AdminPageProps) {
           )}
         </div>
       </section>
+    </section>
+  );
+}
+
+function PromotionCampaignPanel({ products, canWrite }: { products: AdminProduct[]; canWrite: boolean }) {
+  const utils = trpc.useUtils();
+  const campaigns = trpc.admin.promotionCampaigns.useQuery(undefined, { enabled: true });
+  const create = trpc.admin.createPromotionCampaign.useMutation({
+    onSuccess: async () => {
+      await Promise.all([utils.admin.promotionCampaigns.invalidate(), utils.admin.operations.invalidate(), utils.catalogue.page.invalidate(), utils.catalogue.list.invalidate()]);
+      setForm({ name: "", discountPercent: "", startsAt: "", endsAt: "" });
+      setSelectedIds([]);
+      toast("Промоцията е създадена и ще се активира според зададения период.");
+    },
+  });
+  const toggle = trpc.admin.setPromotionCampaignActive.useMutation({
+    onSuccess: () => utils.admin.promotionCampaigns.invalidate(),
+  });
+  const [form, setForm] = useState({ name: "", discountPercent: "", startsAt: "", endsAt: "" });
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const filteredProducts = useMemo(() => {
+    const needle = search.trim().toLocaleLowerCase("bg-BG");
+    if (!needle) return products.slice(0, 120);
+    return products.filter(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(needle)).slice(0, 120);
+  }, [products, search]);
+  const toggleProduct = (id: number) => setSelectedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  const statusLabel: Record<string, string> = { planned: "Предстояща", active: "Активна", ended: "Приключила", paused: "Спряна" };
+  return (
+    <section className="admin-edit-panel admin-campaign-panel">
+      <div className="admin-panel-head">
+        <div>
+          <p className="admin-kicker">КАМПАНИИ</p>
+          <h2>Създайте промоция за избрани артикули</h2>
+          <p>Базовите цени не се променят. Публичната цена се изчислява автоматично само в зададения период.</p>
+        </div>
+        <BadgePercent size={26} />
+      </div>
+      <form className="admin-form" onSubmit={event => {
+        event.preventDefault();
+        if (!canWrite) return;
+        create.mutate({
+          name: form.name.trim(),
+          discountPercent: Number(form.discountPercent),
+          startsAt: new Date(form.startsAt).toISOString(),
+          endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
+          productIds: selectedIds,
+        });
+      }}>
+        <fieldset disabled={!canWrite || create.isPending}>
+          <div className="admin-form-grid admin-campaign-fields">
+            <label>Име на промоцията *<input required value={form.name} placeholder="напр. Септемврийска промоция" onChange={event => setForm({ ...form, name: event.target.value })} /></label>
+            <label>Отстъпка *<input required type="number" min="0.01" max="100" step="0.01" value={form.discountPercent} placeholder="5" onChange={event => setForm({ ...form, discountPercent: event.target.value })} /><small>Процент от базовата цена</small></label>
+            <label>Начало *<input required type="datetime-local" value={form.startsAt} onChange={event => setForm({ ...form, startsAt: event.target.value })} /></label>
+            <label>Край <input type="datetime-local" value={form.endsAt} onChange={event => setForm({ ...form, endsAt: event.target.value })} /><small>Оставете празно за промоция без крайна дата</small></label>
+          </div>
+          <div className="admin-campaign-picker">
+            <div className="admin-panel-head">
+              <div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Изберете продукти</h3></div>
+              <label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label>
+            </div>
+            <div className="admin-campaign-products">
+              {filteredProducts.map(product => <label className="admin-campaign-product" key={product.id}>
+                <input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} />
+                <img src={product.image} alt="" />
+                <span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"} · {product.price ?? "Без цена"}</small></span>
+              </label>)}
+              {!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}
+            </div>
+          </div>
+          <div className="admin-form-actions"><button className="admin-primary" type="submit" disabled={selectedIds.length === 0 || !form.startsAt || create.isPending}><Plus size={17} /> Създай промоция</button></div>
+        </fieldset>
+        {(create.error || campaigns.error) && <p className="admin-error">{create.error?.message ?? campaigns.error?.message}</p>}
+      </form>
+      {campaigns.data?.length ? <div className="admin-campaign-list">{campaigns.data.map(campaign => <article className="admin-campaign-card" key={campaign.id}>
+        <div><span className={`admin-campaign-status is-${campaign.status}`}>{statusLabel[campaign.status] ?? campaign.status}</span><h3>{campaign.name}</h3><p><b>{campaign.discountPercent}%</b> · {new Date(campaign.startsAt).toLocaleString("bg-BG")} {campaign.endsAt ? `— ${new Date(campaign.endsAt).toLocaleString("bg-BG")}` : "— без краен срок"}</p></div>
+        <div><strong>{campaign.products.length} артикула</strong><button type="button" className="admin-secondary" onClick={() => toggle.mutate({ id: campaign.id, isActive: !campaign.isActive })}>{campaign.isActive ? "Спри промоцията" : "Активирай"}</button></div>
+      </article>)}</div> : null}
     </section>
   );
 }

@@ -2,7 +2,7 @@ import { and, asc, count, countDistinct, desc, eq, gt, gte, inArray, isNotNull, 
 import { TRPCError } from "@trpc/server";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, contactEnquiryHistory, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, contactEnquiryHistory, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, promotionCampaignProducts, promotionCampaigns, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
@@ -303,11 +303,30 @@ function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: Retur
   return `/category/${root.slug}${labels.length ? `?path=${labels.join("~")}` : ""}`;
 }
 
-function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null) {
+type ActivePromotion = { id: number; name: string; discountPercent: number };
+
+async function activePromotionsByProductIds(db: Awaited<ReturnType<typeof requireDb>>, productIds: number[]) {
+  const result = new Map<number, ActivePromotion>();
+  if (!productIds.length) return result;
+  const now = new Date();
+  const rows = await db.select({ productId: promotionCampaignProducts.productId, campaignId: promotionCampaigns.id, name: promotionCampaigns.name, discountPercent: promotionCampaigns.discountPercent })
+    .from(promotionCampaignProducts)
+    .innerJoin(promotionCampaigns, eq(promotionCampaignProducts.campaignId, promotionCampaigns.id))
+    .where(and(inArray(promotionCampaignProducts.productId, productIds), eq(promotionCampaigns.isActive, true), lte(promotionCampaigns.startsAt, now), or(isNull(promotionCampaigns.endsAt), gt(promotionCampaigns.endsAt, now))!))
+    .orderBy(desc(promotionCampaigns.discountPercent), desc(promotionCampaigns.startsAt));
+  for (const row of rows) if (!result.has(row.productId)) result.set(row.productId, { id: row.campaignId, name: row.name, discountPercent: Number(row.discountPercent) });
+  return result;
+}
+
+function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null, activePromotion?: ActivePromotion) {
   const translated = language === "en" ? english : undefined;
   const sourceDescription = translated?.description ?? product.description;
   const features = publicProductFeatures(translated?.featuresJson ?? product.featuresJson);
   const presentation = splitProductDescription(sourceDescription, features);
+  const basePrice = product.priceEur === null ? null : Number(product.priceEur);
+  const promotionPrice = activePromotion && basePrice !== null
+    ? Math.max(0, Math.round(basePrice * (1 - activePromotion.discountPercent / 100) * 100) / 100)
+    : null;
   return {
     id: product.id,
     slug: product.slug,
@@ -319,9 +338,9 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     image: product.imageUrl,
     gallery: parseJsonArray(product.galleryJson),
     imageAlt: translated?.imageAlt ?? product.imageAlt,
-    price: formatPrice(product.priceEur),
-    oldPrice: formatPrice(product.oldPriceEur),
-    discount: product.discountLabel ?? undefined,
+    price: formatPrice(promotionPrice === null ? product.priceEur : promotionPrice.toFixed(2)),
+    oldPrice: formatPrice(promotionPrice === null ? product.oldPriceEur : product.priceEur),
+    discount: activePromotion ? `-${activePromotion.discountPercent}%` : product.discountLabel ?? undefined,
     category: category.slug,
     availability: availabilityLabels[product.availability],
     availabilityCode: product.availability,
@@ -359,7 +378,8 @@ export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
   const rows = categoryRows.map((row) => row.category);
   const englishById: CategoryEnglishMap = new Map(categoryRows.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
   const roots = rootCategories(rows, true);
-  return { categories: roots.map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)) };
+  const activePromotions = await activePromotionsByProductIds(db, productRows.map((row) => row.product.id));
+  return { categories: roots.map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id))) };
 }
 
 export type PublicCataloguePageInput = {
@@ -439,6 +459,7 @@ export function publicCataloguePromotionPredicate() {
   return or(
     and(isNotNull(catalogueProducts.oldPriceEur), isNotNull(catalogueProducts.priceEur), gt(catalogueProducts.oldPriceEur, catalogueProducts.priceEur)),
     sql`TRIM(COALESCE(${catalogueProducts.discountLabel}, '')) <> ''`,
+    sql`EXISTS (SELECT 1 FROM promotion_campaign_products pcp INNER JOIN promotion_campaigns pc ON pc.id = pcp.campaignId WHERE pcp.productId = ${catalogueProducts.id} AND pc.isActive = true AND pc.startsAt <= CURRENT_TIMESTAMP() AND (pc.endsAt IS NULL OR pc.endsAt > CURRENT_TIMESTAMP()))`,
   )!;
 }
 
@@ -505,7 +526,8 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
     selectProducts,
     db.select({ brand: language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...publicCatalogueConditions({ ...input, language, brand: undefined, brands: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand).orderBy(asc(language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand)),
   ]);
-  return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl)), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
+  const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
+  return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id))), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
 }
 
 /** Aggregated historical quantities are used only for transparent public popularity ordering. */
@@ -529,7 +551,8 @@ export async function getPublicBestSellers(limit = 8, language: CatalogueLanguag
     .where(and(eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)))
     .orderBy(desc(quantityTotals.units), desc(catalogueProducts.updatedAt), asc(catalogueProducts.name))
     .limit(cappedLimit);
-  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl));
+  const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
+  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)));
 }
 
 export async function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
@@ -538,7 +561,8 @@ export async function getPublicProductBySlug(slug: string, language: CatalogueLa
   const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).limit(1);
   if (!row) return null;
   const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
-  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl)) };
+  const activePromotions = await activePromotionsByProductIds(db, [row.product.id, ...relatedRows.map((candidate) => candidate.product.id)]);
+  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
 }
 
 export async function getPublicProductsBySlugs(slugs: string[], language: CatalogueLanguage = "bg") {
@@ -546,7 +570,8 @@ export async function getPublicProductsBySlugs(slugs: string[], language: Catalo
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)));
-  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl));
+  const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
+  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)));
 }
 
 export async function getPublicSitemapEntries() {
@@ -936,6 +961,68 @@ export async function saveProductPromotion(input: { id: number; priceEur: number
   if (!product) throw new Error("Product was not found");
   await db.update(catalogueProducts).set({ priceEur: asDecimal(input.priceEur), oldPriceEur: asDecimal(input.oldPriceEur), discountLabel: input.discountLabel?.trim() || null }).where(eq(catalogueProducts.id, input.id));
   await logAdminActivity(adminUserId, "promotion.updated", "product", input.id, { slug: product.slug, name: product.name, discountLabel: input.discountLabel ?? null });
+}
+
+export type PromotionCampaignInput = {
+  name: string;
+  discountPercent: number;
+  startsAt: string;
+  endsAt?: string | null;
+  productIds: number[];
+};
+
+function campaignStatus(campaign: { isActive: boolean; startsAt: Date; endsAt: Date | null }, now = new Date()) {
+  if (!campaign.isActive) return "paused" as const;
+  if (campaign.startsAt > now) return "planned" as const;
+  if (campaign.endsAt && campaign.endsAt <= now) return "ended" as const;
+  return "active" as const;
+}
+
+export async function getAdminPromotionCampaigns() {
+  const db = await requireDb();
+  const [campaignRows, links] = await Promise.all([
+    db.select().from(promotionCampaigns).orderBy(desc(promotionCampaigns.startsAt), desc(promotionCampaigns.id)),
+    db.select({ campaignId: promotionCampaignProducts.campaignId, productId: promotionCampaignProducts.productId, name: catalogueProducts.name, sku: catalogueProducts.sku }).from(promotionCampaignProducts).innerJoin(catalogueProducts, eq(promotionCampaignProducts.productId, catalogueProducts.id)),
+  ]);
+  const now = new Date();
+  return campaignRows.map((campaign) => ({
+    ...campaign,
+    discountPercent: Number(campaign.discountPercent),
+    status: campaignStatus(campaign, now),
+    products: links.filter((link) => link.campaignId === campaign.id).map(({ productId, name, sku }) => ({ id: productId, name, sku })),
+  }));
+}
+
+export async function createPromotionCampaign(input: PromotionCampaignInput, adminUserId: number) {
+  const name = input.name.trim();
+  const productIds = Array.from(new Set(input.productIds));
+  const startsAt = new Date(input.startsAt);
+  const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+  if (!name) throw new Error("Името на промоцията е задължително.");
+  if (!Number.isFinite(input.discountPercent) || input.discountPercent <= 0 || input.discountPercent > 100) throw new Error("Отстъпката трябва да е между 0.01% и 100%.");
+  if (Number.isNaN(startsAt.getTime()) || (endsAt && Number.isNaN(endsAt.getTime()))) throw new Error("Невалиден период на промоцията.");
+  if (endsAt && endsAt <= startsAt) throw new Error("Крайната дата трябва да е след началната дата.");
+  if (!productIds.length) throw new Error("Изберете поне един артикул.");
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const products = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, sku: catalogueProducts.sku, priceEur: catalogueProducts.priceEur, isActive: catalogueProducts.isActive, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(inArray(catalogueProducts.id, productIds));
+    if (products.length !== productIds.length) throw new Error("Един или повече избрани артикули не са намерени.");
+    if (products.some((product) => !product.isActive || product.isArchived || product.priceEur === null)) throw new Error("Промоция може да се добави само към активни артикули с базова цена.");
+    const inserted = await tx.insert(promotionCampaigns).values({ name, discountPercent: input.discountPercent.toFixed(2), startsAt, endsAt, isActive: true, createdBy: adminUserId });
+    const campaignId = Number(inserted[0].insertId);
+    await tx.insert(promotionCampaignProducts).values(productIds.map((productId) => ({ campaignId, productId })));
+    await tx.insert(adminActivities).values({ adminUserId, action: "promotion.campaign.created", entityType: "promotion_campaign", entityId: campaignId, metadataJson: JSON.stringify({ name, discountPercent: input.discountPercent, startsAt, endsAt, productIds }) });
+    return { id: campaignId, productCount: productIds.length };
+  });
+}
+
+export async function setPromotionCampaignActive(id: number, isActive: boolean, adminUserId: number) {
+  const db = await requireDb();
+  const [campaign] = await db.select({ id: promotionCampaigns.id, name: promotionCampaigns.name }).from(promotionCampaigns).where(eq(promotionCampaigns.id, id)).limit(1);
+  if (!campaign) throw new Error("Промоцията не е намерена.");
+  await db.update(promotionCampaigns).set({ isActive }).where(eq(promotionCampaigns.id, id));
+  await logAdminActivity(adminUserId, isActive ? "promotion.campaign.activated" : "promotion.campaign.paused", "promotion_campaign", id, { name: campaign.name });
+  return { id, isActive };
 }
 
 function categoryDepthAndParent(rows: CategoryRow[], id: number) {

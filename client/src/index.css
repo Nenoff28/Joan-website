@@ -882,3 +882,33 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .invoice-fields { border-left: 3px solid var(--red); display: grid; gap: .8rem; padding-left: .85rem; }
 .invoice-fields textarea { border: 1px solid var(--line); border-radius: 0; font: inherit; min-height: 82px; padding: .65rem .7rem; resize: vertical; width: 100%; }
 .invoice-fields input:focus, .invoice-fields textarea:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.1); outline: none; }
+
+/* Scheduled promotion campaigns */
+.admin-campaign-panel { margin-top: 1.5rem; }
+.admin-campaign-panel .admin-panel-head > div > p:last-child { max-width: 680px; margin: .45rem 0 0; color: var(--slate); }
+.admin-campaign-fields small, .admin-campaign-product small { display: block; color: var(--slate); font-size: .78rem; margin-top: .25rem; }
+.admin-campaign-picker { margin-top: 1.25rem; padding: 1rem; border: 1px solid rgba(30, 41, 59, .12); border-radius: 1rem; background: rgba(248, 250, 252, .72); }
+.admin-campaign-picker .admin-panel-head { align-items: end; margin-bottom: .8rem; }
+.admin-campaign-picker h3 { margin: .2rem 0 0; }
+.admin-campaign-products { max-height: 390px; overflow: auto; display: grid; gap: .45rem; padding-right: .2rem; }
+.admin-campaign-product { display: grid; grid-template-columns: auto 44px minmax(0, 1fr); align-items: center; gap: .7rem; padding: .55rem .65rem; border: 1px solid transparent; border-radius: .75rem; background: #fff; cursor: pointer; }
+.admin-campaign-product:hover { border-color: rgba(185, 28, 28, .32); }
+.admin-campaign-product input { width: 1rem; height: 1rem; accent-color: #b91c1c; }
+.admin-campaign-product img { width: 44px; height: 44px; object-fit: contain; border-radius: .45rem; background: #f1f5f9; }
+.admin-campaign-product span { min-width: 0; }
+.admin-campaign-product b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-campaign-list { display: grid; gap: .7rem; margin-top: 1.2rem; }
+.admin-campaign-card { display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 1rem; border: 1px solid rgba(30, 41, 59, .12); border-radius: .9rem; background: #fff; }
+.admin-campaign-card h3 { margin: .3rem 0; }
+.admin-campaign-card p { margin: 0; color: var(--slate); font-size: .86rem; }
+.admin-campaign-card > div:last-child { display: flex; align-items: center; gap: .8rem; white-space: nowrap; }
+.admin-campaign-status { display: inline-flex; border-radius: 999px; padding: .2rem .55rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.admin-campaign-status.is-active { color: #166534; background: #dcfce7; }
+.admin-campaign-status.is-planned { color: #1d4ed8; background: #dbeafe; }
+.admin-campaign-status.is-ended, .admin-campaign-status.is-paused { color: #475569; background: #e2e8f0; }
+@media (max-width: 700px) {
+  .admin-campaign-picker .admin-panel-head, .admin-campaign-card { align-items: stretch; flex-direction: column; }
+  .admin-campaign-card > div:last-child { justify-content: space-between; }
+  .admin-campaign-product { grid-template-columns: auto 38px minmax(0, 1fr); }
+  .admin-campaign-product img { width: 38px; height: 38px; }
+}

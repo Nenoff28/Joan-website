@@ -169,6 +169,13 @@
       "when": 1792393851815,
       "tag": "0023_odd_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1792395572435,
+      "tag": "0024_equal_oracle",
+      "breakpoints": true
     }
   ]
 }

@@ -256,6 +256,27 @@ export const catalogueProductCategoryLinks = mysqlTable("catalogue_product_categ
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [index("catalogue_product_category_links_product_idx").on(table.productId), index("catalogue_product_category_links_category_idx").on(table.categoryId)]);
 
+/** Scheduled percentage campaigns; product base prices remain unchanged. */
+export const promotionCampaigns = mysqlTable("promotion_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).notNull(),
+  startsAt: timestamp("startsAt").notNull(),
+  endsAt: timestamp("endsAt"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("promotion_campaigns_schedule_idx").on(table.isActive, table.startsAt, table.endsAt)]);
+
+/** Many-to-many campaign assignments; one product may be assigned to multiple schedules. */
+export const promotionCampaignProducts = mysqlTable("promotion_campaign_products", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull().references(() => promotionCampaigns.id),
+  productId: int("productId").notNull().references(() => catalogueProducts.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("promotion_campaign_products_campaign_idx").on(table.campaignId), index("promotion_campaign_products_product_idx").on(table.productId)]);
+
 /** Non-payment order requests created by the public checkout flow. */
 export const orderRequests = mysqlTable("order_requests", {
   id: int("id").autoincrement().primaryKey(),
