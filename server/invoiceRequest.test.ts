@@ -33,7 +33,9 @@ describe("company invoice data in checkout requests", () => {
     expect(checkout).toContain("next.invoiceMol");
     expect(checkout).toContain("next.invoicePostcode");
     expect(router).toContain("invoiceRequested: z.boolean().default(false)");
-    expect(router).toContain("invoiceEik: z.string().trim().min(5).max(32)");
+    expect(checkout).toContain("/^(?:\\d{9}|\\d{13})$/");
+    expect(checkout).toContain("maxLength={13}");
+    expect(router).toContain("invoiceEik: z.string().trim().regex(/^(?:\\d{9}|\\d{13})$/");
     expect(router).toContain("superRefine((input, ctx)");
     expect(router).toContain("Invoice address is required");
   });

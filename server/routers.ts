@@ -116,7 +116,7 @@ export const appRouter = router({
       postcode: z.string().trim().min(4).max(20),
       invoiceRequested: z.boolean().default(false),
       invoiceCompanyName: z.string().trim().min(2).max(255).nullable().optional(),
-      invoiceEik: z.string().trim().min(5).max(32).nullable().optional(),
+      invoiceEik: z.string().trim().regex(/^(?:\d{9}|\d{13})$/, "EIK/BULSTAT must contain exactly 9 or 13 digits").nullable().optional(),
       invoiceVatNumber: z.string().trim().max(32).nullable().optional(),
       invoiceMol: z.string().trim().min(2).max(255).nullable().optional(),
       invoiceCity: z.string().trim().min(2).max(160).nullable().optional(),

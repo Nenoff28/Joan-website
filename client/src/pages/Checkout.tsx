@@ -289,8 +289,8 @@ export default function Checkout() {
     if (values.invoiceRequested) {
       if (values.invoiceCompanyName.trim().length < 2)
         next.invoiceCompanyName = language === "bg" ? "Въведете име на фирмата." : "Enter the company name.";
-      if (values.invoiceEik.trim().length < 5)
-        next.invoiceEik = language === "bg" ? "Въведете валиден ЕИК/БУЛСТАТ." : "Enter a valid EIK/BULSTAT.";
+      if (!/^(?:\d{9}|\d{13})$/.test(values.invoiceEik.trim()))
+        next.invoiceEik = language === "bg" ? "ЕИК/БУЛСТАТ трябва да съдържа 9 или 13 цифри." : "EIK/BULSTAT must contain exactly 9 or 13 digits.";
       if (values.invoiceMol.trim().length < 2)
         next.invoiceMol = language === "bg" ? "Въведете МОЛ." : "Enter the authorized person.";
       if (values.invoiceCity.trim().length < 2)
@@ -639,7 +639,7 @@ export default function Checkout() {
                         <div className="checkout-two-col">
                           <label>
                             {language === "bg" ? "ЕИК/БУЛСТАТ *" : "EIK/BULSTAT *"}
-                            <input value={values.invoiceEik} onChange={event => update("invoiceEik", event.target.value)} placeholder={language === "bg" ? "ЕИК/БУЛСТАТ" : "EIK/BULSTAT"} aria-invalid={Boolean(errors.invoiceEik)} />
+                            <input inputMode="numeric" maxLength={13} value={values.invoiceEik} onChange={event => update("invoiceEik", event.target.value.replace(/\D/g, "").slice(0, 13))} placeholder={language === "bg" ? "ЕИК/БУЛСТАТ" : "EIK/BULSTAT"} aria-invalid={Boolean(errors.invoiceEik)} />
                             {errors.invoiceEik && <small className="field-error">{errors.invoiceEik}</small>}
                           </label>
                           <label>
