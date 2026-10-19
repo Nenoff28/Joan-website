@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Link, useLocation, useRoute } from "wouter";
 import "./productLogoContrast.css";
 import "./productTechnicalSpecs.css";
+import "./productColorVariants.css";
 
 const lightWordmarkBrands = new Set(["Ceresit", "FAYANS", "GRONE", "Legrand", "SPIRIT", "Vormann", "Zvezda"]);
 
@@ -26,6 +27,7 @@ export default function Product() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [relatedStart, setRelatedStart] = useState(0);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [failedBrandLogo, setFailedBrandLogo] = useState<string>();
   const activeImage = product?.gallery[selectedImage] ?? product?.image;
   const favorite = product ? isFavorite(product.slug) : false;
@@ -37,6 +39,7 @@ export default function Product() {
     setSelectedImage(0);
     setIsZoomed(false);
     setRelatedStart(0);
+    setColorPickerOpen(false);
     setFailedBrandLogo(undefined);
   }, [product?.slug]);
   useEffect(() => {
@@ -50,6 +53,23 @@ export default function Product() {
   const rotateRecommendations = (direction: 1 | -1) => setRelatedStart((current) => related.length ? (current + direction + related.length) % related.length : 0);
   const productBrand = product.brand || "ЖОАН";
   const technicalSpecs = product.technicalSpecs?.length ? product.technicalSpecs : product.features.map((value) => ({ label: t("characteristic"), value }));
+  const colorVariants = product.colorVariants?.filter((variant) => variant.slug && variant.label) ?? [];
+  const currentColor = colorVariants.find((variant) => variant.isCurrent) ?? colorVariants[0];
+  const colorSwatch = (label: string) => {
+    const value = label.toLocaleLowerCase("bg-BG");
+    if (value.includes("бял")) return "#f7f7f3";
+    if (value.includes("черн")) return "#1f2325";
+    if (value.includes("черв")) return "#c92f2f";
+    if (value.includes("син")) return "#3d6fa8";
+    if (value.includes("зелен") || value.includes("резеда") || value.includes("мента")) return "#6f9a63";
+    if (value.includes("жълт")) return "#e7b83c";
+    if (value.includes("оранж")) return "#e56b35";
+    if (value.includes("лилав") || value.includes("вишн")) return "#8b365f";
+    if (value.includes("сив")) return "#b9bdc1";
+    if (value.includes("каф") || value.includes("какао") || value.includes("кафе")) return "#76533d";
+    if (value.includes("роз")) return "#d8899e";
+    return "#b8a58d";
+  };
 
   return <Layout>
     <PageMeta title={product.metaTitle || product.name} description={product.metaDescription || product.description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}/product/${product.slug}`} metaRobots={product.metaRobots || "index,follow"} ogImage={product.image} ogImageAlt={product.imageAlt || product.name} />
@@ -68,6 +88,20 @@ export default function Product() {
             <h1>{product.name}</h1>
             <div className={`detail-status detail-status-${product.availabilityCode ?? "on_request"}`}><span />{availabilityLabel}</div>
             {product.sku?.trim() && <div className="product-spec-pills"><span>{language === "en" ? "Model" : "Модел"}: {product.sku}</span></div>}
+            {colorVariants.length > 1 && <div className="product-color-variants">
+              <label htmlFor="product-color-picker">{language === "en" ? "Color" : "Цвят"}</label>
+              <div className="product-color-picker">
+                <button id="product-color-picker" type="button" className="product-color-picker-trigger" aria-haspopup="listbox" aria-expanded={colorPickerOpen} onClick={() => setColorPickerOpen((open) => !open)}>
+                  <span className="product-color-picker-value"><i className="product-color-swatch" style={{ backgroundColor: colorSwatch(currentColor?.label ?? "") }} /> <span>{currentColor?.label}</span></span>
+                  <ChevronRight className={`product-color-picker-chevron${colorPickerOpen ? " is-open" : ""}`} size={18} />
+                </button>
+                {colorPickerOpen && <div className="product-color-picker-menu" role="listbox" aria-label={language === "en" ? "Available colors" : "Налични цветове"}>
+                  {colorVariants.map((variant) => <button key={variant.slug} type="button" role="option" aria-selected={variant.isCurrent} className={`product-color-picker-option${variant.isCurrent ? " is-current" : ""}`} onClick={() => { setColorPickerOpen(false); if (!variant.isCurrent) setLocation(`/product/${variant.slug}`); }}>
+                    <i className="product-color-swatch" style={{ backgroundColor: colorSwatch(variant.label) }} /> <span>{variant.label}</span>
+                  </button>)}
+                </div>}
+              </div>
+            </div>}
             <div className="operational-spec-strip"><span><b>{t("availableInfo")}</b>{availabilityLabel}</span><span><b>{t("category")}</b>{category?.label}</span><span><b>{t("delivery")}</b>{t("deliveryAfterConfirmation")}</span></div>
             <div className="detail-price-box">{product.price ? <div><p>{priceLabel}</p><strong>{product.price}</strong>{product.oldPrice && <span>{product.oldPrice}</span>}</div> : <div><p>{t("priceAvailability")}</p><strong className="ask-price">{t("enquiry")}</strong><span>{t("teamWillConfirm")}</span></div>}</div>
             <div className="buy-controls">{!isOutOfStock && <div className="quantity-control"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label={language === "en" ? "Decrease quantity" : "Намали количеството"}><Minus size={16} /></button><span>{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} aria-label={language === "en" ? "Increase quantity" : "Увеличи количеството"}><Plus size={16} /></button></div>}{product.price && !isOutOfStock ? <button type="button" className="inquiry-button" onClick={() => { addItem(product.slug, quantity); toast(t("cart") === "Количка" ? "Артикулът е добавен в количката." : "Item added to cart."); }}><ShoppingCart size={18} /> {t("cart")}</button> : <Link href="/contact" className="inquiry-button">{t("productEnquiry")} <ChevronRight size={18} /></Link>}<button type="button" className={`secondary-icon ${favorite ? "is-favorite" : ""}`} aria-label={t("favorites")} aria-pressed={favorite} onClick={() => { toggleFavorite(product.slug); toast(favorite ? t("removedFromFavorites") : t("addedToFavorites")); }}><Heart size={19} fill={favorite ? "currentColor" : "none"} /></button><button type="button" className="secondary-icon" aria-label={language === "en" ? "Compare product" : "Сравни продукта"} onClick={() => toast(language === "en" ? "Compare" : "Сравнение")}><Scale size={19} /></button></div>

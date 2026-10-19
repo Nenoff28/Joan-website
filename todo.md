@@ -722,3 +722,8 @@
 - [x] SSR prefetch-ът вече използва същите `language` query keys като клиента за metadata, header search, homepage products и best sellers, което премахва повторните заявки при hydration. Независимите каталожни products/count/brands заявки се изпълняват паралелно.
 - [x] Добавен е кратък server-side coalescing cache за публичните metadata, catalogue page, best sellers, brochure, product и cart reads; cache-ът е по input/language и има кратък TTL, за да не задържа дълго промени.
 - [x] Добавено е gzip/Brotli-compatible compression middleware. Реално измерване след рестарт: началната страница 667 034 → 145 310 bytes с gzip, `/products` 744 118 → 149 687 bytes; warm TTFB за `/checkout` ~0.031s и `/admin/promotions` ~0.018s. Преминаха 80 Vitest файла / 335 теста, TypeScript, production build, Netlify Function bundle и `git diff --check`.
+
+# Цветови варианти на боите
+- [x] На продуктовите страници е добавен достъпен падащ списък „Цвят“. Автоматично се групират активни бои по марка, общо име/модел и разфасовка, без промяна на цени, SKU или продуктови записи; поддържат се съставни цветове и RAL кодове.
+- [x] Изборът на цвят навигира към конкретния Latin-slug на варианта. Реалният Casa Bella SATEN пример показа 14 цвята и изборът на „вишнева“ отвори правилния продукт; desktop/mobile responsive изгледът и listbox scrollbar-ът са проверени.
+- [x] Целевите 7 теста, TypeScript, production build, Netlify Function bundle и `git diff --check` преминаха. Пълният suite изпълни 80 файла / 337 теста успешно; единственият неуспех е съществуващият външен HTTPS reachability тест (`seoEnvironment.test.ts`) заради sandbox SSL proxy `wrong version number` към origin, потвърден и с curl. Не е свързан с цветовите промени.

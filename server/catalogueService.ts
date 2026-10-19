@@ -319,6 +319,57 @@ function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: Retur
 
 type ActivePromotion = { id: number; name: string; discountPercent: number | null; fixedPriceEur: number | null };
 
+export type PaintColorVariant = { slug: string; label: string; image: string; isCurrent: boolean };
+
+const paintColourWords = new Set([
+  "бяла", "бяло", "бял", "черна", "черно", "черен", "червена", "червено", "червен", "синя", "синьо", "син",
+  "зелена", "зелено", "зелен", "жълта", "жълто", "жълт", "оранжева", "оранжево", "оранжев", "лилава", "лилаво", "лилав",
+  "розова", "розово", "розов", "кафява", "кафяво", "кафяв", "сива", "сиво", "сив", "светлосива", "светлосив", "тъмносива", "тъмносив",
+  "светлозелена", "светлозелено", "светлозелен", "тъмнозелена", "тъмнозелено", "тъмнозелен", "светложълта", "светложълто", "светложълт",
+  "тъмножълта", "тъмножълто", "тъмножълт", "светлокафява", "светлокафяво", "светлокафяв", "тъмнокафява", "тъмнокафяво", "тъмнокафяв",
+  "вишнева", "вишнево", "вишнев", "резеда", "кафе", "млечнокакаов", "млечнокакаова", "млечнокафява", "млечнокафяво", "млечнокафяв",
+  "бежова", "бежово", "бежов", "кремава", "кремаво", "кремав", "бордо", "мента", "маслинена", "маслинено", "маслинен", "антрацит",
+  "лазурен", "лазурна", "лазурно", "махагон", "мед", "палисандър", "орех", "капучино", "теракота", "портокал", "венге", "череша", "дъб", "ленен", "ленена", "графит", "металик", "пясъчен", "пясъчна", "шоколад", "кестен", "кестенов", "охра", "титан", "алуминий",
+  "сребърен", "сребърна", "сребърно", "златен", "златна", "златно", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
+]);
+
+function normalizedPaintText(value: string) {
+  return value.toLocaleLowerCase("bg-BG").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
+}
+
+function paintQuantityToken(name: string) {
+  return name.match(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i)?.[0]?.replace(/\s+/g, "").toLocaleLowerCase("bg-BG") ?? "";
+}
+
+function paintColourLabel(name: string) {
+  const normalized = normalizedPaintText(name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, "").trim();
+  const ral = normalized.match(/\bral\s*\d{3,4}\b/i)?.[0];
+  if (ral) return ral.replace(/\s+/g, " ");
+  const words = normalized.split(/\s+/).filter(Boolean);
+  const candidateIndex = words.reduce((lastIndex, word, index) => paintColourWords.has(word.replace(/[.,]/g, "")) ? index : lastIndex, -1);
+  if (candidateIndex < 0) return null;
+  const prefix = words[candidateIndex - 1] === "тъмно" || words[candidateIndex - 1] === "светло" ? words[candidateIndex - 1] : null;
+  return prefix ? `${prefix} ${words[candidateIndex]}` : words[candidateIndex];
+}
+
+export function derivePaintVariantGroup(product: { name: string; brand?: string | null; categoryName?: string | null }) {
+  const categoryName = normalizedPaintText(product.categoryName ?? "");
+  if (!categoryName.includes("бои") && !categoryName.includes("лак") && !categoryName.includes("мазил")) return null;
+  const colorLabel = paintColourLabel(product.name);
+  if (!colorLabel) return null;
+  const quantity = paintQuantityToken(product.name);
+  const normalizedName = normalizedPaintText(product.name)
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, "")
+    .replace(new RegExp(`(?:^|\\s)${colorLabel.split(" ").join("\\s+")}(?=\\s|$)`, "i"), " ")
+    .replace(/\s+/g, " ").trim();
+  if (!normalizedName || !quantity) return null;
+  return `${normalizedPaintText(product.brand ?? "")}|${normalizedName}|${quantity}`;
+}
+
+function paintVariantLabel(name: string) {
+  return paintColourLabel(name) ?? name;
+}
+
 async function activePromotionsByProductIds(db: Awaited<ReturnType<typeof requireDb>>, productIds: number[]) {
   const result = new Map<number, ActivePromotion>();
   if (!productIds.length) return result;
@@ -338,7 +389,7 @@ async function activePromotionsByProductIds(db: Awaited<ReturnType<typeof requir
   return result;
 }
 
-function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null, activePromotion?: ActivePromotion) {
+function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null, activePromotion?: ActivePromotion, colorVariants: PaintColorVariant[] = []) {
   const translated = language === "en" ? english : undefined;
   const sourceDescription = translated?.description ?? product.description;
   const features = publicProductFeatures(translated?.featuresJson ?? product.featuresJson);
@@ -373,6 +424,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     metaDescription: translated?.seoDescription ?? product.legacyMetaDescriptionBg ?? undefined,
     canonicalUrl: product.legacyCanonicalUrl ?? undefined,
     metaRobots: product.legacyMetaRobots ?? undefined,
+    colorVariants,
   };
 }
 
@@ -597,9 +649,19 @@ async function getPublicProductBySlugUncached(slug: string, language: CatalogueL
   const db = await requireDb();
   const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).limit(1);
   if (!row) return null;
-  const relatedRows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16);
-  const activePromotions = await activePromotionsByProductIds(db, [row.product.id, ...relatedRows.map((candidate) => candidate.product.id)]);
-  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
+  const variantGroup = derivePaintVariantGroup({ name: row.product.name, brand: row.product.brand, categoryName: row.category.name });
+  const [relatedRows, variantRows] = await Promise.all([
+    db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16),
+    variantGroup
+      ? db.select({ product: catalogueProducts }).from(catalogueProducts).where(and(eq(catalogueProducts.categoryId, row.product.categoryId), row.product.brand ? eq(catalogueProducts.brand, row.product.brand) : isNull(catalogueProducts.brand), eq(catalogueProducts.isActive, true), eq(catalogueProducts.isArchived, false))).orderBy(asc(catalogueProducts.name)).limit(200)
+      : Promise.resolve([] as Array<{ product: typeof catalogueProducts.$inferSelect }>),
+  ]);
+  const variantCandidates = variantRows.filter((candidate) => derivePaintVariantGroup({ name: candidate.product.name, brand: candidate.product.brand, categoryName: row.category.name }) === variantGroup);
+  const variantIds = variantCandidates.map((candidate) => candidate.product.id);
+  const allPromotionIds = [row.product.id, ...relatedRows.map((candidate) => candidate.product.id), ...variantIds];
+  const activePromotions = await activePromotionsByProductIds(db, Array.from(new Set(allPromotionIds)));
+  const colorVariants = variantCandidates.map((candidate) => ({ slug: candidate.product.slug, label: paintVariantLabel(candidate.product.name), image: candidate.product.imageUrl, isCurrent: candidate.product.id === row.product.id }));
+  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id), colorVariants), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
 }
 
 export function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {

@@ -1,0 +1,34 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import { derivePaintVariantGroup } from "./catalogueService";
+
+const productPage = readFileSync(resolve(process.cwd(), "client/src/pages/Product.tsx"), "utf8");
+const stylesheet = readFileSync(resolve(process.cwd(), "client/src/pages/productColorVariants.css"), "utf8");
+
+const casaBella = (name: string, brand = "Casa Bella", categoryName = "Бои, Лакове, Мазилки") => derivePaintVariantGroup({ name, brand, categoryName });
+
+describe("paint color variants", () => {
+  it("groups same-brand, same-product and same-quantity paint colors", () => {
+    const white = casaBella("Боя Каса Белла САТЕН бяла 0,650мл.");
+    expect(white).toBeTruthy();
+    expect(casaBella("Боя Каса Белла САТЕН вишнева 0,650мл.")).toBe(white);
+    expect(casaBella("Боя Каса Белла САТЕН черна 0,650мл.")).toBe(white);
+  });
+
+  it("does not merge another size, brand or non-paint product", () => {
+    const base = casaBella("Боя Каса Белла САТЕН бяла 0,650мл.");
+    expect(casaBella("Боя Каса Белла САТЕН бяла 1л.")).not.toBe(base);
+    expect(casaBella("Боя Каса Белла САТЕН бяла 0,650мл.", "ЛЕКО")).not.toBe(base);
+    expect(derivePaintVariantGroup({ name: "Тениска синя 0,650мл.", brand: "Casa Bella", categoryName: "Работно облекло" })).toBeNull();
+  });
+
+  it("renders an accessible color menu and navigates to the selected slug", () => {
+    expect(productPage).toContain("product-color-variants");
+    expect(productPage).toContain('aria-haspopup="listbox"');
+    expect(productPage).toContain('role="option"');
+    expect(productPage).toContain('setLocation(`/product/${variant.slug}`)');
+    expect(stylesheet).toContain("product-color-picker-menu");
+    expect(stylesheet).toContain("overflow-y: auto");
+  });
+});
