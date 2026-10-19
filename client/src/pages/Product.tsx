@@ -55,6 +55,8 @@ export default function Product() {
   const technicalSpecs = product.technicalSpecs?.length ? product.technicalSpecs : product.features.map((value) => ({ label: t("characteristic"), value }));
   const colorVariants = product.colorVariants?.filter((variant) => variant.slug && variant.label) ?? [];
   const currentColor = colorVariants.find((variant) => variant.isCurrent) ?? colorVariants[0];
+  const variantDisplayLabel = (variant: typeof colorVariants[number]) => variant.sizeLabel ? `${variant.label} · ${variant.sizeLabel}` : variant.label;
+  const outOfStockLabel = language === "en" ? "Out of stock" : "Изчерпан";
   const colorSwatch = (label: string) => {
     const value = label.toLocaleLowerCase("bg-BG");
     if (value.includes("бял")) return "#f7f7f3";
@@ -92,12 +94,12 @@ export default function Product() {
               <label htmlFor="product-color-picker">{language === "en" ? "Color" : "Цвят"}</label>
               <div className="product-color-picker">
                 <button id="product-color-picker" type="button" className="product-color-picker-trigger" aria-haspopup="listbox" aria-expanded={colorPickerOpen} onClick={() => setColorPickerOpen((open) => !open)}>
-                  <span className="product-color-picker-value"><i className="product-color-swatch" style={{ backgroundColor: colorSwatch(currentColor?.label ?? "") }} /> <span>{currentColor?.label}</span></span>
+                  <span className="product-color-picker-value"><i className="product-color-swatch" style={{ backgroundColor: colorSwatch(currentColor?.label ?? "") }} /> <span>{currentColor && variantDisplayLabel(currentColor)}</span>{currentColor?.isOutOfStock && <small className="product-color-stock is-out-of-stock">{outOfStockLabel}</small>}</span>
                   <ChevronRight className={`product-color-picker-chevron${colorPickerOpen ? " is-open" : ""}`} size={18} />
                 </button>
                 {colorPickerOpen && <div className="product-color-picker-menu" role="listbox" aria-label={language === "en" ? "Available colors" : "Налични цветове"}>
-                  {colorVariants.map((variant) => <button key={variant.slug} type="button" role="option" aria-selected={variant.isCurrent} className={`product-color-picker-option${variant.isCurrent ? " is-current" : ""}`} onClick={() => { setColorPickerOpen(false); if (!variant.isCurrent) setLocation(`/product/${variant.slug}`); }}>
-                    <i className="product-color-swatch" style={{ backgroundColor: colorSwatch(variant.label) }} /> <span>{variant.label}</span>
+                  {colorVariants.map((variant) => <button key={variant.slug} type="button" role="option" aria-selected={variant.isCurrent} aria-label={`${variantDisplayLabel(variant)}${variant.isOutOfStock ? ` — ${outOfStockLabel}` : ""}`} className={`product-color-picker-option${variant.isCurrent ? " is-current" : ""}${variant.isOutOfStock ? " is-out-of-stock" : ""}`} onClick={() => { setColorPickerOpen(false); if (!variant.isCurrent) setLocation(`/product/${variant.slug}`); }}>
+                    <i className="product-color-swatch" style={{ backgroundColor: colorSwatch(variant.label) }} /> <span>{variantDisplayLabel(variant)}</span>{variant.isOutOfStock && <small className="product-color-stock">{outOfStockLabel}</small>}
                   </button>)}
                 </div>}
               </div>

@@ -49,6 +49,10 @@
   min-width: 0;
 }
 
+.product-color-picker-value {
+  flex-wrap: wrap;
+}
+
 .product-color-picker-value span:last-child,
 .product-color-picker-option span:last-child {
   overflow: hidden;
@@ -111,6 +115,27 @@
 .product-color-picker-option.is-current {
   color: var(--red);
   font-weight: 800;
+}
+
+.product-color-picker-option.is-out-of-stock {
+  color: #6f7376;
+}
+
+.product-color-picker-option.is-out-of-stock .product-color-swatch {
+  opacity: .55;
+}
+
+.product-color-stock {
+  color: #73777a;
+  flex: 0 0 auto;
+  font-size: .7rem;
+  font-weight: 700;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.product-color-stock.is-out-of-stock {
+  color: var(--red);
 }
 
 @media (max-width: 640px) {

@@ -319,7 +319,7 @@ function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: Retur
 
 type ActivePromotion = { id: number; name: string; discountPercent: number | null; fixedPriceEur: number | null };
 
-export type PaintColorVariant = { slug: string; label: string; image: string; isCurrent: boolean };
+export type PaintColorVariant = { slug: string; label: string; sizeLabel: string | null; image: string; isCurrent: boolean; isOutOfStock: boolean };
 
 const paintColourWords = new Set([
   "бяла", "бяло", "бял", "черна", "черно", "черен", "червена", "червено", "червен", "синя", "синьо", "син",
@@ -331,13 +331,13 @@ const paintColourWords = new Set([
   "бежова", "бежово", "бежов", "кремава", "кремаво", "кремав", "бордо", "мента", "маслинена", "маслинено", "маслинен", "антрацит",
   "лазурен", "лазурна", "лазурно", "махагон", "мед", "палисандър", "орех", "капучино", "теракота", "портокал", "венге", "череша", "дъб", "ленен", "ленена", "графит", "металик", "пясъчен", "пясъчна", "шоколад", "кестен", "кестенов", "охра", "титан", "алуминий",
   "сребърен", "сребърна", "сребърно", "сребрист", "сребриста", "сребристо", "злато", "златен", "златна", "златно", "златист", "златиста", "златисто", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
-  "крем", "кремена", "ванилия", "кайсия", "мандарина", "лавандула", "нуга", "сьомга", "личи", "слънчоглед", "алое", "фъстък", "марсала", "корал", "цикламен", "цикламена", "виолетов", "виолетова", "тюркоаз", "тюркоазен", "планливада",
+  "крем", "кремена", "ванилия", "кайсия", "мандарина", "лавандула", "нуга", "сьомга", "личи", "слънчоглед", "алое", "фъстък", "марсала", "корал", "цикламен", "цикламена", "виолетов", "виолетова", "тюркоаз", "тюркоазен", "планливада", "керемиденочервен", "керемиденочервена", "керемиденочервено",
 ]);
 
 const paintColourPhrases = [
   "старо злато", "алое вера", "шам фъстък", "план ливада", "слонова кост",
   "светло сив", "тъмно сив", "светло син", "тъмно син", "светло зелен", "тъмно зелен", "светло жълт", "тъмно жълт", "светло кафяв", "тъмно кафяв",
-  "сребристо сиво", "сигнално бял", "сигнално син", "наситено син", "наситено жълт", "морско син", "трафик червено", "трафик сиво", "жълто зелен", "медено кафяво", "еврика виолетов", "керемидено червено", "шоколадово кафяво", "бял шоколад", "кафе лате", "златен пясък", "графитено сиво", "карибско син", "коралово червен", "винено червен",
+  "сребристо сиво", "сигнално бял", "сигнално син", "наситено син", "наситено жълт", "морско син", "трафик червено", "трафик сиво", "жълто зелен", "медено кафяво", "еврика виолетов", "керемидено червено", "шоколадово кафяво", "бял шоколад", "кафе лате", "златен пясък", "графитено сиво", "карибско син", "коралово червен", "винено червен", "вишнево червен", "вишнево червена", "вишнево червено", "злато металик", "зелен металик", "сив металик", "сл.кост",
   "киви", "канела", "череша", "бадем", "капучино", "теракота",
 ];
 
@@ -347,6 +347,10 @@ function normalizedPaintText(value: string) {
 
 function paintQuantityToken(name: string) {
   return name.match(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i)?.[0]?.replace(/\s+/g, "").replace(",", ".").replace(/\.$/, "").toLocaleLowerCase("bg-BG") ?? "";
+}
+
+function paintQuantityLabel(name: string) {
+  return name.match(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i)?.[0]?.replace(/\.$/, "").trim() ?? null;
 }
 
 function paintColourLabel(name: string) {
@@ -362,22 +366,29 @@ function paintColourLabel(name: string) {
   return prefix ? `${prefix} ${words[candidateIndex]}` : words[candidateIndex];
 }
 
+function stripPaintColourTokens(value: string) {
+  let stripped = value.replace(/\bral\s*\d{3,4}\b/gi, " ").replace(/\b\d+\s+в\s+\d+\b/gi, " ").replace(/\b\d{1,4}\b/g, " ");
+  for (const phrase of [...paintColourPhrases].sort((left, right) => right.length - left.length)) {
+    stripped = stripped.replace(new RegExp(`(?:^|\\s)${phrase.split(" ").join("\\s+")}(?=\\s|$)`, "gi"), " ");
+  }
+  for (const word of Array.from(paintColourWords).sort((left, right) => right.length - left.length)) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    stripped = stripped.replace(new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`, "gi"), " ");
+  }
+  return stripped.replace(/\s+/g, " ").trim();
+}
+
 export function derivePaintVariantGroup(product: { name: string; brand?: string | null; categoryName?: string | null }) {
   const categoryName = normalizedPaintText(product.categoryName ?? "");
   if (!categoryName.includes("бои") && !categoryName.includes("лак") && !categoryName.includes("мазил")) return null;
   const colorLabel = paintColourLabel(product.name);
   if (!colorLabel) return null;
-  const quantity = paintQuantityToken(product.name);
-  const normalizedName = normalizedPaintText(product.name)
-    .replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, "")
-    // Kittfort and Dupli-Color use numeric colour codes such as CL 01 and 9005.
-    .replace(/\b\d{1,4}\b/g, "")
-    .replace(new RegExp(`(?:^|\\s)${colorLabel.split(" ").join("\\s+")}(?=\\s|$)`, "i"), " ")
-    .replace(/\s+/g, " ").trim();
+  const normalizedName = stripPaintColourTokens(normalizedPaintText(product.name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, ""));
   if (!normalizedName) return null;
   // Some spray/paint catalogues omit the pack size from the title. Keep those
   // products groupable while still separating explicitly different sizes.
-  return `${normalizedPaintText(product.brand ?? "")}|${normalizedName}|${quantity || "без-разфасовка"}`;
+  // Различните разфасовки на един и същ модел трябва да споделят една цветова група.
+  return `${normalizedPaintText(product.brand ?? "")}|${normalizedName}`;
 }
 
 function paintVariantLabel(name: string) {
@@ -674,7 +685,14 @@ async function getPublicProductBySlugUncached(slug: string, language: CatalogueL
   const variantIds = variantCandidates.map((candidate) => candidate.product.id);
   const allPromotionIds = [row.product.id, ...relatedRows.map((candidate) => candidate.product.id), ...variantIds];
   const activePromotions = await activePromotionsByProductIds(db, Array.from(new Set(allPromotionIds)));
-  const colorVariants = variantCandidates.map((candidate) => ({ slug: candidate.product.slug, label: paintVariantLabel(candidate.product.name), image: candidate.product.imageUrl, isCurrent: candidate.product.id === row.product.id }));
+  const colorVariants = variantCandidates.map((candidate) => ({
+    slug: candidate.product.slug,
+    label: paintVariantLabel(candidate.product.name),
+    sizeLabel: paintQuantityLabel(candidate.product.name),
+    image: candidate.product.imageUrl,
+    isCurrent: candidate.product.id === row.product.id,
+    isOutOfStock: candidate.product.availability === "out_of_stock" || (candidate.product.stockQuantity != null && Number(candidate.product.stockQuantity) <= 0),
+  }));
   return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id), colorVariants), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
 }
 
