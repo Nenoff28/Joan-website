@@ -19,7 +19,8 @@ describe("company invoice data in checkout requests", () => {
     expect(checkout).toContain("ЕИК/БУЛСТАТ *");
     expect(checkout).toContain("ИН по ЗДДС");
     expect(checkout).toContain("МОЛ *");
-    expect(checkout).toContain("Населено място *");
+    expect(checkout).toContain("invoiceRegion");
+    expect(checkout).toContain("Град/село *");
     expect(checkout).toContain("Пощенски код *");
     expect(checkout).toContain("Адрес *");
     expect(checkout).toContain("Адрес допълнително");
@@ -28,6 +29,12 @@ describe("company invoice data in checkout requests", () => {
 
   it("validates requested invoice data on the client and server", () => {
     expect(checkout).toContain("if (values.invoiceRequested)");
+    expect(checkout).toContain("filteredInvoiceLocations");
+    expect(checkout).toContain("filteredInvoiceRegions");
+    expect(checkout).toContain("updateInvoiceLocation(");
+    expect(checkout).toContain("invoice-region-suggestions");
+    expect(checkout).toContain("invoice-city-suggestions");
+    expect(checkout).not.toContain(".slice(0, 14)");
     expect(checkout).toContain("next.invoiceCompanyName");
     expect(checkout).toContain("next.invoiceEik");
     expect(checkout).toContain("next.invoiceMol");
@@ -43,13 +50,16 @@ describe("company invoice data in checkout requests", () => {
   it("persists invoice fields atomically while keeping old requests compatible", () => {
     expect(schema).toContain('invoiceRequested: boolean("invoiceRequested").default(false).notNull()');
     expect(schema).toContain('invoiceCompanyName: varchar("invoiceCompanyName", { length: 255 })');
+    expect(schema).toContain('invoiceRegion: varchar("invoiceRegion", { length: 160 })');
     expect(schema).toContain('invoiceAdditionalInfo: text("invoiceAdditionalInfo")');
     expect(service).toContain("invoiceRequested: input.invoiceRequested ?? false");
+    expect(service).toContain("invoiceRegion: input.invoiceRequested ? input.invoiceRegion?.trim() || null : null");
     expect(service).toContain("invoiceCompanyName: input.invoiceRequested ? input.invoiceCompanyName?.trim() || null : null");
     expect(service).toContain("invoiceAdditionalInfo: input.invoiceRequested ? input.invoiceAdditionalInfo?.trim() || null : null");
     expect(adminDetail).toContain("invoiceRequested: boolean");
     expect(adminDetail).toContain("Желана фактура за фирма");
     expect(adminDetail).toContain("ЕИК/БУЛСТАТ");
+    expect(adminDetail).toContain("invoiceRegion");
     expect(adminDetail).toContain("ord-invoice-details");
     expect(adminCss).toContain(".ord-invoice-details");
   });

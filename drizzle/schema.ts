@@ -279,6 +279,7 @@ export const orderRequests = mysqlTable("order_requests", {
   invoiceEik: varchar("invoiceEik", { length: 32 }),
   invoiceVatNumber: varchar("invoiceVatNumber", { length: 32 }),
   invoiceMol: varchar("invoiceMol", { length: 255 }),
+  invoiceRegion: varchar("invoiceRegion", { length: 160 }),
   invoiceCity: varchar("invoiceCity", { length: 160 }),
   invoicePostcode: varchar("invoicePostcode", { length: 20 }),
   invoiceAddress: text("invoiceAddress"),

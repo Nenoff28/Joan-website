@@ -38,7 +38,9 @@ type FormValues = {
   invoiceEik: string;
   invoiceVatNumber: string;
   invoiceMol: string;
+  invoiceRegion: string;
   invoiceCity: string;
+  invoiceLocationKey: string;
   invoicePostcode: string;
   invoiceAddress: string;
   invoiceAddressAdditional: string;
@@ -134,7 +136,9 @@ export default function Checkout() {
     invoiceEik: "",
     invoiceVatNumber: "",
     invoiceMol: "",
+    invoiceRegion: "",
     invoiceCity: "",
+    invoiceLocationKey: "",
     invoicePostcode: "",
     invoiceAddress: "",
     invoiceAddressAdditional: "",
@@ -147,6 +151,10 @@ export default function Checkout() {
   const [cityQuery, setCityQuery] = useState("");
   const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
   const [citySuggestionsOpen, setCitySuggestionsOpen] = useState(false);
+  const [invoiceRegionQuery, setInvoiceRegionQuery] = useState("");
+  const [invoiceCityQuery, setInvoiceCityQuery] = useState("");
+  const [invoiceRegionSuggestionsOpen, setInvoiceRegionSuggestionsOpen] = useState(false);
+  const [invoiceCitySuggestionsOpen, setInvoiceCitySuggestionsOpen] = useState(false);
   const [requestNumbers, setRequestNumbers] = useState<string[]>([]);
   const createOrderRequest = trpc.catalogue.createOrderRequest.useMutation({
     onError: () =>
@@ -176,9 +184,14 @@ export default function Checkout() {
     return regions
       .filter(
         region => !query || normalizeLocationQuery(region).startsWith(query)
-      )
-      .slice(0, 12);
+      );
   }, [regionQuery, regions]);
+  const filteredInvoiceRegions = useMemo(() => {
+    const query = normalizeLocationQuery(invoiceRegionQuery);
+    return regions.filter(
+      region => !query || normalizeLocationQuery(region).startsWith(query)
+    );
+  }, [invoiceRegionQuery, regions]);
   const filteredLocations = useMemo(() => {
     const query = normalizeLocationQuery(cityQuery);
     return locationOptions
@@ -186,9 +199,24 @@ export default function Checkout() {
         const name = normalizeLocationQuery(location.name);
         const label = normalizeLocationQuery(locationLabel(location));
         return !query || name.startsWith(query) || label.startsWith(query);
-      })
-      .slice(0, 14);
+      });
   }, [cityQuery, locationOptions]);
+  const invoiceLocationOptions = useMemo(
+    () =>
+      bulgarianLocations.filter(
+        location => location.region === values.invoiceRegion
+      ),
+    [values.invoiceRegion]
+  );
+  const filteredInvoiceLocations = useMemo(() => {
+    const query = normalizeLocationQuery(invoiceCityQuery);
+    return invoiceLocationOptions
+      .filter(location => {
+        const name = normalizeLocationQuery(location.name);
+        const label = normalizeLocationQuery(locationLabel(location));
+        return !query || name.startsWith(query) || label.startsWith(query);
+      });
+  }, [invoiceCityQuery, invoiceLocationOptions]);
   const flowTitle =
     language === "bg" ? "Заявка за доставка" : "Delivery request";
   const flowIntro =
@@ -273,6 +301,75 @@ export default function Checkout() {
       postcode: undefined,
     }));
   }
+  function updateInvoiceRegion(region: string) {
+    setInvoiceRegionQuery(region);
+    setInvoiceRegionSuggestionsOpen(false);
+    setInvoiceCityQuery("");
+    setValues(current => ({
+      ...current,
+      invoiceRegion: region,
+      invoiceCity: "",
+      invoiceLocationKey: "",
+      invoicePostcode: "",
+    }));
+    setErrors(current => ({
+      ...current,
+      invoiceRegion: undefined,
+      invoiceCity: undefined,
+      invoicePostcode: undefined,
+    }));
+  }
+  function updateInvoiceLocation(locationKey: string) {
+    const location = invoiceLocationOptions.find(
+      candidate => `${candidate.name}::${candidate.postcode}` === locationKey
+    );
+    setValues(current => ({
+      ...current,
+      invoiceCity: location?.name ?? "",
+      invoicePostcode: location?.postcode ?? "",
+      invoiceLocationKey: locationKey,
+    }));
+    setInvoiceCityQuery(location ? locationLabel(location) : "");
+    setInvoiceCitySuggestionsOpen(false);
+    setErrors(current => ({
+      ...current,
+      invoiceCity: undefined,
+      invoicePostcode: undefined,
+    }));
+  }
+  function updateInvoiceRegionQuery(query: string) {
+    setInvoiceRegionQuery(query);
+    setInvoiceRegionSuggestionsOpen(true);
+    setValues(current => ({
+      ...current,
+      invoiceRegion: current.invoiceRegion === query ? current.invoiceRegion : "",
+      invoiceCity: "",
+      invoiceLocationKey: "",
+      invoicePostcode: "",
+    }));
+    setInvoiceCityQuery("");
+    setErrors(current => ({
+      ...current,
+      invoiceRegion: undefined,
+      invoiceCity: undefined,
+      invoicePostcode: undefined,
+    }));
+  }
+  function updateInvoiceCityQuery(query: string) {
+    setInvoiceCityQuery(query);
+    setInvoiceCitySuggestionsOpen(true);
+    setValues(current => ({
+      ...current,
+      invoiceCity: current.invoiceCity === query ? current.invoiceCity : "",
+      invoicePostcode: current.invoiceCity === query ? current.invoicePostcode : "",
+      invoiceLocationKey: current.invoiceCity === query ? current.invoiceLocationKey : "",
+    }));
+    setErrors(current => ({
+      ...current,
+      invoiceCity: undefined,
+      invoicePostcode: undefined,
+    }));
+  }
   function validate() {
     const next: FormErrors = {};
     if (values.fullName.trim().length < 3) next.fullName = t("validationName");
@@ -293,7 +390,9 @@ export default function Checkout() {
         next.invoiceEik = language === "bg" ? "ЕИК/БУЛСТАТ трябва да съдържа 9 или 13 цифри." : "EIK/BULSTAT must contain exactly 9 or 13 digits.";
       if (values.invoiceMol.trim().length < 2)
         next.invoiceMol = language === "bg" ? "Въведете МОЛ." : "Enter the authorized person.";
-      if (values.invoiceCity.trim().length < 2)
+      if (!values.invoiceRegion)
+        next.invoiceRegion = language === "bg" ? "Изберете област за фактурата." : "Select an invoice region.";
+      if (values.invoiceCity.trim().length < 2 || !values.invoiceLocationKey)
         next.invoiceCity = language === "bg" ? "Въведете населено място." : "Enter a city or village.";
       if (!/^\d{4}$/.test(values.invoicePostcode))
         next.invoicePostcode = language === "bg" ? "Въведете 4-цифрен пощенски код." : "Enter a 4-digit postcode.";
@@ -330,6 +429,7 @@ export default function Checkout() {
         invoiceEik: values.invoiceRequested ? values.invoiceEik.trim() : null,
         invoiceVatNumber: values.invoiceRequested ? values.invoiceVatNumber.trim() || null : null,
         invoiceMol: values.invoiceRequested ? values.invoiceMol.trim() : null,
+        invoiceRegion: values.invoiceRequested ? values.invoiceRegion.trim() : null,
         invoiceCity: values.invoiceRequested ? values.invoiceCity.trim() : null,
         invoicePostcode: values.invoiceRequested ? values.invoicePostcode.trim() : null,
         invoiceAddress: values.invoiceRequested ? values.invoiceAddress.trim() : null,
@@ -653,17 +753,65 @@ export default function Checkout() {
                           {errors.invoiceMol && <small className="field-error">{errors.invoiceMol}</small>}
                         </label>
                         <div className="checkout-two-col">
-                          <label>
-                            {language === "bg" ? "Населено място *" : "City/village *"}
-                            <input value={values.invoiceCity} onChange={event => update("invoiceCity", event.target.value)} placeholder={language === "bg" ? "Населено място" : "City or village"} aria-invalid={Boolean(errors.invoiceCity)} />
+                          <label className="checkout-combobox">
+                            {language === "bg" ? "Област *" : "Region *"}
+                            <input
+                              value={invoiceRegionQuery}
+                              onChange={event => updateInvoiceRegionQuery(event.target.value)}
+                              onFocus={() => setInvoiceRegionSuggestionsOpen(true)}
+                              onBlur={() => setTimeout(() => setInvoiceRegionSuggestionsOpen(false), 120)}
+                              placeholder={language === "bg" ? "Напишете област..." : "Type a region..."}
+                              autoComplete="off"
+                              role="combobox"
+                              aria-autocomplete="list"
+                              aria-expanded={invoiceRegionSuggestionsOpen}
+                              aria-controls="invoice-region-suggestions"
+                              aria-invalid={Boolean(errors.invoiceRegion)}
+                            />
+                            {invoiceRegionSuggestionsOpen && filteredInvoiceRegions.length > 0 && (
+                              <div id="invoice-region-suggestions" className="checkout-suggestions" role="listbox">
+                                {filteredInvoiceRegions.map(region => (
+                                  <button key={`invoice-${region}`} type="button" role="option" onMouseDown={event => event.preventDefault()} onClick={() => updateInvoiceRegion(region)}>
+                                    {region}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {errors.invoiceRegion && <small className="field-error">{errors.invoiceRegion}</small>}
+                          </label>
+                          <label className="checkout-combobox">
+                            {language === "bg" ? "Град/село *" : "City/village *"}
+                            <input
+                              value={invoiceCityQuery}
+                              onChange={event => updateInvoiceCityQuery(event.target.value)}
+                              onFocus={() => values.invoiceRegion && setInvoiceCitySuggestionsOpen(true)}
+                              onBlur={() => setTimeout(() => setInvoiceCitySuggestionsOpen(false), 120)}
+                              placeholder={values.invoiceRegion ? (language === "bg" ? "Напишете град или село..." : "Type a city or village...") : (language === "bg" ? "Първо изберете област" : "Select a region first")}
+                              autoComplete="off"
+                              disabled={!values.invoiceRegion}
+                              role="combobox"
+                              aria-autocomplete="list"
+                              aria-expanded={invoiceCitySuggestionsOpen}
+                              aria-controls="invoice-city-suggestions"
+                              aria-invalid={Boolean(errors.invoiceCity)}
+                            />
+                            {invoiceCitySuggestionsOpen && values.invoiceRegion && filteredInvoiceLocations.length > 0 && (
+                              <div id="invoice-city-suggestions" className="checkout-suggestions" role="listbox">
+                                {filteredInvoiceLocations.map(location => (
+                                  <button key={`invoice-${location.name}-${location.postcode}`} type="button" role="option" onMouseDown={event => event.preventDefault()} onClick={() => updateInvoiceLocation(`${location.name}::${location.postcode}`)}>
+                                    {locationLabel(location)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             {errors.invoiceCity && <small className="field-error">{errors.invoiceCity}</small>}
                           </label>
-                          <label>
-                            {language === "bg" ? "Пощенски код *" : "Postcode *"}
-                            <input inputMode="numeric" value={values.invoicePostcode} onChange={event => update("invoicePostcode", event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={language === "bg" ? "Пощенски код" : "Postcode"} aria-invalid={Boolean(errors.invoicePostcode)} />
-                            {errors.invoicePostcode && <small className="field-error">{errors.invoicePostcode}</small>}
-                          </label>
                         </div>
+                        <label>
+                          {language === "bg" ? "Пощенски код *" : "Postcode *"}
+                          <input inputMode="numeric" value={values.invoicePostcode} onChange={event => update("invoicePostcode", event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={language === "bg" ? "Въведете или редактирайте кода" : "Enter or edit the postcode"} aria-invalid={Boolean(errors.invoicePostcode)} />
+                          {errors.invoicePostcode && <small className="field-error">{errors.invoicePostcode}</small>}
+                        </label>
                         <label>
                           {language === "bg" ? "Адрес *" : "Address *"}
                           <input value={values.invoiceAddress} onChange={event => update("invoiceAddress", event.target.value)} placeholder={language === "bg" ? "Адрес" : "Address"} aria-invalid={Boolean(errors.invoiceAddress)} />

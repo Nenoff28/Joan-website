@@ -61,6 +61,7 @@ type OrderDetail = {
   invoiceEik: string | null;
   invoiceVatNumber: string | null;
   invoiceMol: string | null;
+  invoiceRegion: string | null;
   invoiceCity: string | null;
   invoicePostcode: string | null;
   invoiceAddress: string | null;
@@ -341,6 +342,7 @@ function RequestDetailContent() {
                 <div><dt>ЕИК/БУЛСТАТ</dt><dd>{order.invoiceEik || "—"}</dd></div>
                 <div><dt>ИН по ЗДДС</dt><dd>{order.invoiceVatNumber || "—"}</dd></div>
                 <div><dt>МОЛ</dt><dd>{order.invoiceMol || "—"}</dd></div>
+                <div><dt>Област</dt><dd>{order.invoiceRegion || "—"}</dd></div>
                 <div><dt>Населено място</dt><dd>{order.invoiceCity || "—"}</dd></div>
                 <div><dt>Пощенски код</dt><dd>{order.invoicePostcode || "—"}</dd></div>
                 <div><dt>Адрес</dt><dd>{order.invoiceAddress || "—"}</dd></div>
