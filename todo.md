@@ -684,3 +684,8 @@
 - [x] Добавени са server-side поле за търсене по име, SKU или slug и падащ филтър по активна главна категория. Филтрите работят едновременно и намират артикули извън досегашната контролна зона.
 - [x] Inventory query връща лек резултат, ограничен до 250 реда на заявка, с индикатор `+` при още съвпадения; batch редакцията и confirmation diff-ът работят върху текущия филтриран списък.
 - [x] Read-only режимът, permission guard-ът и mobile layout-ът са запазени. Реален read-only smoke потвърди търсене по име и category filter; преминаха 77 Vitest файла / 324 теста, TypeScript, production build и `git diff --check`.
+# Netlify deployment preparation
+- [x] Добавена е реална Netlify конфигурация: `pnpm run build`, `dist/public`, `netlify/functions`, Node 22.13 и esbuild. Поправена е причината за `The deploy directory site does not exist` / `No build steps found` без да се променя Vite output-ът.
+- [x] Express app-ът е извлечен като reusable factory; Netlify Function запазва SSR, tRPC API, auth routes, `/manus-storage`, redirects и sitemap. Не са заменяни DB-backed products/categories с mock или static sample data.
+- [x] Добавен е deployment regression test. Реални проверки: 78 Vitest файла / 327 теста, TypeScript, production build, Function bundle, SSR HTTP 200, representative asset HTTP 200, `catalogue.metadata` HTTP 200, sitemap HTTP 200, media manifest с 8 361 уникални файла и `git diff --check`.
+- [x] Документирани са нужните Netlify environment variables и критичното ограничение за upload-и над Function payload limit. Не е правен deploy към чужд Netlify account и не са използвани/commit-вани secrets; staging env и direct upload storage трябва да се настроят преди production cutover.

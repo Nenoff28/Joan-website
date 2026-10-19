@@ -6,7 +6,6 @@ import { nanoid } from "nanoid";
 import path from "path";
 import superjson from "superjson";
 import { createServer as createViteServer } from "vite";
-import viteConfig from "../../vite.config";
 import { buildSsrPrefetch } from "./ssrCaller";
 import type { HeadMeta } from "../../client/src/ssr/prefetch";
 import { getPublicProductBySlug, getPublicSitemapEntries } from "../catalogueService";
@@ -34,6 +33,9 @@ function compose(template: string, html: string, head: HeadMeta, state: unknown,
   return template.replace("</body>", () => `<script${nonceAttribute}>window.__RQ_STATE__=${stateJson}</script></body>`).replace("<!--app-head-->", () => headTags(head)).replace("<!--app-html-->", () => html);
 }
 function normalizePath(reqPath: string, originalUrl: string) { const query = originalUrl.slice(reqPath.length); return (reqPath.replace(/\/+$/, "") || "/").replace(/^\/\/+/, "/") + query; }
+function productionDistRoot() {
+  return path.resolve(process.cwd(), "dist");
+}
 async function canonicalProductRedirect(req: Request, res: Response) {
   const requestUrl = new URL(req.originalUrl, "http://localhost");
   const match = requestUrl.pathname.match(/^\/product\/([a-z0-9-]+)$/);
@@ -47,6 +49,7 @@ async function canonicalProductRedirect(req: Request, res: Response) {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  const { default: viteConfig } = await import("../../vite.config");
   const vite = await createViteServer({ ...viteConfig, configFile: false, server: { middlewareMode: true, hmr: { server }, allowedHosts: true }, appType: "custom" });
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
@@ -64,7 +67,8 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = process.env.NODE_ENV === "development" ? path.resolve(import.meta.dirname, "../..", "dist", "public") : path.resolve(import.meta.dirname, "public");
+  const distPath = process.env.NODE_ENV === "development" ? path.resolve(import.meta.dirname, "../..", "dist", "public") : path.join(productionDistRoot(), "public");
+  const ssrEntryPath = path.join(productionDistRoot(), "server-ssr", "entry-server.js");
   app.get("/robots.txt", (_req, res) => res.set("Cache-Control", "public, max-age=3600").type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /favorites\nSitemap: ${canonicalOrigin}/sitemap.xml\n`));
   app.get("/sitemap.xml", async (_req, res, next) => {
     try {
@@ -85,7 +89,7 @@ export function serveStatic(app: Express) {
     if (await canonicalProductRedirect(req, res)) return;
     const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
     try {
-      const { render } = await import(path.resolve(import.meta.dirname, "server-ssr", "entry-server.js"));
+      const { render } = await import(ssrEntryPath);
       const result = await render(req.originalUrl, await buildSsrPrefetch(req, res));
       res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState, res.locals.cspNonce));
     } catch (error) {

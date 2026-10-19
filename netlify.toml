@@ -1,0 +1,39 @@
+[build]
+  command = "pnpm run build"
+  publish = "dist/public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22.13.0"
+  PNPM_VERSION = "10.4.1"
+  NODE_ENV = "production"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["dist/public/**", "dist/server-ssr/**"]
+
+# Keep the API, auth, storage proxy, SSR, sitemap and redirects on the same
+# Express app instead of degrading the project to a static-only SPA.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/server/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/manus-storage/*"
+  to = "/.netlify/functions/server/manus-storage/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/server/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server/:splat"
+  status = 200
+  force = false
