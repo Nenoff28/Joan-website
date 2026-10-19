@@ -861,7 +861,12 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-stock-confirmation button { min-height: 42px; padding: .65rem 1rem; border: 1px solid #303739; border-radius: 7px; background: #303739; color: #fff; font-size: .875rem; font-weight: 700; cursor: pointer; }
 .admin-stock-confirmation button:first-child { border-color: #ced3d0; background: #f4f5f3; color: #303739; }
 .admin-stock-confirmation button:disabled { opacity: .5; cursor: wait; }
+.admin-inventory-filters { display: grid; gap: .6rem; grid-template-columns: minmax(220px, 1.5fr) minmax(180px, 1fr); margin-top: .8rem; max-width: 720px; }
+.admin-inventory-filters label { color: var(--slate); display: grid; font-size: .61rem; font-weight: 800; gap: .3rem; }
+.admin-inventory-filters input, .admin-inventory-filters select { background: white; border: 1px solid var(--line); color: var(--ink); font-size: .76rem; min-height: 38px; outline: none; padding: .45rem .55rem; }
+.admin-inventory-filters input:focus, .admin-inventory-filters select:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.1); }
 @media (max-width: 700px) {
+  .admin-inventory-filters { grid-template-columns: 1fr; max-width: none; }
   .admin-inventory-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .admin-inventory-actions .admin-count { text-align: center; }
   .admin-inventory-actions .admin-primary { width: 100%; }

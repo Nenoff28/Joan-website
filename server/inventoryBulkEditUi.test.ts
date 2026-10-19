@@ -10,6 +10,10 @@ describe("bulk inventory editor UI contract", () => {
   it("uses absolute quantity inputs and a single save action", () => {
     expect(adminSource).toContain('type="number" min="0" max="999999"');
     expect(adminSource).toContain("trpc.admin.saveStockChanges.useMutation");
+    expect(adminSource).toContain("trpc.admin.inventory.useQuery");
+    expect(adminSource).toContain('type="search"');
+    expect(adminSource).toContain("Търсене по име или код");
+    expect(adminSource).toContain("Всички категории");
     expect(adminSource).toContain("Запиши промените");
     expect(adminSource).not.toContain("adjust.mutate({ id: product.id, delta: 1 })");
   });

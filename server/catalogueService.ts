@@ -593,6 +593,27 @@ export async function getAdminProductCategories() {
   return buildProductCategoryOptions(rootRows, taxonomyRows);
 }
 
+export async function getAdminInventoryProducts(options?: { query?: string; categoryId?: number }) {
+  await ensureCatalogueSeeded();
+  const db = await requireDb();
+  const term = options?.query?.trim();
+  const filters = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
+  if (options?.categoryId) filters.push(eq(catalogueProducts.categoryId, options.categoryId));
+  if (term) {
+    const pattern = `%${term.replace(/[\\%_]/g, "\\$&")}%`;
+    filters.push(or(like(catalogueProducts.name, pattern), like(catalogueProducts.sku, pattern), like(catalogueProducts.slug, pattern))!);
+  }
+  const [rows, categories] = await Promise.all([
+    db.select({ product: catalogueProducts, category: catalogueCategories }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).where(and(...filters)).orderBy(asc(catalogueProducts.name), asc(catalogueProducts.id)).limit(250),
+    db.select({ id: catalogueCategories.id, label: catalogueCategories.name }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false), isNull(catalogueCategories.legacyCategoryId), isNull(catalogueCategories.parentId))).orderBy(asc(catalogueCategories.sortOrder), asc(catalogueCategories.name)),
+  ]);
+  return {
+    products: rows.map(({ product, category }) => ({ id: product.id, name: product.name, sku: product.sku, image: product.imageUrl, category: category.name, categoryId: category.id, availability: availabilityLabels[product.availability], availabilityCode: product.availability, stockQuantity: product.stockQuantity })),
+    categories,
+    hasMore: rows.length === 250,
+  };
+}
+
 export async function getAdminBrochures() {
   await ensureBrochureSeeded();
   const db = await requireDb();

@@ -1508,6 +1508,10 @@ function AdminInventory({ permissions }: AdminPageProps) {
   const canReadInventory = can(permissions, "inventory.read");
   const canWriteInventory = can(permissions, "inventory.write");
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadInventory });
+  const [inventorySearchInput, setInventorySearchInput] = useState("");
+  const [inventorySearch, setInventorySearch] = useState("");
+  const [inventoryCategory, setInventoryCategory] = useState("");
+  const inventory = trpc.admin.inventory.useQuery({ query: inventorySearch || undefined, categoryId: inventoryCategory ? Number(inventoryCategory) : undefined }, { enabled: canReadInventory });
   const [stockDrafts, setStockDrafts] = useState<Record<number, string>>({});
   const [stockConfirmOpen, setStockConfirmOpen] = useState(false);
   const [stockSaveError, setStockSaveError] = useState("");
@@ -1515,6 +1519,7 @@ function AdminInventory({ permissions }: AdminPageProps) {
     onSuccess: async () => {
       await Promise.all([
         utils.admin.operations.invalidate(),
+        utils.admin.inventory.invalidate(),
         utils.admin.products.invalidate(),
         utils.admin.summary.invalidate(),
         utils.catalogue.list.invalidate(),
@@ -1526,22 +1531,26 @@ function AdminInventory({ permissions }: AdminPageProps) {
     onError: error => setStockSaveError(error.message || "Промените не бяха записани."),
   });
   useEffect(() => {
-    if (!operations.data) return;
-    setStockDrafts(Object.fromEntries(operations.data.inventoryQueue.map(product => [product.id, String(product.stockQuantity ?? 0)])));
-  }, [operations.data]);
-  const stockChanges = operations.data?.inventoryQueue.flatMap(product => {
+    if (!inventory.data) return;
+    setStockDrafts(Object.fromEntries(inventory.data.products.map(product => [product.id, String(product.stockQuantity ?? 0)])));
+  }, [inventory.data]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setInventorySearch(inventorySearchInput.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [inventorySearchInput]);
+  const stockChanges = inventory.data?.products.flatMap(product => {
     const value = stockDrafts[product.id] ?? String(product.stockQuantity ?? 0);
     const next = Number(value);
     return /^\d+$/.test(value) && Number.isSafeInteger(next) && next >= 0 && next <= 999999 && next !== (product.stockQuantity ?? 0)
       ? [{ id: product.id, name: product.name, oldQuantity: product.stockQuantity ?? 0, newQuantity: next }]
       : [];
   }) ?? [];
-  const hasInvalidStockDraft = operations.data?.inventoryQueue.some(product => {
+  const hasInvalidStockDraft = inventory.data?.products.some(product => {
     const value = stockDrafts[product.id] ?? String(product.stockQuantity ?? 0);
     return !/^\d+$/.test(value) || Number(value) > 999999;
   }) ?? false;
-  if (operations.isLoading) return <LoadingState />;
-  if (!operations.data) return <ErrorState />;
+  if (operations.isLoading || inventory.isLoading) return <LoadingState />;
+  if (!operations.data || !inventory.data) return <ErrorState />;
   return (
     <section className="admin-workspace">
       <ShellHeading
@@ -1575,15 +1584,19 @@ function AdminInventory({ permissions }: AdminPageProps) {
             <p className="admin-kicker">ИНВЕНТАРНА ОПАШКА</p>
             <h2>Артикули за преглед и редакция</h2>
             <p className="admin-panel-caption">Въведете крайната наличност директно. Можете да промените няколко артикула и да ги запишете наведнъж.</p>
+            <div className="admin-inventory-filters">
+              <label>Търсене по име или код<input type="search" value={inventorySearchInput} onChange={event => setInventorySearchInput(event.target.value)} placeholder="Например: бормашина или SKU-123" /></label>
+              <label>Категория<select value={inventoryCategory} onChange={event => setInventoryCategory(event.target.value)}><option value="">Всички категории</option>{inventory.data.categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+            </div>
           </div>
           <div className="admin-inventory-actions">
-            <span className="admin-count">{operations.data.inventoryQueue.length} записа</span>
+            <span className="admin-count">{inventory.data.products.length}{inventory.data.hasMore ? "+" : ""} записа</span>
             {canWriteInventory && <button type="button" className="admin-primary" disabled={!stockChanges.length || hasInvalidStockDraft || saveStock.isPending} onClick={() => { setStockSaveError(""); setStockConfirmOpen(true); }}>{saveStock.isPending ? "Записване…" : `Запиши промените${stockChanges.length ? ` (${stockChanges.length})` : ""}`}</button>}
           </div>
         </div>
-        {operations.data.inventoryQueue.length ? (
+        {inventory.data.products.length ? (
           <div className="admin-inventory-list">
-            {operations.data.inventoryQueue.map(product => (
+            {inventory.data.products.map(product => (
               <article key={product.id}>
                 <img src={product.image} alt="" />
                 <div>
@@ -1608,8 +1621,8 @@ function AdminInventory({ permissions }: AdminPageProps) {
         ) : (
           <EmptyState
             icon={PackageCheck}
-            title="Няма артикули в контролна зона."
-            text="Когато количество на активен артикул е до 2, той ще се покаже тук."
+            title="Няма намерени артикули."
+            text="Променете търсенето или изберете друга категория."
           />
         )}
       </section>
