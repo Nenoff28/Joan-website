@@ -1775,6 +1775,28 @@ function isoDateTime(value: string) {
   return value ? new Date(value).toISOString() : null;
 }
 
+function numericProductPrice(value?: string) {
+  if (!value) return null;
+  const normalized = value.replace(/[^0-9,.-]/g, "").replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function promotionPreviewPrice(product: AdminProduct, mode: "specific" | "campaign", form: { discountPercent: string; fixedPriceEur: string }, rowDrafts: Record<number, PromotionRowDraft>) {
+  const base = numericProductPrice(product.price);
+  if (base === null) return null;
+  const row = mode === "specific" ? rowDrafts[product.id] : undefined;
+  const fixedValue = row?.fixedPriceEur || form.fixedPriceEur;
+  if (fixedValue) {
+    const fixed = Number(fixedValue);
+    return Number.isFinite(fixed) ? fixed : null;
+  }
+  const percentValue = row?.discountPercent || form.discountPercent;
+  if (!percentValue) return null;
+  const percent = Number(percentValue);
+  return Number.isFinite(percent) ? Math.round(base * (1 - percent / 100) * 100) / 100 : null;
+}
+
 function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOptions, onCategoryChange }: { products: AdminProduct[]; canWrite: boolean; categoryId: number | null; categoryOptions: FlatPromotionCategoryOption[]; onCategoryChange: (categoryId: number | null) => void }) {
   const utils = trpc.useUtils();
   const campaigns = trpc.admin.promotionCampaigns.useQuery(undefined, { enabled: true });
@@ -1825,6 +1847,15 @@ function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOption
     setSelected([...selectedIds, ...matches.map(product => product.id)]);
     setCodeMessage(missing.length ? `Не са намерени: ${missing.join(", ")}` : `${matches.length} артикула са добавени по код.`);
   };
+  const allFilteredSelected = filteredProducts.length > 0 && filteredProducts.every(product => selectedSet.has(product.id));
+  const toggleAllFiltered = () => {
+    if (allFilteredSelected) {
+      const filteredIds = new Set(filteredProducts.map(product => product.id));
+      setSelected(selectedIds.filter(id => !filteredIds.has(id)));
+      return;
+    }
+    setSelected([...selectedIds, ...filteredProducts.map(product => product.id)]);
+  };
   const editCampaign = (campaign: NonNullable<typeof campaigns.data>[number]) => {
     const hasSpecificRows = campaign.products.some(product => product.discountPercent !== null || product.fixedPriceEur !== null || product.startsAt || product.endsAt) || (campaign.discountPercent === null && campaign.fixedPriceEur === null);
     setMode(hasSpecificRows ? "specific" : "campaign");
@@ -1861,9 +1892,9 @@ function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOption
           </div>
           {mode === "specific" && <div className="admin-campaign-specific-note"><strong>Индивидуални настройки</strong><span>Изберете процент или цена и период за всеки артикул по-долу. Ако редът е празен, се използва общата стойност и период.</span></div>}
           <div className="admin-campaign-picker">
-            <div className="admin-panel-head"><div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Добавете продукти</h3><small>Изберете категория или подкатегория, после маркирайте нужните артикули.</small></div><div className="admin-campaign-filters"><label className="admin-search">Категория / подкатегория<select value={categoryId ?? ""} onChange={event => onCategoryChange(event.target.value ? Number(event.target.value) : null)}><option value="">Всички категории</option>{categoryOptions.map(option => <option key={option.id} value={option.id}>{"— ".repeat(option.depth)}{option.label}</option>)}</select></label><label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label></div></div>
+            <div className="admin-panel-head"><div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Добавете продукти</h3><small>Изберете категория или подкатегория, после маркирайте нужните артикули.</small></div><div className="admin-campaign-filters"><label className="admin-search">Категория / подкатегория<select value={categoryId ?? ""} onChange={event => onCategoryChange(event.target.value ? Number(event.target.value) : null)}><option value="">Всички категории</option>{categoryOptions.map(option => <option key={option.id} value={option.id}>{"— ".repeat(option.depth)}{option.label}</option>)}</select></label><label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label><button type="button" className="admin-secondary admin-campaign-select-all" onClick={toggleAllFiltered} disabled={!filteredProducts.length}>{allFilteredSelected ? "Размаркирай всички показани" : "Маркирай всички показани"}</button></div></div>
             <div className="admin-campaign-code-entry"><label>Добавяне на много вътрешни кодове<textarea value={codes} placeholder="137920, 137921 или по един код на ред" onChange={event => setCodes(event.target.value)} /></label><button type="button" className="admin-secondary" onClick={addCodes}>Добави кодовете</button>{codeMessage && <small>{codeMessage}</small>}</div>
-            <div className="admin-campaign-products">{filteredProducts.map(product => <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"} · {product.price ?? "Без цена"}</small></span></label>)}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
+            <div className="admin-campaign-products">{filteredProducts.map(product => { const preview = promotionPreviewPrice(product, mode, form, rowDrafts); return <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"}</small><small className="admin-campaign-price-preview"><span>Текуща: {product.price ?? "Без цена"}</span><span>{preview === null ? "Промо: —" : `Промо: ${preview.toFixed(2)}€`}</span></small></span></label>; })}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
           </div>
           {mode === "specific" && selectedProducts.length > 0 && <div className="admin-campaign-rows"><h3>Настройки по продукт</h3>{selectedProducts.map(product => { const row = rowDrafts[product.id] ?? { discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" }; const updateRow = (changes: Partial<PromotionRowDraft>) => setRowDrafts(current => ({ ...current, [product.id]: { ...row, ...changes } })); return <div className="admin-campaign-row" key={product.id}><div><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без код"} · базова цена {product.price}</small></div><label>%<input type="number" min="0.01" max="100" step="0.01" value={row.discountPercent} onChange={event => updateRow({ discountPercent: event.target.value, fixedPriceEur: event.target.value ? "" : row.fixedPriceEur })} /></label><label>Цена EUR<input type="number" min="0" step="0.01" value={row.fixedPriceEur} onChange={event => updateRow({ fixedPriceEur: event.target.value, discountPercent: event.target.value ? "" : row.discountPercent })} /></label><label>Начало<input type="datetime-local" value={row.startsAt} onChange={event => updateRow({ startsAt: event.target.value })} /></label><label>Край<input type="datetime-local" value={row.endsAt} onChange={event => updateRow({ endsAt: event.target.value })} /></label><button type="button" className="admin-icon-button" aria-label={`Премахни ${product.name}`} onClick={() => setSelected(selectedIds.filter(id => id !== product.id))}><Trash2 size={16} /></button></div>; })}</div>}
           <div className="admin-form-actions"><button className="admin-primary" type="submit" disabled={selectedIds.length === 0 || !form.startsAt || pending}>{editingId ? <Save size={17} /> : <Plus size={17} />}{editingId ? "Запази промените" : "Създай промоция"}</button>{editingId && <button type="button" className="admin-secondary" onClick={resetEditor}>Откажи редакцията</button>}</div>

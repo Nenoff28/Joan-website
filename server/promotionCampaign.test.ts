@@ -48,6 +48,11 @@ describe("promotion campaigns", () => {
     expect(admin).toContain("Категория / подкатегория");
     expect(admin).toContain("flattenPromotionCategories");
     expect(admin).toContain("selectedIds");
+    expect(admin).toContain("Маркирай всички показани");
+    expect(admin).toContain("Размаркирай всички показани");
+    expect(admin).toContain("promotionPreviewPrice");
+    expect(admin).toContain("Текуща:");
+    expect(admin).toContain("Промо:");
     expect(admin).toContain("Добавяне на много вътрешни кодове");
     expect(admin).toContain("Настройки по продукт");
     expect(admin).toContain("Създай промоция");
