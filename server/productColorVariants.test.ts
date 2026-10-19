@@ -23,6 +23,17 @@ describe("paint color variants", () => {
     expect(derivePaintVariantGroup({ name: "Тениска синя 0,650мл.", brand: "Casa Bella", categoryName: "Работно облекло" })).toBeNull();
   });
 
+  it("recognizes variants from different paint manufacturers", () => {
+    const protecta = derivePaintVariantGroup({ name: "Боя Протекта 3 в 1 сребриста 0,500мл.", brand: "Protecta", categoryName: "Бои, Лакове, Мазилки" });
+    expect(protecta).toBe(derivePaintVariantGroup({ name: "Боя Протекта 3 в 1 старо злато 0,500мл.", brand: "Protecta", categoryName: "Бои, Лакове, Мазилки" }));
+
+    const kittfort = derivePaintVariantGroup({ name: "Латекс CL 01 КРЕМ 1,5кг.", brand: "Kittfort", categoryName: "Бои, Лакове, Мазилки" });
+    expect(kittfort).toBe(derivePaintVariantGroup({ name: "Латекс CL 02 ВАНИЛИЯ 1,5кг.", brand: "Kittfort", categoryName: "Бои, Лакове, Мазилки" }));
+
+    const dupliColor = derivePaintVariantGroup({ name: "Спрей VERY WELL 9005 черен гланц 400мл.", brand: "Dupli-Color", categoryName: "Бои, Лакове, Мазилки" });
+    expect(dupliColor).toBe(derivePaintVariantGroup({ name: "Спрей VERY WELL 9010 бял гланц 400мл.", brand: "Dupli-Color", categoryName: "Бои, Лакове, Мазилки" }));
+  });
+
   it("renders an accessible color menu and navigates to the selected slug", () => {
     expect(productPage).toContain("product-color-variants");
     expect(productPage).toContain('aria-haspopup="listbox"');

@@ -330,21 +330,31 @@ const paintColourWords = new Set([
   "вишнева", "вишнево", "вишнев", "резеда", "кафе", "млечнокакаов", "млечнокакаова", "млечнокафява", "млечнокафяво", "млечнокафяв",
   "бежова", "бежово", "бежов", "кремава", "кремаво", "кремав", "бордо", "мента", "маслинена", "маслинено", "маслинен", "антрацит",
   "лазурен", "лазурна", "лазурно", "махагон", "мед", "палисандър", "орех", "капучино", "теракота", "портокал", "венге", "череша", "дъб", "ленен", "ленена", "графит", "металик", "пясъчен", "пясъчна", "шоколад", "кестен", "кестенов", "охра", "титан", "алуминий",
-  "сребърен", "сребърна", "сребърно", "златен", "златна", "златно", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
+  "сребърен", "сребърна", "сребърно", "сребрист", "сребриста", "сребристо", "злато", "златен", "златна", "златно", "златист", "златиста", "златисто", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
+  "крем", "кремена", "ванилия", "кайсия", "мандарина", "лавандула", "нуга", "сьомга", "личи", "слънчоглед", "алое", "фъстък", "марсала", "корал", "цикламен", "цикламена", "виолетов", "виолетова", "тюркоаз", "тюркоазен", "планливада",
 ]);
+
+const paintColourPhrases = [
+  "старо злато", "алое вера", "шам фъстък", "план ливада", "слонова кост",
+  "светло сив", "тъмно сив", "светло син", "тъмно син", "светло зелен", "тъмно зелен", "светло жълт", "тъмно жълт", "светло кафяв", "тъмно кафяв",
+  "сребристо сиво", "сигнално бял", "сигнално син", "наситено син", "наситено жълт", "морско син", "трафик червено", "трафик сиво", "жълто зелен", "медено кафяво", "еврика виолетов", "керемидено червено", "шоколадово кафяво", "бял шоколад", "кафе лате", "златен пясък", "графитено сиво", "карибско син", "коралово червен", "винено червен",
+  "киви", "канела", "череша", "бадем", "капучино", "теракота",
+];
 
 function normalizedPaintText(value: string) {
   return value.toLocaleLowerCase("bg-BG").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
 }
 
 function paintQuantityToken(name: string) {
-  return name.match(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i)?.[0]?.replace(/\s+/g, "").toLocaleLowerCase("bg-BG") ?? "";
+  return name.match(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i)?.[0]?.replace(/\s+/g, "").replace(",", ".").replace(/\.$/, "").toLocaleLowerCase("bg-BG") ?? "";
 }
 
 function paintColourLabel(name: string) {
   const normalized = normalizedPaintText(name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, "").trim();
   const ral = normalized.match(/\bral\s*\d{3,4}\b/i)?.[0];
   if (ral) return ral.replace(/\s+/g, " ");
+  const phrase = [...paintColourPhrases].sort((left, right) => right.length - left.length).find((candidate) => new RegExp(`(?:^|\\s)${candidate.split(" ").join("\\s+")}(?=\\s|$)`, "i").test(normalized));
+  if (phrase) return phrase;
   const words = normalized.split(/\s+/).filter(Boolean);
   const candidateIndex = words.reduce((lastIndex, word, index) => paintColourWords.has(word.replace(/[.,]/g, "")) ? index : lastIndex, -1);
   if (candidateIndex < 0) return null;
@@ -360,10 +370,14 @@ export function derivePaintVariantGroup(product: { name: string; brand?: string 
   const quantity = paintQuantityToken(product.name);
   const normalizedName = normalizedPaintText(product.name)
     .replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, "")
+    // Kittfort and Dupli-Color use numeric colour codes such as CL 01 and 9005.
+    .replace(/\b\d{1,4}\b/g, "")
     .replace(new RegExp(`(?:^|\\s)${colorLabel.split(" ").join("\\s+")}(?=\\s|$)`, "i"), " ")
     .replace(/\s+/g, " ").trim();
-  if (!normalizedName || !quantity) return null;
-  return `${normalizedPaintText(product.brand ?? "")}|${normalizedName}|${quantity}`;
+  if (!normalizedName) return null;
+  // Some spray/paint catalogues omit the pack size from the title. Keep those
+  // products groupable while still separating explicitly different sizes.
+  return `${normalizedPaintText(product.brand ?? "")}|${normalizedName}|${quantity || "без-разфасовка"}`;
 }
 
 function paintVariantLabel(name: string) {
