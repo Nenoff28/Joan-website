@@ -717,3 +717,8 @@
 - [x] Всеки продукт показва „Текуща“ цена и „Промо“ цена, изчислена в реално време от общата или индивидуалната отстъпка/фиксирана цена; добавени са responsive стилове и regression assertions. Целевите 11 теста и пълните 80 файла / 335 теста, TypeScript, build, Netlify bundle и diff check преминаха.
 - [x] Филтрите са разделени на независими полета „Категория“, „Подкатегория“ и „Търсене по име или вътрешен код“. Подкатегориите се зареждат според избраната категория, включително по-дълбоки нива, а изборът на „Всички подкатегории“ оставя филтъра на ниво категория.
 - [x] След поправката преминаха 80 Vitest файла / 335 теста, TypeScript, production build, Netlify Function bundle и `git diff --check`; не са променяни продуктови цени, SKU или наличности.
+
+# Performance оптимизация
+- [x] SSR prefetch-ът вече използва същите `language` query keys като клиента за metadata, header search, homepage products и best sellers, което премахва повторните заявки при hydration. Независимите каталожни products/count/brands заявки се изпълняват паралелно.
+- [x] Добавен е кратък server-side coalescing cache за публичните metadata, catalogue page, best sellers, brochure, product и cart reads; cache-ът е по input/language и има кратък TTL, за да не задържа дълго промени.
+- [x] Добавено е gzip/Brotli-compatible compression middleware. Реално измерване след рестарт: началната страница 667 034 → 145 310 bytes с gzip, `/products` 744 118 → 149 687 bytes; warm TTFB за `/checkout` ~0.031s и `/admin/promotions` ~0.018s. Преминаха 80 Vitest файла / 335 теста, TypeScript, production build, Netlify Function bundle и `git diff --check`.

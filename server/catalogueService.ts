@@ -116,6 +116,20 @@ async function requireDb() {
 let seeded: Promise<void> | null = null;
 let brochureSeeded: Promise<void> | null = null;
 
+const publicReadCache = new Map<string, { expiresAt: number; value: Promise<unknown> }>();
+
+function cachedPublicRead<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const cached = publicReadCache.get(key);
+  if (cached && cached.expiresAt > now) return cached.value as Promise<T>;
+  const value = load().catch((error) => {
+    publicReadCache.delete(key);
+    throw error;
+  });
+  publicReadCache.set(key, { expiresAt: now + ttlMs, value });
+  return value;
+}
+
 /** Imports the existing public catalogue once, keeping current routes stable while admin management takes over. */
 export function ensureCatalogueSeeded() {
   if (!seeded) seeded = seedCatalogue();
@@ -367,11 +381,15 @@ function publicBrochure(brochure: typeof catalogueBrochures.$inferSelect) {
   return { id: brochure.id, title: brochure.title, pageUrls, pageCount: brochure.pageCount, sourcePdfUrl: brochure.sourcePdfUrl, isActive: brochure.isActive, isArchived: brochure.isArchived, createdAt: brochure.createdAt, updatedAt: brochure.updatedAt, isManaged: true };
 }
 
-export async function getPublicBrochure() {
+async function getPublicBrochureUncached() {
   await ensureBrochureSeeded();
   const db = await requireDb();
   const [brochure] = await db.select().from(catalogueBrochures).where(and(eq(catalogueBrochures.isActive, true), eq(catalogueBrochures.isArchived, false))).orderBy(desc(catalogueBrochures.updatedAt)).limit(1);
   return brochure ? publicBrochure(brochure) : { id: 0, title: "Промо брошура", pageUrls: fallbackBrochurePages, pageCount: fallbackBrochurePages.length, sourcePdfUrl: null, isActive: true, isArchived: false, createdAt: null, updatedAt: null, isManaged: false };
+}
+
+export function getPublicBrochure() {
+  return cachedPublicRead("brochure", 30_000, getPublicBrochureUncached);
 }
 
 export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
@@ -501,7 +519,7 @@ function publicCatalogueOrder(sort: PublicCataloguePageInput["sort"], language: 
   return [outOfStockLast, desc(catalogueProducts.updatedAt), asc(name)] as const;
 }
 
-export async function getPublicCatalogueMetadata(language: CatalogueLanguage = "bg") {
+async function getPublicCatalogueMetadataUncached(language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const rowsWithEnglish = await db.select({ category: catalogueCategories, english: catalogueCategoryEnglish }).from(catalogueCategories).leftJoin(catalogueCategoryEnglish, eq(catalogueCategoryEnglish.categoryId, catalogueCategories.id)).orderBy(asc(catalogueCategories.sortOrder));
@@ -510,7 +528,11 @@ export async function getPublicCatalogueMetadata(language: CatalogueLanguage = "
   return { categories: rootCategories(rows, true).map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))) };
 }
 
-export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
+export function getPublicCatalogueMetadata(language: CatalogueLanguage = "bg") {
+  return cachedPublicRead(`metadata:${language}`, 30_000, () => getPublicCatalogueMetadataUncached(language));
+}
+
+async function getPublicCataloguePageUncached(input: PublicCataloguePageInput) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const language = input.language ?? "bg";
@@ -525,19 +547,24 @@ export async function getPublicCataloguePage(input: PublicCataloguePageInput) {
   const selectProducts = withPath
     ? db.selectDistinct({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, eq(catalogueProducts.categoryId, category!.id), inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds))).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize)
     : db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(...conditions)).orderBy(...order).limit(pageSize).offset((page - 1) * pageSize);
-  const countRows = withPath
-    ? await db.select({ total: countDistinct(catalogueProducts.id) }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, eq(catalogueProducts.categoryId, category!.id), inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
-    : await db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...conditions));
-  const [rows, brandRows] = await Promise.all([
+  const countPromise = withPath
+    ? db.select({ total: countDistinct(catalogueProducts.id) }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).innerJoin(catalogueProductCategoryLinks, eq(catalogueProductCategoryLinks.productId, catalogueProducts.id)).where(and(...conditions, eq(catalogueProducts.categoryId, category!.id), inArray(catalogueProductCategoryLinks.categoryId, pathCategoryIds)))
+    : db.select({ total: count() }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...conditions));
+  const [rows, countRows, brandRows] = await Promise.all([
     selectProducts,
+    countPromise,
     db.select({ brand: language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...publicCatalogueConditions({ ...input, language, brand: undefined, brands: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand).orderBy(asc(language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand)),
   ]);
   const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
   return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id))), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
 }
 
+export function getPublicCataloguePage(input: PublicCataloguePageInput) {
+  return cachedPublicRead(`page:${JSON.stringify(input)}`, 10_000, () => getPublicCataloguePageUncached(input));
+}
+
 /** Aggregated historical quantities are used only for transparent public popularity ordering. */
-export async function getPublicBestSellers(limit = 8, language: CatalogueLanguage = "bg") {
+async function getPublicBestSellersUncached(limit = 8, language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const cappedLimit = Math.min(24, Math.max(1, limit));
@@ -561,7 +588,11 @@ export async function getPublicBestSellers(limit = 8, language: CatalogueLanguag
   return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)));
 }
 
-export async function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
+export function getPublicBestSellers(limit = 8, language: CatalogueLanguage = "bg") {
+  return cachedPublicRead(`best-sellers:${limit}:${language}`, 30_000, () => getPublicBestSellersUncached(limit, language));
+}
+
+async function getPublicProductBySlugUncached(slug: string, language: CatalogueLanguage = "bg") {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).limit(1);
@@ -571,13 +602,21 @@ export async function getPublicProductBySlug(slug: string, language: CatalogueLa
   return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
 }
 
-export async function getPublicProductsBySlugs(slugs: string[], language: CatalogueLanguage = "bg") {
+export function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
+  return cachedPublicRead(`product:${slug}:${language}`, 10_000, () => getPublicProductBySlugUncached(slug, language));
+}
+
+async function getPublicProductsBySlugsUncached(slugs: string[], language: CatalogueLanguage = "bg") {
   if (!slugs.length) return [];
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)));
   const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
   return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)));
+}
+
+export function getPublicProductsBySlugs(slugs: string[], language: CatalogueLanguage = "bg") {
+  return cachedPublicRead(`products:${JSON.stringify([...slugs].sort())}:${language}`, 10_000, () => getPublicProductsBySlugsUncached(slugs, language));
 }
 
 export async function getPublicSitemapEntries() {

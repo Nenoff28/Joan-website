@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Express } from "express";
+import compression from "compression";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -32,6 +33,7 @@ export async function createApp(server?: Server): Promise<Express> {
   const app = express();
   app.disable("x-powered-by");
   if (process.env.NODE_ENV === "production") app.use(applySecurityHeaders);
+  app.use(compression({ threshold: 1024, level: 6 }));
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "1mb", extended: true }));
   registerStorageProxy(app);

@@ -55,7 +55,7 @@ describe("homepage SEO audit regressions", () => {
 
   it("starts independent homepage SSR queries before awaiting metadata", () => {
     expect(prefetchSource).toContain(
-      "const metadataPromise = prefetch.metadata()"
+      'const metadataPromise = prefetch.metadata(metadataInput)'
     );
     expect(prefetchSource).toContain(
       "const headerSearchPromise = prefetch.page(headerSearch)"
