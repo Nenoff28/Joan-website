@@ -45,8 +45,11 @@ describe("promotion campaigns", () => {
     expect(admin).toContain("Търсене по име или вътрешен код");
     expect(admin).toContain("trpc.admin.promotionProducts.useQuery");
     expect(admin).toContain("trpc.admin.promotionCategories.useQuery");
-    expect(admin).toContain("Категория / подкатегория");
-    expect(admin).toContain("flattenPromotionCategories");
+    expect(admin).toContain("Категория<select");
+    expect(admin).toContain("Подкатегория");
+    expect(admin).toContain("selectedSubcategoryId");
+    expect(admin).toContain("findPromotionCategory");
+    expect(admin).toContain("flattenPromotionDescendants");
     expect(admin).toContain("selectedIds");
     expect(admin).toContain("Маркирай всички показани");
     expect(admin).toContain("Размаркирай всички показани");

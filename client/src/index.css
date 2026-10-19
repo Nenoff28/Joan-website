@@ -893,9 +893,10 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-campaign-picker .admin-panel-head { align-items: end; margin-bottom: .8rem; }
 .admin-campaign-picker h3 { margin: .2rem 0 0; }
 .admin-campaign-picker .admin-panel-head > div > small { color: var(--slate); display: block; font-size: .72rem; margin-top: .35rem; }
-.admin-campaign-filters { display: grid; gap: .55rem; grid-template-columns: minmax(210px, .9fr) minmax(220px, 1.1fr); min-width: min(520px, 100%); }
+.admin-campaign-filters { display: grid; gap: .55rem; grid-template-columns: minmax(160px, .8fr) minmax(160px, .8fr) minmax(220px, 1.2fr); min-width: min(680px, 100%); }
 .admin-campaign-filters .admin-search { margin: 0; }
 .admin-campaign-filters select, .admin-campaign-filters input { background: #fff; border: 1px solid #d6ddd5; border-radius: .65rem; min-height: 40px; }
+.admin-campaign-filters select:disabled { cursor: not-allowed; background: #eef2f1; color: #64748b; }
 .admin-campaign-select-all { grid-column: 1 / -1; justify-self: start; min-height: 38px; }
 .admin-campaign-products { max-height: 390px; overflow: auto; display: grid; gap: .45rem; padding-right: .2rem; }
 .admin-campaign-product { display: grid; grid-template-columns: auto 44px minmax(0, 1fr); align-items: center; gap: .7rem; padding: .55rem .65rem; border: 1px solid transparent; border-radius: .75rem; background: #fff; cursor: pointer; }

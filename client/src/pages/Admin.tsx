@@ -1660,7 +1660,6 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   }, [availableProducts, selectedId]);
   const selected =
     availableProducts.find(product => product.id === selectedId) ?? null;
-  const categoryOptions = useMemo(() => flattenPromotionCategories(categoriesQuery.data ?? []), [categoriesQuery.data]);
   if (operations.isLoading || productsQuery.isLoading || categoriesQuery.isLoading) return <LoadingState />;
   if (!operations.data) return <ErrorState />;
   return (
@@ -1690,7 +1689,7 @@ function AdminPromotions({ permissions }: AdminPageProps) {
           <p>Артикула са без цена и изискват допълване преди предложение.</p>
         </div>
       </section>
-      <PromotionCampaignPanel products={availableProducts} canWrite={canWritePromotions} categoryId={categoryId} categoryOptions={categoryOptions} onCategoryChange={nextId => { setCategoryId(nextId); setSelectedId(null); }} />
+      <PromotionCampaignPanel products={availableProducts} canWrite={canWritePromotions} categoryId={categoryId} categoryTree={categoriesQuery.data ?? []} onCategoryChange={nextId => { setCategoryId(nextId); setSelectedId(null); }} />
       {selected ? (
         <PromotionEditor product={selected} canWrite={canWritePromotions} />
       ) : (
@@ -1755,10 +1754,20 @@ function AdminPromotions({ permissions }: AdminPageProps) {
 }
 
 type PromotionCategoryOption = { id: number; label: string; children?: PromotionCategoryOption[] };
-type FlatPromotionCategoryOption = { id: number; label: string; depth: number };
+type PromotionSubcategoryOption = { id: number; label: string; depth: number };
 
-function flattenPromotionCategories(options: PromotionCategoryOption[], depth = 0): FlatPromotionCategoryOption[] {
-  return options.flatMap(option => [{ id: option.id, label: option.label, depth }, ...flattenPromotionCategories(option.children ?? [], depth + 1)]);
+function flattenPromotionDescendants(options: PromotionCategoryOption[], depth = 0): PromotionSubcategoryOption[] {
+  return options.flatMap(option => [{ id: option.id, label: option.label, depth }, ...flattenPromotionDescendants(option.children ?? [], depth + 1)]);
+}
+
+function findPromotionCategory(options: PromotionCategoryOption[], id: number | null): PromotionCategoryOption | null {
+  if (id === null) return null;
+  for (const option of options) {
+    if (option.id === id) return option;
+    const nested = findPromotionCategory(option.children ?? [], id);
+    if (nested) return nested;
+  }
+  return null;
 }
 
 type PromotionRowDraft = { discountPercent: string; fixedPriceEur: string; startsAt: string; endsAt: string };
@@ -1797,7 +1806,7 @@ function promotionPreviewPrice(product: AdminProduct, mode: "specific" | "campai
   return Number.isFinite(percent) ? Math.round(base * (1 - percent / 100) * 100) / 100 : null;
 }
 
-function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOptions, onCategoryChange }: { products: AdminProduct[]; canWrite: boolean; categoryId: number | null; categoryOptions: FlatPromotionCategoryOption[]; onCategoryChange: (categoryId: number | null) => void }) {
+function PromotionCampaignPanel({ products, canWrite, categoryId, categoryTree, onCategoryChange }: { products: AdminProduct[]; canWrite: boolean; categoryId: number | null; categoryTree: PromotionCategoryOption[]; onCategoryChange: (categoryId: number | null) => void }) {
   const utils = trpc.useUtils();
   const campaigns = trpc.admin.promotionCampaigns.useQuery(undefined, { enabled: true });
   const [mode, setMode] = useState<"specific" | "campaign">("specific");
@@ -1808,6 +1817,10 @@ function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOption
   const [codeMessage, setCodeMessage] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [rowDrafts, setRowDrafts] = useState<Record<number, PromotionRowDraft>>({});
+  const selectedRoot = useMemo(() => categoryTree.find(option => option.id === categoryId) ?? categoryTree.find(option => option.children?.some(child => child.id === categoryId || findPromotionCategory(child.children ?? [], categoryId) !== null)) ?? null, [categoryTree, categoryId]);
+  const selectedRootId = selectedRoot?.id ?? null;
+  const selectedSubcategoryId = selectedRootId !== null && selectedRootId !== categoryId ? categoryId : null;
+  const subcategoryOptions = useMemo(() => flattenPromotionDescendants(selectedRoot?.children ?? []), [selectedRoot]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const filteredProducts = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase("bg-BG");
@@ -1892,7 +1905,33 @@ function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOption
           </div>
           {mode === "specific" && <div className="admin-campaign-specific-note"><strong>Индивидуални настройки</strong><span>Изберете процент или цена и период за всеки артикул по-долу. Ако редът е празен, се използва общата стойност и период.</span></div>}
           <div className="admin-campaign-picker">
-            <div className="admin-panel-head"><div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Добавете продукти</h3><small>Изберете категория или подкатегория, после маркирайте нужните артикули.</small></div><div className="admin-campaign-filters"><label className="admin-search">Категория / подкатегория<select value={categoryId ?? ""} onChange={event => onCategoryChange(event.target.value ? Number(event.target.value) : null)}><option value="">Всички категории</option>{categoryOptions.map(option => <option key={option.id} value={option.id}>{"— ".repeat(option.depth)}{option.label}</option>)}</select></label><label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label><button type="button" className="admin-secondary admin-campaign-select-all" onClick={toggleAllFiltered} disabled={!filteredProducts.length}>{allFilteredSelected ? "Размаркирай всички показани" : "Маркирай всички показани"}</button></div></div>
+            <div className="admin-panel-head">
+              <div>
+                <p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p>
+                <h3>Добавете продукти</h3>
+                <small>Изберете категория и по желание подкатегория, после търсете и маркирайте нужните артикули.</small>
+              </div>
+              <div className="admin-campaign-filters">
+                <label className="admin-search">Категория
+                  <select value={selectedRootId ?? ""} onChange={event => onCategoryChange(event.target.value ? Number(event.target.value) : null)}>
+                    <option value="">Всички категории</option>
+                    {categoryTree.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </select>
+                </label>
+                <label className="admin-search">Подкатегория
+                  <select value={selectedSubcategoryId ?? ""} onChange={event => onCategoryChange(event.target.value ? Number(event.target.value) : selectedRootId)} disabled={!selectedRoot}>
+                    <option value="">Всички подкатегории</option>
+                    {subcategoryOptions.map(option => <option key={option.id} value={option.id}>{"— ".repeat(option.depth)}{option.label}</option>)}
+                  </select>
+                </label>
+                <label className="admin-search admin-campaign-name-search">Търсене по име или вътрешен код
+                  <input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} />
+                </label>
+                <button type="button" className="admin-secondary admin-campaign-select-all" onClick={toggleAllFiltered} disabled={!filteredProducts.length}>
+                  {allFilteredSelected ? "Размаркирай всички показани" : "Маркирай всички показани"}
+                </button>
+              </div>
+            </div>
             <div className="admin-campaign-code-entry"><label>Добавяне на много вътрешни кодове<textarea value={codes} placeholder="137920, 137921 или по един код на ред" onChange={event => setCodes(event.target.value)} /></label><button type="button" className="admin-secondary" onClick={addCodes}>Добави кодовете</button>{codeMessage && <small>{codeMessage}</small>}</div>
             <div className="admin-campaign-products">{filteredProducts.map(product => { const preview = promotionPreviewPrice(product, mode, form, rowDrafts); return <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"}</small><small className="admin-campaign-price-preview"><span>Текуща: {product.price ?? "Без цена"}</span><span>{preview === null ? "Промо: —" : `Промо: ${preview.toFixed(2)}€`}</span></small></span></label>; })}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
           </div>
