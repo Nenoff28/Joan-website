@@ -356,14 +356,15 @@ function paintQuantityLabel(name: string) {
 function paintColourLabel(name: string) {
   const normalized = normalizedPaintText(name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, "").trim();
   const ral = normalized.match(/\bral\s*\d{3,4}\b/i)?.[0];
-  if (ral) return ral.replace(/\s+/g, " ");
   const phrase = [...paintColourPhrases].sort((left, right) => right.length - left.length).find((candidate) => new RegExp(`(?:^|\\s)${candidate.split(" ").join("\\s+")}(?=\\s|$)`, "i").test(normalized));
   if (phrase) return phrase;
   const words = normalized.split(/\s+/).filter(Boolean);
   const candidateIndex = words.reduce((lastIndex, word, index) => paintColourWords.has(word.replace(/[.,]/g, "")) ? index : lastIndex, -1);
-  if (candidateIndex < 0) return null;
-  const prefix = words[candidateIndex - 1] === "тъмно" || words[candidateIndex - 1] === "светло" ? words[candidateIndex - 1] : null;
-  return prefix ? `${prefix} ${words[candidateIndex]}` : words[candidateIndex];
+  if (candidateIndex >= 0) {
+    const prefix = words[candidateIndex - 1] === "тъмно" || words[candidateIndex - 1] === "светло" ? words[candidateIndex - 1] : null;
+    return prefix ? `${prefix} ${words[candidateIndex]}` : words[candidateIndex];
+  }
+  return ral ? ral.replace(/\s+/g, " ") : null;
 }
 
 function stripPaintColourTokens(value: string) {
@@ -391,7 +392,7 @@ export function derivePaintVariantGroup(product: { name: string; brand?: string 
   return `${normalizedPaintText(product.brand ?? "")}|${normalizedName}`;
 }
 
-function paintVariantLabel(name: string) {
+export function paintVariantLabel(name: string) {
   return paintColourLabel(name) ?? name;
 }
 

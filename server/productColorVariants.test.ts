@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { derivePaintVariantGroup } from "./catalogueService";
+import { derivePaintVariantGroup, paintVariantLabel } from "./catalogueService";
 
 const productPage = readFileSync(resolve(process.cwd(), "client/src/pages/Product.tsx"), "utf8");
 const stylesheet = readFileSync(resolve(process.cwd(), "client/src/pages/productColorVariants.css"), "utf8");
@@ -34,6 +34,12 @@ describe("paint color variants", () => {
 
     const dupliColor = derivePaintVariantGroup({ name: "Спрей VERY WELL 9005 черен гланц 400мл.", brand: "Dupli-Color", categoryName: "Бои, Лакове, Мазилки" });
     expect(dupliColor).toBe(derivePaintVariantGroup({ name: "Спрей VERY WELL 9010 бял гланц 400мл.", brand: "Dupli-Color", categoryName: "Бои, Лакове, Мазилки" }));
+  });
+
+  it("prefers the descriptive color over a RAL code in the visible label", () => {
+    expect(paintVariantLabel("Боя Мефисто RAL5015 синя 0,650мл. - Оргахим")).toBe("синя");
+    expect(paintVariantLabel("Боя ЛЕКО RAL 9005 Черна 650мл.")).toBe("черна");
+    expect(paintVariantLabel("Боя ЛЕКО RAL 9005 2,5л.")).toBe("ral 9005");
   });
 
   it("renders an accessible color menu and navigates to the selected slug", () => {
