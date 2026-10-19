@@ -1647,7 +1647,7 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   const canReadPromotions = can(permissions, "promotions.read");
   const canWritePromotions = can(permissions, "promotions.write");
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadPromotions });
-  const productsQuery = trpc.admin.products.useQuery(undefined, { enabled: canReadPromotions });
+  const productsQuery = trpc.admin.promotionProducts.useQuery(undefined, { enabled: canReadPromotions });
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const availableProducts = (productsQuery.data ?? []).filter(
     product => product.isActive && product.price
@@ -1751,81 +1751,112 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   );
 }
 
+type PromotionRowDraft = { discountPercent: string; fixedPriceEur: string; startsAt: string; endsAt: string };
+
+function localDateTime(value: string | Date | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (number: number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function isoDateTime(value: string) {
+  return value ? new Date(value).toISOString() : null;
+}
+
 function PromotionCampaignPanel({ products, canWrite }: { products: AdminProduct[]; canWrite: boolean }) {
   const utils = trpc.useUtils();
   const campaigns = trpc.admin.promotionCampaigns.useQuery(undefined, { enabled: true });
-  const create = trpc.admin.createPromotionCampaign.useMutation({
-    onSuccess: async () => {
-      await Promise.all([utils.admin.promotionCampaigns.invalidate(), utils.admin.operations.invalidate(), utils.catalogue.page.invalidate(), utils.catalogue.list.invalidate()]);
-      setForm({ name: "", discountPercent: "", startsAt: "", endsAt: "" });
-      setSelectedIds([]);
-      toast("Промоцията е създадена и ще се активира според зададения период.");
-    },
-  });
-  const toggle = trpc.admin.setPromotionCampaignActive.useMutation({
-    onSuccess: () => utils.admin.promotionCampaigns.invalidate(),
-  });
-  const [form, setForm] = useState({ name: "", discountPercent: "", startsAt: "", endsAt: "" });
+  const [mode, setMode] = useState<"specific" | "campaign">("specific");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState({ name: "", discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" });
   const [search, setSearch] = useState("");
+  const [codes, setCodes] = useState("");
+  const [codeMessage, setCodeMessage] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [rowDrafts, setRowDrafts] = useState<Record<number, PromotionRowDraft>>({});
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const filteredProducts = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase("bg-BG");
     if (!needle) return products.slice(0, 120);
     return products.filter(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(needle)).slice(0, 120);
   }, [products, search]);
-  const toggleProduct = (id: number) => setSelectedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  const selectedProducts = useMemo(() => products.filter(product => selectedSet.has(product.id)), [products, selectedSet]);
+  const refresh = async () => Promise.all([utils.admin.promotionCampaigns.invalidate(), utils.admin.operations.invalidate(), utils.catalogue.page.invalidate(), utils.catalogue.list.invalidate()]);
+  const resetEditor = () => {
+    setEditingId(null);
+    setForm({ name: "", discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" });
+    setSelectedIds([]);
+    setRowDrafts({});
+    setCodes("");
+    setCodeMessage("");
+  };
+  const create = trpc.admin.createPromotionCampaign.useMutation({ onSuccess: async () => { await refresh(); resetEditor(); toast("Промоцията е създадена."); } });
+  const update = trpc.admin.updatePromotionCampaign.useMutation({ onSuccess: async () => { await refresh(); resetEditor(); toast("Промоцията е обновена."); } });
+  const remove = trpc.admin.deletePromotionCampaign.useMutation({ onSuccess: async () => { await refresh(); if (editingId) resetEditor(); toast("Промоцията е изтрита."); } });
+  const toggle = trpc.admin.setPromotionCampaignActive.useMutation({ onSuccess: refresh });
+  const pending = create.isPending || update.isPending;
+  const setSelected = (ids: number[]) => {
+    const unique = Array.from(new Set(ids));
+    setSelectedIds(unique);
+    setRowDrafts(current => Object.fromEntries(unique.map(id => [id, current[id] ?? { discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" }])));
+  };
+  const toggleProduct = (id: number) => setSelected(selectedIds.includes(id) ? selectedIds.filter(item => item !== id) : [...selectedIds, id]);
+  const addCodes = () => {
+    const wanted = codes.split(/[\s,;]+/).map(code => code.trim().toLocaleLowerCase("bg-BG")).filter(Boolean);
+    const matches = products.filter(product => product.sku && wanted.includes(product.sku.toLocaleLowerCase("bg-BG")));
+    const found = new Set(matches.map(product => product.sku?.toLocaleLowerCase("bg-BG")));
+    const missing = wanted.filter(code => !found.has(code));
+    setSelected([...selectedIds, ...matches.map(product => product.id)]);
+    setCodeMessage(missing.length ? `Не са намерени: ${missing.join(", ")}` : `${matches.length} артикула са добавени по код.`);
+  };
+  const editCampaign = (campaign: NonNullable<typeof campaigns.data>[number]) => {
+    const hasSpecificRows = campaign.products.some(product => product.discountPercent !== null || product.fixedPriceEur !== null || product.startsAt || product.endsAt) || (campaign.discountPercent === null && campaign.fixedPriceEur === null);
+    setMode(hasSpecificRows ? "specific" : "campaign");
+    setEditingId(campaign.id);
+    setForm({ name: campaign.name, discountPercent: campaign.discountPercent === null ? "" : String(campaign.discountPercent), fixedPriceEur: campaign.fixedPriceEur === null ? "" : String(campaign.fixedPriceEur), startsAt: localDateTime(campaign.startsAt), endsAt: localDateTime(campaign.endsAt) });
+    setSelected(campaign.products.map(product => product.id));
+    setRowDrafts(Object.fromEntries(campaign.products.map(product => [product.id, { discountPercent: product.discountPercent === null ? "" : String(product.discountPercent), fixedPriceEur: product.fixedPriceEur === null ? "" : String(product.fixedPriceEur), startsAt: localDateTime(product.startsAt), endsAt: localDateTime(product.endsAt) }])));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!canWrite || !form.startsAt || !selectedIds.length) return;
+    const commonDiscount = form.discountPercent ? Number(form.discountPercent) : null;
+    const commonFixed = form.fixedPriceEur ? Number(form.fixedPriceEur) : null;
+    const payload = { name: form.name.trim(), discountPercent: mode === "campaign" ? commonDiscount : commonDiscount, fixedPriceEur: commonFixed, startsAt: isoDateTime(form.startsAt)!, endsAt: isoDateTime(form.endsAt), productIds: selectedIds, productOverrides: mode === "specific" ? selectedIds.map(productId => { const row = rowDrafts[productId] ?? { discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" }; return { productId, discountPercent: row.discountPercent ? Number(row.discountPercent) : undefined, fixedPriceEur: row.fixedPriceEur ? Number(row.fixedPriceEur) : undefined, startsAt: isoDateTime(row.startsAt), endsAt: isoDateTime(row.endsAt) }; }) : undefined };
+    if (editingId) update.mutate({ id: editingId, ...payload }); else create.mutate(payload);
+  };
   const statusLabel: Record<string, string> = { planned: "Предстояща", active: "Активна", ended: "Приключила", paused: "Спряна" };
   return (
     <section className="admin-edit-panel admin-campaign-panel">
-      <div className="admin-panel-head">
-        <div>
-          <p className="admin-kicker">КАМПАНИИ</p>
-          <h2>Създайте промоция за избрани артикули</h2>
-          <p>Базовите цени не се променят. Публичната цена се изчислява автоматично само в зададения период.</p>
-        </div>
-        <BadgePercent size={26} />
+      <div className="admin-panel-head"><div><p className="admin-kicker">КАМПАНИИ</p><h2>{editingId ? "Редактирайте промоцията" : "Създайте промоция"}</h2><p>Базовите цени не се променят. Публичната цена се изчислява само в зададения период.</p></div><BadgePercent size={26} /></div>
+      <div className="admin-campaign-tabs" role="tablist" aria-label="Тип промоция">
+        <button type="button" role="tab" aria-selected={mode === "specific"} className={mode === "specific" ? "is-active" : ""} onClick={() => { setMode("specific"); if (!editingId) setForm(current => ({ ...current, name: current.name || "Промоции на избрани продукти" })); }}>Промоции на определени продукти</button>
+        <button type="button" role="tab" aria-selected={mode === "campaign"} className={mode === "campaign" ? "is-active" : ""} onClick={() => { setMode("campaign"); if (!editingId) setForm(current => ({ ...current, name: current.name || "Нова обща промоция" })); }}>Цяла промоция / кампания</button>
       </div>
-      <form className="admin-form" onSubmit={event => {
-        event.preventDefault();
-        if (!canWrite) return;
-        create.mutate({
-          name: form.name.trim(),
-          discountPercent: Number(form.discountPercent),
-          startsAt: new Date(form.startsAt).toISOString(),
-          endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
-          productIds: selectedIds,
-        });
-      }}>
-        <fieldset disabled={!canWrite || create.isPending}>
+      <form className="admin-form" onSubmit={submit}>
+        <fieldset disabled={!canWrite || pending}>
           <div className="admin-form-grid admin-campaign-fields">
-            <label>Име на промоцията *<input required value={form.name} placeholder="напр. Септемврийска промоция" onChange={event => setForm({ ...form, name: event.target.value })} /></label>
-            <label>Отстъпка *<input required type="number" min="0.01" max="100" step="0.01" value={form.discountPercent} placeholder="5" onChange={event => setForm({ ...form, discountPercent: event.target.value })} /><small>Процент от базовата цена</small></label>
-            <label>Начало *<input required type="datetime-local" value={form.startsAt} onChange={event => setForm({ ...form, startsAt: event.target.value })} /></label>
-            <label>Край <input type="datetime-local" value={form.endsAt} onChange={event => setForm({ ...form, endsAt: event.target.value })} /><small>Оставете празно за промоция без крайна дата</small></label>
+            <label>Име на промоцията *<input required value={form.name} placeholder={mode === "campaign" ? "напр. Черен петък" : "напр. Избрани продукти"} onChange={event => setForm({ ...form, name: event.target.value })} /></label>
+            <label>Общ процент {mode === "campaign" ? "*" : "по избор"}<input type="number" min="0.01" max="100" step="0.01" value={form.discountPercent} placeholder="5" onChange={event => setForm({ ...form, discountPercent: event.target.value, fixedPriceEur: event.target.value ? "" : form.fixedPriceEur })} /><small>Оставете празно при фиксирана цена или настройки по ред.</small></label>
+            <label>Обща цена EUR {mode === "campaign" ? "*" : "по избор"}<input type="number" min="0" step="0.01" value={form.fixedPriceEur} placeholder="19.99" onChange={event => setForm({ ...form, fixedPriceEur: event.target.value, discountPercent: event.target.value ? "" : form.discountPercent })} /><small>Използва се вместо процент, ако е зададена.</small></label>
+            <label>Общо начало *<input required type="datetime-local" value={form.startsAt} onChange={event => setForm({ ...form, startsAt: event.target.value })} /></label>
+            <label>Общ край <input type="datetime-local" value={form.endsAt} onChange={event => setForm({ ...form, endsAt: event.target.value })} /><small>Празно означава без краен срок.</small></label>
           </div>
+          {mode === "specific" && <div className="admin-campaign-specific-note"><strong>Индивидуални настройки</strong><span>Изберете процент или цена и период за всеки артикул по-долу. Ако редът е празен, се използва общата стойност и период.</span></div>}
           <div className="admin-campaign-picker">
-            <div className="admin-panel-head">
-              <div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Изберете продукти</h3></div>
-              <label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label>
-            </div>
-            <div className="admin-campaign-products">
-              {filteredProducts.map(product => <label className="admin-campaign-product" key={product.id}>
-                <input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} />
-                <img src={product.image} alt="" />
-                <span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"} · {product.price ?? "Без цена"}</small></span>
-              </label>)}
-              {!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}
-            </div>
+            <div className="admin-panel-head"><div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Добавете продукти</h3></div><label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label></div>
+            <div className="admin-campaign-code-entry"><label>Добавяне на много вътрешни кодове<textarea value={codes} placeholder="137920, 137921 или по един код на ред" onChange={event => setCodes(event.target.value)} /></label><button type="button" className="admin-secondary" onClick={addCodes}>Добави кодовете</button>{codeMessage && <small>{codeMessage}</small>}</div>
+            <div className="admin-campaign-products">{filteredProducts.map(product => <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"} · {product.price ?? "Без цена"}</small></span></label>)}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
           </div>
-          <div className="admin-form-actions"><button className="admin-primary" type="submit" disabled={selectedIds.length === 0 || !form.startsAt || create.isPending}><Plus size={17} /> Създай промоция</button></div>
+          {mode === "specific" && selectedProducts.length > 0 && <div className="admin-campaign-rows"><h3>Настройки по продукт</h3>{selectedProducts.map(product => { const row = rowDrafts[product.id] ?? { discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" }; const updateRow = (changes: Partial<PromotionRowDraft>) => setRowDrafts(current => ({ ...current, [product.id]: { ...row, ...changes } })); return <div className="admin-campaign-row" key={product.id}><div><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без код"} · базова цена {product.price}</small></div><label>%<input type="number" min="0.01" max="100" step="0.01" value={row.discountPercent} onChange={event => updateRow({ discountPercent: event.target.value, fixedPriceEur: event.target.value ? "" : row.fixedPriceEur })} /></label><label>Цена EUR<input type="number" min="0" step="0.01" value={row.fixedPriceEur} onChange={event => updateRow({ fixedPriceEur: event.target.value, discountPercent: event.target.value ? "" : row.discountPercent })} /></label><label>Начало<input type="datetime-local" value={row.startsAt} onChange={event => updateRow({ startsAt: event.target.value })} /></label><label>Край<input type="datetime-local" value={row.endsAt} onChange={event => updateRow({ endsAt: event.target.value })} /></label><button type="button" className="admin-icon-button" aria-label={`Премахни ${product.name}`} onClick={() => setSelected(selectedIds.filter(id => id !== product.id))}><Trash2 size={16} /></button></div>; })}</div>}
+          <div className="admin-form-actions"><button className="admin-primary" type="submit" disabled={selectedIds.length === 0 || !form.startsAt || pending}>{editingId ? <Save size={17} /> : <Plus size={17} />}{editingId ? "Запази промените" : "Създай промоция"}</button>{editingId && <button type="button" className="admin-secondary" onClick={resetEditor}>Откажи редакцията</button>}</div>
         </fieldset>
-        {(create.error || campaigns.error) && <p className="admin-error">{create.error?.message ?? campaigns.error?.message}</p>}
+        {(create.error || update.error || campaigns.error) && <p className="admin-error">{create.error?.message ?? update.error?.message ?? campaigns.error?.message}</p>}
       </form>
-      {campaigns.data?.length ? <div className="admin-campaign-list">{campaigns.data.map(campaign => <article className="admin-campaign-card" key={campaign.id}>
-        <div><span className={`admin-campaign-status is-${campaign.status}`}>{statusLabel[campaign.status] ?? campaign.status}</span><h3>{campaign.name}</h3><p><b>{campaign.discountPercent}%</b> · {new Date(campaign.startsAt).toLocaleString("bg-BG")} {campaign.endsAt ? `— ${new Date(campaign.endsAt).toLocaleString("bg-BG")}` : "— без краен срок"}</p></div>
-        <div><strong>{campaign.products.length} артикула</strong><button type="button" className="admin-secondary" onClick={() => toggle.mutate({ id: campaign.id, isActive: !campaign.isActive })}>{campaign.isActive ? "Спри промоцията" : "Активирай"}</button></div>
-      </article>)}</div> : null}
+      {campaigns.data?.length ? <div className="admin-campaign-list">{campaigns.data.map(campaign => <article className="admin-campaign-card" key={campaign.id}><div><span className={`admin-campaign-status is-${campaign.status}`}>{statusLabel[campaign.status] ?? campaign.status}</span><h3>{campaign.name}</h3><p><b>{campaign.discountPercent !== null ? `${campaign.discountPercent}%` : campaign.fixedPriceEur !== null ? `${campaign.fixedPriceEur.toFixed(2)}€` : "Индивидуални стойности"}</b> · {new Date(campaign.startsAt).toLocaleString("bg-BG")} {campaign.endsAt ? `— ${new Date(campaign.endsAt).toLocaleString("bg-BG")}` : "— без краен срок"}</p><small>{campaign.products.length} артикула{campaign.products.some(product => product.discountPercent !== null || product.fixedPriceEur !== null || product.startsAt || product.endsAt) ? " · има индивидуални настройки" : ""}</small></div><div className="admin-campaign-actions"><strong>{campaign.products.length} артикула</strong><button type="button" className="admin-secondary" onClick={() => editCampaign(campaign)}>Редактирай</button><button type="button" className="admin-secondary" onClick={() => toggle.mutate({ id: campaign.id, isActive: !campaign.isActive })}>{campaign.isActive ? "Спри промоцията" : "Активирай"}</button><button type="button" className="admin-danger-button" onClick={() => { if (window.confirm(`Изтриване на „${campaign.name}“?`)) remove.mutate({ id: campaign.id }); }}>Изтрий</button></div></article>)}</div> : null}
     </section>
   );
 }

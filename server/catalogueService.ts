@@ -303,18 +303,24 @@ function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: Retur
   return `/category/${root.slug}${labels.length ? `?path=${labels.join("~")}` : ""}`;
 }
 
-type ActivePromotion = { id: number; name: string; discountPercent: number };
+type ActivePromotion = { id: number; name: string; discountPercent: number | null; fixedPriceEur: number | null };
 
 async function activePromotionsByProductIds(db: Awaited<ReturnType<typeof requireDb>>, productIds: number[]) {
   const result = new Map<number, ActivePromotion>();
   if (!productIds.length) return result;
   const now = new Date();
-  const rows = await db.select({ productId: promotionCampaignProducts.productId, campaignId: promotionCampaigns.id, name: promotionCampaigns.name, discountPercent: promotionCampaigns.discountPercent })
+  const rows = await db.select({ productId: promotionCampaignProducts.productId, campaignId: promotionCampaigns.id, name: promotionCampaigns.name, campaignDiscountPercent: promotionCampaigns.discountPercent, campaignFixedPriceEur: promotionCampaigns.fixedPriceEur, campaignStartsAt: promotionCampaigns.startsAt, campaignEndsAt: promotionCampaigns.endsAt, linkDiscountPercent: promotionCampaignProducts.discountPercent, fixedPriceEur: promotionCampaignProducts.fixedPriceEur, linkStartsAt: promotionCampaignProducts.startsAt, linkEndsAt: promotionCampaignProducts.endsAt })
     .from(promotionCampaignProducts)
     .innerJoin(promotionCampaigns, eq(promotionCampaignProducts.campaignId, promotionCampaigns.id))
-    .where(and(inArray(promotionCampaignProducts.productId, productIds), eq(promotionCampaigns.isActive, true), lte(promotionCampaigns.startsAt, now), or(isNull(promotionCampaigns.endsAt), gt(promotionCampaigns.endsAt, now))!))
-    .orderBy(desc(promotionCampaigns.discountPercent), desc(promotionCampaigns.startsAt));
-  for (const row of rows) if (!result.has(row.productId)) result.set(row.productId, { id: row.campaignId, name: row.name, discountPercent: Number(row.discountPercent) });
+    .where(and(inArray(promotionCampaignProducts.productId, productIds), eq(promotionCampaigns.isActive, true)));
+  for (const row of rows) {
+    const startsAt = row.linkStartsAt ?? row.campaignStartsAt;
+    const endsAt = row.linkEndsAt ?? row.campaignEndsAt;
+    if (startsAt > now || (endsAt && endsAt <= now)) continue;
+    const discountPercent = row.linkDiscountPercent === null ? (row.campaignDiscountPercent === null ? null : Number(row.campaignDiscountPercent)) : Number(row.linkDiscountPercent);
+    const fixedPriceEur = row.fixedPriceEur === null ? (row.campaignFixedPriceEur === null ? null : Number(row.campaignFixedPriceEur)) : Number(row.fixedPriceEur);
+    if (!result.has(row.productId)) result.set(row.productId, { id: row.campaignId, name: row.name, discountPercent: fixedPriceEur === null ? discountPercent : null, fixedPriceEur });
+  }
   return result;
 }
 
@@ -325,7 +331,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
   const presentation = splitProductDescription(sourceDescription, features);
   const basePrice = product.priceEur === null ? null : Number(product.priceEur);
   const promotionPrice = activePromotion && basePrice !== null
-    ? Math.max(0, Math.round(basePrice * (1 - activePromotion.discountPercent / 100) * 100) / 100)
+    ? activePromotion.fixedPriceEur !== null ? activePromotion.fixedPriceEur : Math.max(0, Math.round(basePrice * (1 - (activePromotion.discountPercent ?? 0) / 100) * 100) / 100)
     : null;
   return {
     id: product.id,
@@ -340,7 +346,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     imageAlt: translated?.imageAlt ?? product.imageAlt,
     price: formatPrice(promotionPrice === null ? product.priceEur : promotionPrice.toFixed(2)),
     oldPrice: formatPrice(promotionPrice === null ? product.oldPriceEur : product.priceEur),
-    discount: activePromotion ? `-${activePromotion.discountPercent}%` : product.discountLabel ?? undefined,
+    discount: activePromotion ? activePromotion.discountPercent === null ? "Промо" : `-${activePromotion.discountPercent}%` : product.discountLabel ?? undefined,
     category: category.slug,
     availability: availabilityLabels[product.availability],
     availabilityCode: product.availability,
@@ -965,10 +971,12 @@ export async function saveProductPromotion(input: { id: number; priceEur: number
 
 export type PromotionCampaignInput = {
   name: string;
-  discountPercent: number;
+  discountPercent?: number | null;
+  fixedPriceEur?: number | null;
   startsAt: string;
   endsAt?: string | null;
   productIds: number[];
+  productOverrides?: Array<{ productId: number; discountPercent?: number | null; fixedPriceEur?: number | null; startsAt?: string | null; endsAt?: string | null }>;
 };
 
 function campaignStatus(campaign: { isActive: boolean; startsAt: Date; endsAt: Date | null }, now = new Date()) {
@@ -982,24 +990,52 @@ export async function getAdminPromotionCampaigns() {
   const db = await requireDb();
   const [campaignRows, links] = await Promise.all([
     db.select().from(promotionCampaigns).orderBy(desc(promotionCampaigns.startsAt), desc(promotionCampaigns.id)),
-    db.select({ campaignId: promotionCampaignProducts.campaignId, productId: promotionCampaignProducts.productId, name: catalogueProducts.name, sku: catalogueProducts.sku }).from(promotionCampaignProducts).innerJoin(catalogueProducts, eq(promotionCampaignProducts.productId, catalogueProducts.id)),
+    db.select({ campaignId: promotionCampaignProducts.campaignId, productId: promotionCampaignProducts.productId, name: catalogueProducts.name, sku: catalogueProducts.sku, discountPercent: promotionCampaignProducts.discountPercent, fixedPriceEur: promotionCampaignProducts.fixedPriceEur, startsAt: promotionCampaignProducts.startsAt, endsAt: promotionCampaignProducts.endsAt }).from(promotionCampaignProducts).innerJoin(catalogueProducts, eq(promotionCampaignProducts.productId, catalogueProducts.id)),
   ]);
   const now = new Date();
   return campaignRows.map((campaign) => ({
     ...campaign,
-    discountPercent: Number(campaign.discountPercent),
+    discountPercent: campaign.discountPercent === null ? null : Number(campaign.discountPercent),
+    fixedPriceEur: campaign.fixedPriceEur === null ? null : Number(campaign.fixedPriceEur),
     status: campaignStatus(campaign, now),
-    products: links.filter((link) => link.campaignId === campaign.id).map(({ productId, name, sku }) => ({ id: productId, name, sku })),
+    products: links.filter((link) => link.campaignId === campaign.id).map(({ productId, name, sku, discountPercent, fixedPriceEur, startsAt, endsAt }) => ({ id: productId, name, sku, discountPercent: discountPercent === null ? null : Number(discountPercent), fixedPriceEur: fixedPriceEur === null ? null : Number(fixedPriceEur), startsAt, endsAt })),
   }));
+}
+
+function preparePromotionValues(input: PromotionCampaignInput, products: Array<{ id: number; name: string; priceEur: string | number | null }>) {
+  const defaultDiscount = input.discountPercent ?? null;
+  const defaultFixedPrice = input.fixedPriceEur ?? null;
+  if (defaultDiscount !== null && defaultFixedPrice !== null) throw new Error("Задайте само процент или фиксирана цена като обща стойност.");
+  if (defaultDiscount !== null && (!Number.isFinite(defaultDiscount) || defaultDiscount <= 0 || defaultDiscount > 100)) throw new Error("Отстъпката трябва да е между 0.01% и 100%.");
+  if (defaultFixedPrice !== null && (!Number.isFinite(defaultFixedPrice) || defaultFixedPrice < 0)) throw new Error("Фиксираната цена трябва да е валидна положителна стойност.");
+  const overrides = input.productOverrides ?? [];
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const links = input.productIds.map((productId) => {
+    const product = productById.get(productId);
+    const override = overrides.find((item) => item.productId === productId);
+    const hasOverrideValue = Boolean(override && (override.discountPercent !== undefined || override.fixedPriceEur !== undefined));
+    const discountPercent = hasOverrideValue ? (override?.discountPercent ?? null) : defaultDiscount;
+    const fixedPriceEur = hasOverrideValue ? (override?.fixedPriceEur ?? null) : defaultFixedPrice;
+    if (!product) throw new Error("Един или повече избрани артикули не са намерени.");
+    if ((discountPercent === null) === (fixedPriceEur === null)) throw new Error(`Задайте точно една стойност за „${product.name}“.`);
+    if (discountPercent !== null && (!Number.isFinite(discountPercent) || discountPercent <= 0 || discountPercent > 100)) throw new Error("Всеки процент трябва да е между 0.01% и 100%.");
+    const basePrice = Number(product.priceEur);
+    if (fixedPriceEur !== null && (!Number.isFinite(fixedPriceEur) || fixedPriceEur < 0 || fixedPriceEur > basePrice)) throw new Error(`Фиксираната цена за „${product.name}“ не може да е над базовата цена.`);
+    const startsAt = override?.startsAt ? new Date(override.startsAt) : null;
+    const endsAt = override?.endsAt ? new Date(override.endsAt) : null;
+    const effectiveStartsAt = startsAt ?? new Date(input.startsAt);
+    if ((startsAt && Number.isNaN(startsAt.getTime())) || (endsAt && Number.isNaN(endsAt.getTime())) || effectiveStartsAt.toString() === "Invalid Date" || (endsAt && endsAt <= effectiveStartsAt)) throw new Error(`Невалиден период за „${product.name}“.`);
+    return { productId, discountPercent: asDecimal(discountPercent), fixedPriceEur: asDecimal(fixedPriceEur), startsAt, endsAt };
+  });
+  return { defaultDiscount, defaultFixedPrice, links };
 }
 
 export async function createPromotionCampaign(input: PromotionCampaignInput, adminUserId: number) {
   const name = input.name.trim();
-  const productIds = Array.from(new Set(input.productIds));
+  const productIds: number[] = Array.from(new Set(input.productIds.length ? input.productIds : (input.productOverrides ?? []).map((item) => item.productId)));
   const startsAt = new Date(input.startsAt);
   const endsAt = input.endsAt ? new Date(input.endsAt) : null;
   if (!name) throw new Error("Името на промоцията е задължително.");
-  if (!Number.isFinite(input.discountPercent) || input.discountPercent <= 0 || input.discountPercent > 100) throw new Error("Отстъпката трябва да е между 0.01% и 100%.");
   if (Number.isNaN(startsAt.getTime()) || (endsAt && Number.isNaN(endsAt.getTime()))) throw new Error("Невалиден период на промоцията.");
   if (endsAt && endsAt <= startsAt) throw new Error("Крайната дата трябва да е след началната дата.");
   if (!productIds.length) throw new Error("Изберете поне един артикул.");
@@ -1008,11 +1044,47 @@ export async function createPromotionCampaign(input: PromotionCampaignInput, adm
     const products = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, sku: catalogueProducts.sku, priceEur: catalogueProducts.priceEur, isActive: catalogueProducts.isActive, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(inArray(catalogueProducts.id, productIds));
     if (products.length !== productIds.length) throw new Error("Един или повече избрани артикули не са намерени.");
     if (products.some((product) => !product.isActive || product.isArchived || product.priceEur === null)) throw new Error("Промоция може да се добави само към активни артикули с базова цена.");
-    const inserted = await tx.insert(promotionCampaigns).values({ name, discountPercent: input.discountPercent.toFixed(2), startsAt, endsAt, isActive: true, createdBy: adminUserId });
+    const { defaultDiscount, defaultFixedPrice, links } = preparePromotionValues({ ...input, productIds }, products);
+    const inserted = await tx.insert(promotionCampaigns).values({ name, discountPercent: asDecimal(defaultDiscount), fixedPriceEur: asDecimal(defaultFixedPrice), startsAt, endsAt, isActive: true, createdBy: adminUserId });
     const campaignId = Number(inserted[0].insertId);
-    await tx.insert(promotionCampaignProducts).values(productIds.map((productId) => ({ campaignId, productId })));
-    await tx.insert(adminActivities).values({ adminUserId, action: "promotion.campaign.created", entityType: "promotion_campaign", entityId: campaignId, metadataJson: JSON.stringify({ name, discountPercent: input.discountPercent, startsAt, endsAt, productIds }) });
+    await tx.insert(promotionCampaignProducts).values(links.map((row) => ({ ...row, campaignId })));
+    await tx.insert(adminActivities).values({ adminUserId, action: "promotion.campaign.created", entityType: "promotion_campaign", entityId: campaignId, metadataJson: JSON.stringify({ name, discountPercent: defaultDiscount, fixedPriceEur: defaultFixedPrice, startsAt, endsAt, productIds }) });
     return { id: campaignId, productCount: productIds.length };
+  });
+}
+
+export async function updatePromotionCampaign(id: number, input: PromotionCampaignInput, adminUserId: number) {
+  const name = input.name.trim();
+  const productIds = Array.from(new Set(input.productIds));
+  const startsAt = new Date(input.startsAt);
+  const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+  if (!name) throw new Error("Името на промоцията е задължително.");
+  if (Number.isNaN(startsAt.getTime()) || (endsAt && Number.isNaN(endsAt.getTime())) || (endsAt && endsAt <= startsAt)) throw new Error("Невалиден период на промоцията.");
+  if (!productIds.length) throw new Error("Изберете поне един артикул.");
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const [campaign] = await tx.select({ id: promotionCampaigns.id, isActive: promotionCampaigns.isActive }).from(promotionCampaigns).where(eq(promotionCampaigns.id, id)).limit(1);
+    if (!campaign) throw new Error("Промоцията не е намерена.");
+    const products = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, sku: catalogueProducts.sku, priceEur: catalogueProducts.priceEur, isActive: catalogueProducts.isActive, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(inArray(catalogueProducts.id, productIds));
+    if (products.length !== productIds.length || products.some((product) => !product.isActive || product.isArchived || product.priceEur === null)) throw new Error("Промоция може да се добави само към активни артикули с базова цена.");
+    const { defaultDiscount, defaultFixedPrice, links } = preparePromotionValues({ ...input, productIds }, products);
+    await tx.update(promotionCampaigns).set({ name, discountPercent: asDecimal(defaultDiscount), fixedPriceEur: asDecimal(defaultFixedPrice), startsAt, endsAt }).where(eq(promotionCampaigns.id, id));
+    await tx.delete(promotionCampaignProducts).where(eq(promotionCampaignProducts.campaignId, id));
+    await tx.insert(promotionCampaignProducts).values(links.map((row) => ({ ...row, campaignId: id })));
+    await tx.insert(adminActivities).values({ adminUserId, action: "promotion.campaign.updated", entityType: "promotion_campaign", entityId: id, metadataJson: JSON.stringify({ name, discountPercent: defaultDiscount, fixedPriceEur: defaultFixedPrice, startsAt, endsAt, productIds }) });
+    return { id, productCount: productIds.length, isActive: campaign.isActive };
+  });
+}
+
+export async function deletePromotionCampaign(id: number, adminUserId: number) {
+  const db = await requireDb();
+  return db.transaction(async (tx) => {
+    const [campaign] = await tx.select({ id: promotionCampaigns.id, name: promotionCampaigns.name }).from(promotionCampaigns).where(eq(promotionCampaigns.id, id)).limit(1);
+    if (!campaign) throw new Error("Промоцията не е намерена.");
+    await tx.delete(promotionCampaignProducts).where(eq(promotionCampaignProducts.campaignId, id));
+    await tx.delete(promotionCampaigns).where(eq(promotionCampaigns.id, id));
+    await tx.insert(adminActivities).values({ adminUserId, action: "promotion.campaign.deleted", entityType: "promotion_campaign", entityId: id, metadataJson: JSON.stringify({ name: campaign.name }) });
+    return { id, deleted: true };
   });
 }
 

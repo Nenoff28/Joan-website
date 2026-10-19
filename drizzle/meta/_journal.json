@@ -176,6 +176,20 @@
       "when": 1792395572435,
       "tag": "0024_equal_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1792396782271,
+      "tag": "0025_magenta_crystal",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1792396845844,
+      "tag": "0026_mixed_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

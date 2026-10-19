@@ -260,7 +260,8 @@ export const catalogueProductCategoryLinks = mysqlTable("catalogue_product_categ
 export const promotionCampaigns = mysqlTable("promotion_campaigns", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 160 }).notNull(),
-  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).notNull(),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }),
+  fixedPriceEur: decimal("fixedPriceEur", { precision: 10, scale: 2 }),
   startsAt: timestamp("startsAt").notNull(),
   endsAt: timestamp("endsAt"),
   isActive: boolean("isActive").default(true).notNull(),
@@ -274,6 +275,10 @@ export const promotionCampaignProducts = mysqlTable("promotion_campaign_products
   id: int("id").autoincrement().primaryKey(),
   campaignId: int("campaignId").notNull().references(() => promotionCampaigns.id),
   productId: int("productId").notNull().references(() => catalogueProducts.id),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }),
+  fixedPriceEur: decimal("fixedPriceEur", { precision: 10, scale: 2 }),
+  startsAt: timestamp("startsAt"),
+  endsAt: timestamp("endsAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [index("promotion_campaign_products_campaign_idx").on(table.campaignId), index("promotion_campaign_products_product_idx").on(table.productId)]);
 
