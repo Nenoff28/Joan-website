@@ -671,6 +671,13 @@ export async function getAdminProducts(options?: { includeArchived?: boolean }) 
   });
 }
 
+/** Returns promotion-ready products, optionally restricted to a category branch. */
+export async function getAdminPromotionProducts(categoryId?: number) {
+  const products = await getAdminProducts();
+  if (!categoryId) return products;
+  return products.filter((product) => product.categoryId === categoryId || product.subcategoryIds.includes(categoryId));
+}
+
 export async function getAdminOrders() {
   const db = await requireDb();
   const orders = await db.select().from(orderRequests).where(eq(orderRequests.isDeleted, false)).orderBy(desc(orderRequests.createdAt));

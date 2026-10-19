@@ -1647,7 +1647,9 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   const canReadPromotions = can(permissions, "promotions.read");
   const canWritePromotions = can(permissions, "promotions.write");
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadPromotions });
-  const productsQuery = trpc.admin.promotionProducts.useQuery(undefined, { enabled: canReadPromotions });
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const productsQuery = trpc.admin.promotionProducts.useQuery(categoryId ? { categoryId } : undefined, { enabled: canReadPromotions });
+  const categoriesQuery = trpc.admin.promotionCategories.useQuery(undefined, { enabled: canReadPromotions });
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const availableProducts = (productsQuery.data ?? []).filter(
     product => product.isActive && product.price
@@ -1658,7 +1660,8 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   }, [availableProducts, selectedId]);
   const selected =
     availableProducts.find(product => product.id === selectedId) ?? null;
-  if (operations.isLoading || productsQuery.isLoading) return <LoadingState />;
+  const categoryOptions = useMemo(() => flattenPromotionCategories(categoriesQuery.data ?? []), [categoriesQuery.data]);
+  if (operations.isLoading || productsQuery.isLoading || categoriesQuery.isLoading) return <LoadingState />;
   if (!operations.data) return <ErrorState />;
   return (
     <section className="admin-workspace">
@@ -1687,7 +1690,7 @@ function AdminPromotions({ permissions }: AdminPageProps) {
           <p>Артикула са без цена и изискват допълване преди предложение.</p>
         </div>
       </section>
-      <PromotionCampaignPanel products={availableProducts} canWrite={canWritePromotions} />
+      <PromotionCampaignPanel products={availableProducts} canWrite={canWritePromotions} categoryId={categoryId} categoryOptions={categoryOptions} onCategoryChange={nextId => { setCategoryId(nextId); setSelectedId(null); }} />
       {selected ? (
         <PromotionEditor product={selected} canWrite={canWritePromotions} />
       ) : (
@@ -1751,6 +1754,13 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   );
 }
 
+type PromotionCategoryOption = { id: number; label: string; children?: PromotionCategoryOption[] };
+type FlatPromotionCategoryOption = { id: number; label: string; depth: number };
+
+function flattenPromotionCategories(options: PromotionCategoryOption[], depth = 0): FlatPromotionCategoryOption[] {
+  return options.flatMap(option => [{ id: option.id, label: option.label, depth }, ...flattenPromotionCategories(option.children ?? [], depth + 1)]);
+}
+
 type PromotionRowDraft = { discountPercent: string; fixedPriceEur: string; startsAt: string; endsAt: string };
 
 function localDateTime(value: string | Date | null | undefined) {
@@ -1765,7 +1775,7 @@ function isoDateTime(value: string) {
   return value ? new Date(value).toISOString() : null;
 }
 
-function PromotionCampaignPanel({ products, canWrite }: { products: AdminProduct[]; canWrite: boolean }) {
+function PromotionCampaignPanel({ products, canWrite, categoryId, categoryOptions, onCategoryChange }: { products: AdminProduct[]; canWrite: boolean; categoryId: number | null; categoryOptions: FlatPromotionCategoryOption[]; onCategoryChange: (categoryId: number | null) => void }) {
   const utils = trpc.useUtils();
   const campaigns = trpc.admin.promotionCampaigns.useQuery(undefined, { enabled: true });
   const [mode, setMode] = useState<"specific" | "campaign">("specific");
@@ -1779,10 +1789,14 @@ function PromotionCampaignPanel({ products, canWrite }: { products: AdminProduct
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const filteredProducts = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase("bg-BG");
-    if (!needle) return products.slice(0, 120);
-    return products.filter(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(needle)).slice(0, 120);
+    if (!needle) return products;
+    return products.filter(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(needle));
   }, [products, search]);
   const selectedProducts = useMemo(() => products.filter(product => selectedSet.has(product.id)), [products, selectedSet]);
+  useEffect(() => {
+    setSelectedIds([]);
+    setRowDrafts({});
+  }, [categoryId]);
   const refresh = async () => Promise.all([utils.admin.promotionCampaigns.invalidate(), utils.admin.operations.invalidate(), utils.catalogue.page.invalidate(), utils.catalogue.list.invalidate()]);
   const resetEditor = () => {
     setEditingId(null);
@@ -1847,7 +1861,7 @@ function PromotionCampaignPanel({ products, canWrite }: { products: AdminProduct
           </div>
           {mode === "specific" && <div className="admin-campaign-specific-note"><strong>Индивидуални настройки</strong><span>Изберете процент или цена и период за всеки артикул по-долу. Ако редът е празен, се използва общата стойност и период.</span></div>}
           <div className="admin-campaign-picker">
-            <div className="admin-panel-head"><div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Добавете продукти</h3></div><label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label></div>
+            <div className="admin-panel-head"><div><p className="admin-kicker">АРТИКУЛИ ({selectedIds.length} избрани)</p><h3>Добавете продукти</h3><small>Изберете категория или подкатегория, после маркирайте нужните артикули.</small></div><div className="admin-campaign-filters"><label className="admin-search">Категория / подкатегория<select value={categoryId ?? ""} onChange={event => onCategoryChange(event.target.value ? Number(event.target.value) : null)}><option value="">Всички категории</option>{categoryOptions.map(option => <option key={option.id} value={option.id}>{"— ".repeat(option.depth)}{option.label}</option>)}</select></label><label className="admin-search">Търсене по име или вътрешен код<input value={search} placeholder="напр. 137920 или бормашина" onChange={event => setSearch(event.target.value)} /></label></div></div>
             <div className="admin-campaign-code-entry"><label>Добавяне на много вътрешни кодове<textarea value={codes} placeholder="137920, 137921 или по един код на ред" onChange={event => setCodes(event.target.value)} /></label><button type="button" className="admin-secondary" onClick={addCodes}>Добави кодовете</button>{codeMessage && <small>{codeMessage}</small>}</div>
             <div className="admin-campaign-products">{filteredProducts.map(product => <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"} · {product.price ?? "Без цена"}</small></span></label>)}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
           </div>

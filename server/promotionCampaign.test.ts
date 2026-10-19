@@ -44,6 +44,9 @@ describe("promotion campaigns", () => {
     expect(admin).toContain('type="datetime-local"');
     expect(admin).toContain("Търсене по име или вътрешен код");
     expect(admin).toContain("trpc.admin.promotionProducts.useQuery");
+    expect(admin).toContain("trpc.admin.promotionCategories.useQuery");
+    expect(admin).toContain("Категория / подкатегория");
+    expect(admin).toContain("flattenPromotionCategories");
     expect(admin).toContain("selectedIds");
     expect(admin).toContain("Добавяне на много вътрешни кодове");
     expect(admin).toContain("Настройки по продукт");
@@ -51,5 +54,12 @@ describe("promotion campaigns", () => {
     expect(admin).toContain("Редактирай");
     expect(admin).toContain("Изтрий");
     expect(admin).toContain("Спри промоцията");
+  });
+
+  it("filters the picker by a selected category branch without changing product prices", () => {
+    expect(router).toContain('promotionProducts: permissionProcedure("promotions.read").input');
+    expect(router).toContain('promotionCategories: permissionProcedure("promotions.read")');
+    expect(service).toContain("export async function getAdminPromotionProducts(categoryId?: number)");
+    expect(service).toContain("product.subcategoryIds.includes(categoryId)");
   });
 });
