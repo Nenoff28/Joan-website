@@ -190,6 +190,13 @@
       "when": 1792396845844,
       "tag": "0026_mixed_rocket_racer",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1792416316490,
+      "tag": "0027_thin_scorpion",
+      "breakpoints": true
     }
   ]
 }

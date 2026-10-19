@@ -35,6 +35,8 @@ export type ProductPayload = {
   priceEur?: number | null;
   oldPriceEur?: number | null;
   discountLabel?: string | null;
+  colorName?: string | null;
+  colorRgb?: string | null;
   availability: ProductAvailability;
   stockQuantity: number;
   features: string[];
@@ -319,7 +321,7 @@ function publicUrlForCategory(row: CategoryRow, rows: CategoryRow[], meta: Retur
 
 type ActivePromotion = { id: number; name: string; discountPercent: number | null; fixedPriceEur: number | null };
 
-export type PaintColorVariant = { slug: string; label: string; sizeLabel: string | null; image: string; isCurrent: boolean; isOutOfStock: boolean };
+export type PaintColorVariant = { slug: string; label: string; sizeLabel: string | null; colorRgb: string | null; image: string; isCurrent: boolean; isOutOfStock: boolean };
 
 const paintColourWords = new Set([
   "бяла", "бяло", "бял", "черна", "черно", "черен", "червена", "червено", "червен", "синя", "синьо", "син",
@@ -330,7 +332,7 @@ const paintColourWords = new Set([
   "вишнева", "вишнево", "вишнев", "резеда", "кафе", "млечнокакаов", "млечнокакаова", "млечнокафява", "млечнокафяво", "млечнокафяв",
   "бежова", "бежово", "бежов", "кремава", "кремаво", "кремав", "бордо", "мента", "маслинена", "маслинено", "маслинен", "антрацит",
   "лазурен", "лазурна", "лазурно", "махагон", "мед", "палисандър", "орех", "капучино", "теракота", "портокал", "венге", "череша", "дъб", "ленен", "ленена", "графит", "металик", "пясъчен", "пясъчна", "шоколад", "кестен", "кестенов", "охра", "титан", "алуминий",
-  "сребърен", "сребърна", "сребърно", "сребрист", "сребриста", "сребристо", "злато", "златен", "златна", "златно", "златист", "златиста", "златисто", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
+  "сребърен", "сребърна", "сребърно", "сребрист", "сребриста", "сребристо", "silver", "злато", "златен", "златна", "златно", "златист", "златиста", "златисто", "gold", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
   "крем", "кремена", "ванилия", "кайсия", "мандарина", "лавандула", "нуга", "сьомга", "личи", "слънчоглед", "алое", "фъстък", "марсала", "корал", "цикламен", "цикламена", "виолетов", "виолетова", "тюркоаз", "тюркоазен", "планливада", "керемиденочервен", "керемиденочервена", "керемиденочервено",
 ]);
 
@@ -379,12 +381,16 @@ function stripPaintColourTokens(value: string) {
   return stripped.replace(/\s+/g, " ").trim();
 }
 
-export function derivePaintVariantGroup(product: { name: string; brand?: string | null; categoryName?: string | null }) {
+export function derivePaintVariantGroup(product: { name: string; brand?: string | null; categoryName?: string | null; colorName?: string | null }) {
   const categoryName = normalizedPaintText(product.categoryName ?? "");
   if (!categoryName.includes("бои") && !categoryName.includes("лак") && !categoryName.includes("мазил")) return null;
-  const colorLabel = paintColourLabel(product.name);
+  const colorLabel = product.colorName?.trim() || paintColourLabel(product.name);
   if (!colorLabel) return null;
-  const normalizedName = stripPaintColourTokens(normalizedPaintText(product.name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, ""));
+  let normalizedName = stripPaintColourTokens(normalizedPaintText(product.name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, ""));
+  if (product.colorName?.trim()) {
+    const manualColor = normalizedPaintText(product.colorName).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    normalizedName = normalizedName.replace(new RegExp(`(?:^|\\s)${manualColor}(?=\\s|$)`, "i"), " ").replace(/\s+/g, " ").trim();
+  }
   if (!normalizedName) return null;
   // Some spray/paint catalogues omit the pack size from the title. Keep those
   // products groupable while still separating explicitly different sizes.
@@ -442,6 +448,8 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     availability: availabilityLabels[product.availability],
     availabilityCode: product.availability,
     stockQuantity: product.stockQuantity,
+    colorName: product.colorName ?? undefined,
+    colorRgb: product.colorRgb ?? undefined,
     features,
     description: presentation.description,
     technicalSpecs: presentation.technicalSpecs,
@@ -675,21 +683,22 @@ async function getPublicProductBySlugUncached(slug: string, language: CatalogueL
   const db = await requireDb();
   const [row] = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(eq(catalogueProducts.slug, slug), eq(catalogueProducts.legacyPublicSlug, slug))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).limit(1);
   if (!row) return null;
-  const variantGroup = derivePaintVariantGroup({ name: row.product.name, brand: row.product.brand, categoryName: row.category.name });
+  const variantGroup = derivePaintVariantGroup({ name: row.product.name, brand: row.product.brand, categoryName: row.category.name, colorName: row.product.colorName });
   const [relatedRows, variantRows] = await Promise.all([
     db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(ne(catalogueProducts.id, row.product.id), eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))).orderBy(sql`CASE WHEN ${catalogueProducts.categoryId} = ${row.product.categoryId} THEN 0 ELSE 1 END`, desc(catalogueProducts.updatedAt), asc(catalogueProducts.name)).limit(16),
     variantGroup
       ? db.select({ product: catalogueProducts }).from(catalogueProducts).where(and(eq(catalogueProducts.categoryId, row.product.categoryId), row.product.brand ? eq(catalogueProducts.brand, row.product.brand) : isNull(catalogueProducts.brand), eq(catalogueProducts.isActive, true), eq(catalogueProducts.isArchived, false))).orderBy(asc(catalogueProducts.name)).limit(200)
       : Promise.resolve([] as Array<{ product: typeof catalogueProducts.$inferSelect }>),
   ]);
-  const variantCandidates = variantRows.filter((candidate) => derivePaintVariantGroup({ name: candidate.product.name, brand: candidate.product.brand, categoryName: row.category.name }) === variantGroup);
+  const variantCandidates = variantRows.filter((candidate) => derivePaintVariantGroup({ name: candidate.product.name, brand: candidate.product.brand, categoryName: row.category.name, colorName: candidate.product.colorName }) === variantGroup);
   const variantIds = variantCandidates.map((candidate) => candidate.product.id);
   const allPromotionIds = [row.product.id, ...relatedRows.map((candidate) => candidate.product.id), ...variantIds];
   const activePromotions = await activePromotionsByProductIds(db, Array.from(new Set(allPromotionIds)));
   const colorVariants = variantCandidates.map((candidate) => ({
     slug: candidate.product.slug,
-    label: paintVariantLabel(candidate.product.name),
+    label: candidate.product.colorName?.trim() || paintVariantLabel(candidate.product.name),
     sizeLabel: paintQuantityLabel(candidate.product.name),
+    colorRgb: candidate.product.colorRgb ?? null,
     image: candidate.product.imageUrl,
     isCurrent: candidate.product.id === row.product.id,
     isOutOfStock: candidate.product.availability === "out_of_stock" || (candidate.product.stockQuantity != null && Number(candidate.product.stockQuantity) <= 0),
@@ -1033,7 +1042,7 @@ export async function createAdminProduct(payload: ProductPayload, adminUserId: n
     const { path } = await validateProductCategorySelection(tx, payload.categoryId, payload.subcategoryIds);
     await assertAdminProductSlugAvailableWithDb(tx, payload.slug);
     const result = await tx.insert(catalogueProducts).values({
-      categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
+      categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, colorName: payload.colorName ?? null, colorRgb: payload.colorRgb ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
     });
     const id = Number(result[0].insertId);
     await replaceProductSubcategoryLinks(tx, id, path);
@@ -1052,7 +1061,7 @@ export async function updateAdminProduct(id: number, payload: ProductPayload, ad
     const { path } = await validateProductCategorySelection(tx, payload.categoryId, payload.subcategoryIds);
     await assertAdminProductSlugAvailableWithDb(tx, payload.slug, id);
     await tx.update(catalogueProducts).set({
-      categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
+      categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, colorName: payload.colorName ?? null, colorRgb: payload.colorRgb ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
     }).where(eq(catalogueProducts.id, id));
     if (payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId) await replaceProductSubcategoryLinks(tx, id, path);
     await insertProductAdminActivity(tx, adminUserId, "product.updated", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, ...(payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId ? { subcategoryIds: path.map((row) => row.id) } : {}) });

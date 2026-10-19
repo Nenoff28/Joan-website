@@ -833,6 +833,13 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 /* Native select options must not impose their intrinsic text width on the mobile form. */
 .admin-form-grid > label { min-width: 0; }
 .admin-form-grid select { width: 100%; min-width: 0; max-width: 100%; }
+.admin-color-editor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .65fr); gap: .8rem 1rem; padding: 1rem; border: 1px solid #eadbd5; border-radius: 10px; background: #fffaf7; }
+.admin-color-editor label { min-width: 0; }
+.admin-color-input-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: .5rem; }
+.admin-color-input-row input[type="color"] { width: 52px; height: 42px; padding: 3px; cursor: pointer; }
+.admin-color-input-row input[type="text"], .admin-color-input-row input:not([type]) { min-width: 0; }
+.admin-form-hint { grid-column: 1 / -1; margin: 0; color: var(--slate); font-size: .75rem; line-height: 1.5; }
+@media (max-width: 640px) { .admin-color-editor { grid-template-columns: 1fr; } }
 
 /* Reversible product removal actions, distinct from cancelling an edit. */
 .admin-product-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }

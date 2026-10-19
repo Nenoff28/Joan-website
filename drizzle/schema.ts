@@ -179,6 +179,8 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   priceEur: decimal("priceEur", { precision: 10, scale: 2 }),
   oldPriceEur: decimal("oldPriceEur", { precision: 10, scale: 2 }),
   discountLabel: varchar("discountLabel", { length: 48 }),
+  colorName: varchar("colorName", { length: 120 }),
+  colorRgb: varchar("colorRgb", { length: 7 }),
   availability: mysqlEnum("availability", ["in_stock", "on_request", "out_of_stock"]).default("on_request").notNull(),
   stockQuantity: int("stockQuantity").default(0).notNull(),
   featuresJson: text("featuresJson").notNull(),

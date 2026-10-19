@@ -81,6 +81,8 @@ type ProductForm = {
   priceEur: string;
   oldPriceEur: string;
   discountLabel: string;
+  colorName: string;
+  colorRgb: string;
   availability: Availability;
   stockQuantity: string;
   technicalRows: TechnicalRow[];
@@ -106,6 +108,8 @@ type AdminProduct = {
   price?: string;
   oldPrice?: string;
   discount?: string;
+  colorName?: string;
+  colorRgb?: string;
   availability: string;
   availabilityCode?: Availability;
   stockQuantity?: number;
@@ -779,6 +783,11 @@ function AdminProducts({ permissions }: AdminPageProps) {
     }
     return levels;
   }, [categoryOptions, form.categoryId, form.subcategoryIds]);
+  const isPaintProduct = useMemo(() => {
+    const root = categoryOptions.find(category => category.id === form.categoryId);
+    const selectedLabels = form.subcategoryIds.map((id, depth) => subcategoryLevels[depth]?.find(option => option.id === id)?.label ?? "");
+    return [root?.label ?? "", ...selectedLabels].some(label => /бои|лак|мазил/i.test(label));
+  }, [categoryOptions, form.categoryId, form.subcategoryIds, subcategoryLevels]);
   const canEditProductForm = canWriteProducts && categoryOptions.length > 0;
   useEffect(() => {
     if (form.categoryId === 0 && categoryOptions[0])
@@ -867,6 +876,8 @@ function AdminProducts({ permissions }: AdminPageProps) {
       priceEur: money(product.price),
       oldPriceEur: money(product.oldPrice),
       discountLabel: product.discount ?? "",
+      colorName: product.colorName ?? "",
+      colorRgb: product.colorRgb ?? "#d71920",
       availability: product.availabilityCode ?? "on_request",
       stockQuantity: String(product.stockQuantity ?? 0),
       technicalRows: parseTechnicalRows(product.features),
@@ -907,6 +918,8 @@ function AdminProducts({ permissions }: AdminPageProps) {
       priceEur: numericOrNull(form.priceEur),
       oldPriceEur: numericOrNull(form.oldPriceEur),
       discountLabel: form.discountLabel.trim() || null,
+      colorName: form.colorName.trim() || null,
+      colorRgb: form.colorName.trim() ? form.colorRgb : null,
       availability: form.availability,
       stockQuantity: Math.max(0, Number(form.stockQuantity) || 0),
       features: form.technicalRows.filter(row => row.label.trim() && row.value.trim()).map(row => `${row.label.trim()} — ${row.value.trim()}`),
@@ -1118,6 +1131,36 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 onChange={event => update("discountLabel", event.target.value)}
               />
             </label>
+            {isPaintProduct && <div className="admin-color-editor" role="group" aria-label="Цвят на боята">
+              <label>
+                Име на цвета <small>напр. Бяла, Дъб, Мед</small>
+                <input
+                  value={form.colorName}
+                  placeholder="Въведете име на цвета"
+                  maxLength={120}
+                  onChange={event => update("colorName", event.target.value)}
+                />
+              </label>
+              <label>
+                Точен цвят
+                <span className="admin-color-input-row">
+                  <input
+                    type="color"
+                    aria-label="Изберете RGB цвят"
+                    value={form.colorRgb}
+                    onChange={event => update("colorRgb", event.target.value)}
+                  />
+                  <input
+                    value={form.colorRgb}
+                    pattern="#[0-9A-Fa-f]{6}"
+                    maxLength={7}
+                    aria-label="HEX код на цвета"
+                    onChange={event => update("colorRgb", event.target.value.toUpperCase())}
+                  />
+                </span>
+              </label>
+              <p className="admin-form-hint">Тези данни се използват за групиране на цветовите варианти и за кръгчето в публичния каталог.</p>
+            </div>}
           </div>
           <section
             className="admin-seo-panel"
@@ -3025,6 +3068,8 @@ function emptyProductForm(categoryId: number): ProductForm {
     priceEur: "",
     oldPriceEur: "",
     discountLabel: "",
+    colorName: "",
+    colorRgb: "#d71920",
     availability: "on_request",
     stockQuantity: "0",
     technicalRows: [{ label: "", value: "" }],

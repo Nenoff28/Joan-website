@@ -42,6 +42,11 @@ describe("paint color variants", () => {
     expect(paintVariantLabel("Боя ЛЕКО RAL 9005 2,5л.")).toBe("ral 9005");
   });
 
+  it("groups manually named colors even when the legacy heuristic has no Bulgarian token", () => {
+    const silver = derivePaintVariantGroup({ name: "Декоративно покритие за стени Modena Silver 2.5л", brand: "Joan", colorName: "Silver", categoryName: "Бои, Лакове, Мазилки" });
+    expect(silver).toBe(derivePaintVariantGroup({ name: "Декоративно покритие за стени Modena Gold 2.5л", brand: "Joan", colorName: "Gold", categoryName: "Бои, Лакове, Мазилки" }));
+  });
+
   it("renders an accessible color menu and navigates to the selected slug", () => {
     expect(productPage).toContain("product-color-variants");
     expect(productPage).toContain('aria-haspopup="listbox"');
@@ -49,6 +54,7 @@ describe("paint color variants", () => {
     expect(productPage).toContain('setLocation(`/product/${variant.slug}`)');
     expect(productPage).toContain("variant.sizeLabel");
     expect(productPage).toContain("variant.isOutOfStock");
+    expect(productPage).toContain("variant.colorRgb");
     expect(stylesheet).toContain("product-color-picker-menu");
     expect(stylesheet).toContain("overflow-y: auto");
     expect(stylesheet).toContain("product-color-stock");

@@ -18,6 +18,8 @@ export const productPayloadSchema = z.object({
   priceEur: z.number().nonnegative("Цената не може да е отрицателна.").nullable().optional(),
   oldPriceEur: z.number().nonnegative("Старата цена не може да е отрицателна.").nullable().optional(),
   discountLabel: z.string().trim().max(48, "Промо етикетът трябва да е до 48 знака.").nullable().optional(),
+  colorName: z.string().trim().max(120, "Името на цвета трябва да е до 120 знака.").nullable().optional(),
+  colorRgb: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Изберете валиден RGB/HEX цвят.").nullable().optional(),
   availability: z.enum(["in_stock", "on_request", "out_of_stock"]),
   stockQuantity: z.number().int("Количеството трябва да е цяло число.").min(0, "Количеството не може да е отрицателно.").max(999999, "Количеството трябва да е до 999999."),
   features: z.array(z.string().trim().min(1).max(180, "Всеки технически ред трябва да е до 180 знака.")).max(30, "Добавете най-много 30 технически реда."),
@@ -28,7 +30,7 @@ const fieldLabels: Record<string, string> = {
   name: "Име", categoryId: "Категория", subcategoryIds: "Подкатегория", description: "Описание", slug: "URL адрес",
   sku: "Вътрешен код", brand: "Марка", imageUrl: "Основна снимка", gallery: "Снимки",
   imageAlt: "Текст на снимките", priceEur: "Цена", oldPriceEur: "Стара цена",
-  stockQuantity: "Количество", features: "Технически данни", availability: "Наличност",
+  stockQuantity: "Количество", features: "Технически данни", availability: "Наличност", colorName: "Име на цвета", colorRgb: "RGB цвят",
   seoTitle: "SEO заглавие", seoDescription: "SEO описание", seoKeywords: "Ключови думи",
 };
 export function productFieldErrors(issues: readonly { path: readonly PropertyKey[]; message: string }[]) {
