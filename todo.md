@@ -572,7 +572,7 @@
 - [x] Целевият production crawler SSR verifier премина за home, catalogue page 1, profile loading shell, privacy, admin entry routes, index redirect и реални 404. Документирани са употребата на роли, собственият admin преход и Google настройването в docs/users-roles.md и docs/google-login-setup.md.
 - [deferred] Активиране и live проверка на Google OAuth след предоставяне на GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET и разрешен callback; към момента configured=false и бутонът е явно неактивен.
 - [deferred] IP allowlist след предоставяне на точните разрешени IP адреси и проверка на доверения reverse proxy, без риск от admin lockout.
-- [deferred] Отделен SEO follow-up: съществуващият SSR canonical на /products?page=2 сочи към /products. Не е променян в задачата за роли и вход.
+- [x] SEO follow-up: SSR prefetch-ът и client catalogue pagination вече четат page query параметъра, зареждат същата страница и self-canonicalize-ват `/products?page=2+`; promotion параметърът се запазва. Добавен е regression test за exact query key и canonical.
 
 # Заявки: detail страница и история на статусите
 - [x] Добавен е отделен защитен URL `/admin/requests/:id`; списъкът „Заявки“ вече води към него. Detail страницата показва всички артикули със снимка, име, SKU, количество, единична/обща цена и snapshot на наличните технически параметри. Legacy заявки без child артикули остават четими чрез съвместим fallback.
@@ -731,3 +731,4 @@
 - [x] Добавен е ясен статус „Изчерпан“ в trigger-а и във всяка изчерпана опция; реалният Dupli-Color пример показа „кафяв — Изчерпан“ и наличен „черен“ в едно меню. Реалният ЛЕКО пример показа едновременно RAL 9005 650мл и 2,5л.
 - [x] Разширено е разпознаването за Мефисто RAL1015 слонова кост, Марсел 3 в 1 вишнево червена, ЛЕКО RAL9005/RAL3009 керемиденочервен и Протекта 3 в 1 Ефект; финално преминаха 81 Vitest файла / 339 теста, TypeScript, build, Netlify bundle и diff check.
 - [x] При име с RAL код и описателен цвят dropdown-ът вече показва описателния цвят: „Боя Мефисто RAL5015 синя 0,650мл.“ се показва като „синя“, а RAL кодът остава само когато няма текстово цветово име. Преминаха 81 Vitest файла / 340 теста, TypeScript, production build, Netlify bundle и `git diff --check`.
+- [x] Добавени са nullable `colorName` и `colorRgb` полета с migration 0027, admin CRUD mapping и условен редактор с име на цвят и HEX picker само за „Бои, Лакове, Мазилки“. Публичният picker предпочита ръчния HEX, а legacy heuristic fallback е запазен. Проверки: 81 Vitest файла / 341 теста, TypeScript, production client+SSR build, SSR smoke, DB readback и `git diff --check`; цените, SKU, наличностите и старите записи не са променяни.

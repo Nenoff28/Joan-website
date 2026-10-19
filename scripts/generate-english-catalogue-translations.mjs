@@ -9,7 +9,7 @@ const kind = args.get("kind") ?? "all";
 const batchSize = Math.max(1, Math.min(12, Number(args.get("batch-size") ?? 8)));
 const concurrency = Math.max(1, Math.min(6, Number(args.get("concurrency") ?? 4)));
 const limit = args.has("limit") ? Math.max(1, Number(args.get("limit"))) : undefined;
-const model = args.get("model") ?? "gpt-5-mini";
+const model = args.get("model") ?? "gpt-6-luna";
 
 if (!allowedKinds.has(kind)) throw new Error("--kind must be products, categories or all");
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
@@ -92,8 +92,8 @@ const translationSchema = (entryKind) => ({
 async function translateBatch(entryKind, entries) {
   const content = entryKind === "product" ? entries.map(normalizedProduct) : entries.map(normalizedCategory);
   const instructions = entryKind === "product"
-    ? "Translate every human-readable Bulgarian customer-facing product field to natural, accurate English. Preserve brand names, model codes, SKU-like identifiers, dimensions, quantities, units, standards, HTML tags and technical values exactly. Do not add facts, marketing claims, features or omissions. Translate every feature string. Translate visible words inside HTML while retaining the tags and their order. SEO text must be concise, accurate English. Return the same ids and all fields, even when source values are empty. No Cyrillic characters may remain in translated text."
-    : "Translate every human-readable Bulgarian category field to natural, accurate English. Preserve technical names, brands, model codes, dimensions and values. Translate every label at every depth of subcategoriesJson while preserving its exact JSON structure and non-text values. Do not add or omit categories, details or claims. SEO text must be concise, accurate English. Return the same ids and all fields, even when source values are empty. No Cyrillic characters may remain in translated text.";
+    ? "Translate every human-readable Bulgarian customer-facing product field to natural, accurate English. Preserve brand names, model codes, SKU-like identifiers, dimensions, quantities, units, standards, HTML tags and technical values exactly where they are already Latin/numeric. Translate or transliterate Bulgarian proper names and brand text into Latin rather than copying Cyrillic. Do not add facts, marketing claims, features or omissions. Translate every feature string. Translate visible words inside HTML while retaining the tags and their order. SEO text must be concise, accurate English. Return the same ids and all fields, even when source values are empty. No Cyrillic characters may remain in translated text."
+    : "Translate every human-readable Bulgarian category field to natural, accurate English. Preserve technical names, brands, model codes, dimensions and values when already Latin/numeric; translate or transliterate Bulgarian proper names and labels into Latin rather than copying Cyrillic. Translate every label at every depth of subcategoriesJson while preserving its exact JSON structure and non-text values. Do not add or omit categories, details or claims. SEO text must be concise, accurate English. Return the same ids and all fields, even when source values are empty. No Cyrillic characters may remain in translated text.";
   const response = await fetch(`${process.env.BUILT_IN_FORGE_API_URL.replace(/\/+$/, "")}/v1/chat/completions`, {
     method: "POST",
     headers: { "Authorization": `Bearer ${process.env.BUILT_IN_FORGE_API_KEY}`, "Content-Type": "application/json" },
@@ -171,7 +171,16 @@ async function runKind(entryKind) {
   const worker = async () => {
     while (next < batches.length) {
       const current = batches[next++];
-      const translated = await translateBatch(entryKind, current);
+      let translated;
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          translated = await translateBatch(entryKind, current);
+          break;
+        } catch (error) {
+          if (attempt >= 2) throw error;
+          console.warn(`${entryKind}: retrying failed batch after quality/API error (${error instanceof Error ? error.message : String(error)})`);
+        }
+      }
       if (entryKind === "product") await writeProducts(current, translated);
       else await writeCategories(current, translated);
       completed += current.length;

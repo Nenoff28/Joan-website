@@ -44,6 +44,10 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [, params] = useRoute("/category/:slug");
   const [, setLocation] = useLocation();
   const search = useSearch();
+  const requestedPage = useMemo(() => {
+    const value = Number(new URLSearchParams(search).get("page"));
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+  }, [search]);
   const promotion = isPromotionFilter(search);
   const { categories } = useCatalogue();
   const category = categories.find((item) => item.slug === params?.slug) ?? categories[0];
@@ -59,7 +63,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [enquiry, setEnquiry] = useState(false);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(requestedPage);
   const [pageInput, setPageInput] = useState("");
   const resetFilters = () => { setSelectedBrands([]); setManufacturerQuery(""); setQuery(""); setInStock(false); setEnquiry(false); setMinPrice(""); setMaxPrice(""); setSort("relevance"); setPage(1); };
   const setPromotionFilter = (enabled: boolean) => {
@@ -68,7 +72,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   };
   const clearFilters = () => { resetFilters(); if (promotion) setPromotionFilter(false); };
 
-  useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(1); }, [category?.slug, selectedPathLabel, showAll]);
+  useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(requestedPage); }, [category?.slug, selectedPathLabel, requestedPage, showAll]);
   useEffect(() => { setPage(1); }, [promotion]);
   useEffect(() => {
     if (showAll || !category || selectedPath.length === 0) return;
@@ -103,6 +107,10 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
     const next = Math.max(1, Math.min(totalPages, Math.floor(target) || 1));
     setPage(next);
     setPageInput("");
+    const nextSearch = new URLSearchParams(search);
+    if (next > 1) nextSearch.set("page", String(next)); else nextSearch.delete("page");
+    const nextPath = showAll ? "/products" : `/category/${category.slug}`;
+    setLocation(nextSearch.toString() ? `${nextPath}?${nextSearch.toString()}` : nextPath, { replace: true });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
   useEffect(() => { if (cataloguePage.data && page > totalPages) setPage(totalPages); }, [cataloguePage.data, page, totalPages]);
@@ -116,7 +124,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
 
   return (
     <Layout>
-      <PageMeta title={title} description={description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}${showAll ? promotion ? "/products?promotion=1" : "/products" : `/category/${category.slug}`}`} metaRobots="index,follow" />
+      <PageMeta title={title} description={description} canonicalUrl={typeof window === "undefined" ? undefined : `${window.location.origin}${showAll ? `${promotion ? "/products?promotion=1" : "/products"}${page > 1 ? `${promotion ? "&" : "?"}page=${page}` : ""}` : `/category/${category.slug}`}`} metaRobots="index,follow" />
       <JsonLd />
       <main>
         <div className="page-frame category-shell">
@@ -131,8 +139,8 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
               <section className="category-hero">
                 <img src={category.image} alt={`${category.label} — ${category.description}`} /><div className="category-hero-overlay" />
                 <div className="category-hero-content">
-                  <p className="eyebrow">Каталог Жоан</p><h1>{category.label}</h1><p>{category.description}</p>
-                  {selectedPathLabel && <div className="category-hero-path"><span>{selectedPath.join(" / ")}</span><button type="button" onClick={() => selectSubcategory([])}>Всички в {category.label}</button></div>}
+                  <p className="eyebrow">{en ? "Joan catalogue" : "Каталог Жоан"}</p><h1>{category.label}</h1><p>{category.description}</p>
+                  {selectedPathLabel && <div className="category-hero-path"><span>{selectedPath.join(" / ")}</span><button type="button" onClick={() => selectSubcategory([])}>{en ? "All in" : "Всички в"} {category.label}</button></div>}
                 </div>
               </section>
               {!selectedPathLabel && <CategoryHierarchy category={category} selectedPath={selectedPathLabel} onSelect={selectSubcategory} />}

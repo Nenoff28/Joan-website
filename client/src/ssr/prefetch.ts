@@ -18,6 +18,8 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
   const path = cleanPath(url);
   const search = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
   const promotion = isPromotionFilter(search);
+  const requestedPageValue = Number(new URLSearchParams(search).get("page"));
+  const requestedPage = Number.isFinite(requestedPageValue) && requestedPageValue > 0 ? Math.floor(requestedPageValue) : 1;
   const metadataInput = { language: "bg" as const };
   const metadataPromise = prefetch.metadata(metadataInput);
   const headerSearch = { page: 1, pageSize: 4, language: "bg" as const, query: undefined, sort: "relevance" as const };
@@ -36,12 +38,13 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
   await seed(queryClient, getQueryKey(trpc.catalogue.metadata, metadataInput, "query"), metadata);
   await seed(queryClient, getQueryKey(trpc.catalogue.page, headerSearch, "query"), await headerSearchPromise);
   if (path === "/products") {
-    const input: CataloguePageInput = { page: 1, pageSize: 48, language: "bg", availability: [], promotion: promotion || undefined, sort: "relevance" };
+    const input: CataloguePageInput = { page: requestedPage, pageSize: 48, language: "bg", availability: [], promotion: promotion || undefined, sort: "relevance" };
     seed(queryClient, getQueryKey(trpc.catalogue.metadata, { language: "bg" }, "query"), metadata);
     await seed(queryClient, getQueryKey(trpc.catalogue.page, input, "query"), await prefetch.page(input));
+    const canonicalQuery = [promotion ? "promotion=1" : "", requestedPage > 1 ? `page=${requestedPage}` : ""].filter(Boolean).join("&");
     return promotion
-      ? { title: `Продукти на промоция | ${SITE}`, description: "Разгледайте всички продукти на промоция. Филтрирайте по производител, наличност и цена.", canonicalPath: "/products?promotion=1" }
-      : { title: `Всички продукти | ${SITE}`, description: DEFAULT_DESCRIPTION, canonicalPath: "/products" };
+      ? { title: `Продукти на промоция | ${SITE}`, description: "Разгледайте всички продукти на промоция. Филтрирайте по производител, наличност и цена.", canonicalPath: `/products?${canonicalQuery}` }
+      : { title: `Всички продукти | ${SITE}`, description: DEFAULT_DESCRIPTION, canonicalPath: canonicalQuery ? `/products?${canonicalQuery}` : "/products" };
   }
   const categoryMatch = path.match(/^\/category\/([a-z0-9-]+)$/);
   if (categoryMatch) {

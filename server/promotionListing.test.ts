@@ -105,6 +105,23 @@ describe("promotion catalogue URL and SSR", () => {
     );
   });
 
+  it("prefetches and canonicalizes a directly requested catalogue page", async () => {
+    const queryClient = new QueryClient();
+    const api = fixture();
+    const head = await prefetchForPath("/products?page=2", queryClient, api);
+    const input = {
+      page: 2,
+      pageSize: 48,
+      language: "bg" as const,
+      availability: [],
+      promotion: undefined,
+      sort: "relevance" as const,
+    };
+    expect(api.page).toHaveBeenCalledWith(input);
+    expect(queryClient.getQueryData(getQueryKey(trpc.catalogue.page, input, "query"))).toMatchObject({ page: 2 });
+    expect(head.canonicalPath).toBe("/products?page=2");
+  });
+
   it("links the homepage CTA to the full filtered catalogue and includes the shared checkbox", () => {
     const home = readFileSync(
       resolve(process.cwd(), "client/src/pages/Home.tsx"),

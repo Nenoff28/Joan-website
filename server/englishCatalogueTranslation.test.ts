@@ -15,6 +15,9 @@ describe("English catalogue translation contract", () => {
   it("uses a resumable translation process with a no-Cyrillic quality gate and no source-table mutation", () => {
     expect(script).toContain("ON DUPLICATE KEY UPDATE");
     expect(script).toContain("Translation response still contains Cyrillic text");
+    expect(script).toContain('args.get("model") ?? "gpt-6-luna"');
+    expect(script).toContain("retrying failed batch");
+    expect(script).toContain("translate or transliterate Bulgarian proper names");
     expect(script).not.toContain("UPDATE catalogue_products");
     expect(script).not.toContain("UPDATE catalogue_categories");
     expect(script).not.toContain("DELETE FROM catalogue_products");
