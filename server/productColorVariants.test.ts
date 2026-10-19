@@ -23,6 +23,8 @@ describe("paint color variants", () => {
     expect(casaBella("Боя Каса Белла МАТ бяла 1л.")).not.toBe(base);
     expect(casaBella("Боя Каса Белла САТЕН бяла 0,650мл.", "ЛЕКО")).not.toBe(base);
     expect(derivePaintVariantGroup({ name: "Тениска синя 0,650мл.", brand: "Casa Bella", categoryName: "Работно облекло" })).toBeNull();
+    expect(derivePaintVariantGroup({ name: "Четка плоска 40мм жълта дръжка", brand: "HARDY", categoryName: "Бои, Лакове, Мазилки" })).toBeNull();
+    expect(derivePaintVariantGroup({ name: "Лента велкро черна 20мм", brand: "Vormann", categoryName: "Бои, Лакове, Мазилки" })).toBeNull();
   });
 
   it("recognizes variants from different paint manufacturers", () => {
@@ -34,6 +36,12 @@ describe("paint color variants", () => {
 
     const dupliColor = derivePaintVariantGroup({ name: "Спрей VERY WELL 9005 черен гланц 400мл.", brand: "Dupli-Color", categoryName: "Бои, Лакове, Мазилки" });
     expect(dupliColor).toBe(derivePaintVariantGroup({ name: "Спрей VERY WELL 9010 бял гланц 400мл.", brand: "Dupli-Color", categoryName: "Бои, Лакове, Мазилки" }));
+
+    const effectBase = derivePaintVariantGroup({ name: "База Спирит Ефект Verona Silver 1л.", brand: "Оргахим", categoryName: "Бои, Лакове, Мазилки" });
+    expect(effectBase).toBe(derivePaintVariantGroup({ name: "База Спирит Ефект Verona Silver 2.5л.", brand: "Оргахим", categoryName: "Бои, Лакове, Мазилки" }));
+
+    const whitePrimer = derivePaintVariantGroup({ name: "Грунд за гипсокартон WHITE PRIMER - 4 л", brand: "Kraft", categoryName: "Бои, Лакове, Мазилки" });
+    expect(whitePrimer).toBeTruthy();
   });
 
   it("prefers the descriptive color over a RAL code in the visible label", () => {

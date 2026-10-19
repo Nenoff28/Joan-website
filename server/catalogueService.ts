@@ -334,6 +334,7 @@ const paintColourWords = new Set([
   "лазурен", "лазурна", "лазурно", "махагон", "мед", "палисандър", "орех", "капучино", "теракота", "портокал", "венге", "череша", "дъб", "ленен", "ленена", "графит", "металик", "пясъчен", "пясъчна", "шоколад", "кестен", "кестенов", "охра", "титан", "алуминий",
   "сребърен", "сребърна", "сребърно", "сребрист", "сребриста", "сребристо", "silver", "злато", "златен", "златна", "златно", "златист", "златиста", "златисто", "gold", "безцветен", "безцветна", "безцветно", "прозрачен", "прозрачна", "прозрачно",
   "крем", "кремена", "ванилия", "кайсия", "мандарина", "лавандула", "нуга", "сьомга", "личи", "слънчоглед", "алое", "фъстък", "марсала", "корал", "цикламен", "цикламена", "виолетов", "виолетова", "тюркоаз", "тюркоазен", "планливада", "керемиденочервен", "керемиденочервена", "керемиденочервено",
+  "white", "black", "red", "blue", "green", "yellow", "orange", "purple", "pink", "brown", "grey", "gray", "clear", "transparent", "bronze", "copper", "ivory", "beige",
 ]);
 
 const paintColourPhrases = [
@@ -342,6 +343,9 @@ const paintColourPhrases = [
   "сребристо сиво", "сигнално бял", "сигнално син", "наситено син", "наситено жълт", "морско син", "трафик червено", "трафик сиво", "жълто зелен", "медено кафяво", "еврика виолетов", "керемидено червено", "шоколадово кафяво", "бял шоколад", "кафе лате", "златен пясък", "графитено сиво", "карибско син", "коралово червен", "винено червен", "вишнево червен", "вишнево червена", "вишнево червено", "злато металик", "зелен металик", "сив металик", "сл.кост",
   "киви", "канела", "череша", "бадем", "капучино", "теракота",
 ];
+
+const nonPaintColourProductTokens = /(?:^|\s)(?:четк|валяк|шпатула|пистолет|шкур|лента|лепил|силикон|разредител|разтворител|диск|фрез|бормаш|ръкавиц|крепеж|маркер)(?=\s|$)/i;
+const paintProductTokens = /(?:^|\s)(?:боя|бои|лак|лаков|латекс|мазил|фасаген|грунд|емайллак|спрей|байц|покритие|лазур|база)(?=\s|$)/i;
 
 function normalizedPaintText(value: string) {
   return value.toLocaleLowerCase("bg-BG").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
@@ -384,6 +388,10 @@ function stripPaintColourTokens(value: string) {
 export function derivePaintVariantGroup(product: { name: string; brand?: string | null; categoryName?: string | null; colorName?: string | null }) {
   const categoryName = normalizedPaintText(product.categoryName ?? "");
   if (!categoryName.includes("бои") && !categoryName.includes("лак") && !categoryName.includes("мазил")) return null;
+  // The public root contains paint accessories as well. Do not turn a coloured
+  // brush handle, tape or tool into a paint colour picker unless an admin has
+  // explicitly assigned a manual colour.
+  if (!product.colorName?.trim() && (!paintProductTokens.test(product.name) || nonPaintColourProductTokens.test(product.name))) return null;
   const colorLabel = product.colorName?.trim() || paintColourLabel(product.name);
   if (!colorLabel) return null;
   let normalizedName = stripPaintColourTokens(normalizedPaintText(product.name).replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/i, ""));
@@ -400,6 +408,14 @@ export function derivePaintVariantGroup(product: { name: string; brand?: string 
 
 export function paintVariantLabel(name: string) {
   return paintColourLabel(name) ?? name;
+}
+
+function paintVariantQualifier(name: string) {
+  const withoutSize = name.replace(/\b\d+(?:[.,]\d+)?\s*(?:мл|ml|л|l|кг|kg|гр|g)\.?/gi, " ");
+  const ral = withoutSize.match(/\bral\s*\d{3,4}\b/i)?.[0]?.replace(/\s+/g, " ");
+  if (ral) return ral.toUpperCase();
+  const numericCode = withoutSize.match(/\b\d+(?:[.,]\d+)?\b/)?.[0];
+  return numericCode ?? null;
 }
 
 async function activePromotionsByProductIds(db: Awaited<ReturnType<typeof requireDb>>, productIds: number[]) {
@@ -694,15 +710,21 @@ async function getPublicProductBySlugUncached(slug: string, language: CatalogueL
   const variantIds = variantCandidates.map((candidate) => candidate.product.id);
   const allPromotionIds = [row.product.id, ...relatedRows.map((candidate) => candidate.product.id), ...variantIds];
   const activePromotions = await activePromotionsByProductIds(db, Array.from(new Set(allPromotionIds)));
-  const colorVariants = variantCandidates.map((candidate) => ({
+  const colorVariants = variantCandidates.map((candidate, index, candidates) => {
+    const baseLabel = candidate.product.colorName?.trim() || paintVariantLabel(candidate.product.name);
+    const sizeLabel = paintQuantityLabel(candidate.product.name);
+    const duplicate = candidates.filter((other) => (other.product.colorName?.trim() || paintVariantLabel(other.product.name)).toLocaleLowerCase("bg-BG") === baseLabel.toLocaleLowerCase("bg-BG") && paintQuantityLabel(other.product.name) === sizeLabel).length > 1;
+    const qualifier = duplicate ? paintVariantQualifier(candidate.product.name) : null;
+    return {
     slug: candidate.product.slug,
-    label: candidate.product.colorName?.trim() || paintVariantLabel(candidate.product.name),
-    sizeLabel: paintQuantityLabel(candidate.product.name),
+    label: qualifier ? `${baseLabel} · ${qualifier}` : baseLabel,
+    sizeLabel,
     colorRgb: candidate.product.colorRgb ?? null,
     image: candidate.product.imageUrl,
     isCurrent: candidate.product.id === row.product.id,
     isOutOfStock: candidate.product.availability === "out_of_stock" || (candidate.product.stockQuantity != null && Number(candidate.product.stockQuantity) <= 0),
-  }));
+    };
+  });
   return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id), colorVariants), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
 }
 
