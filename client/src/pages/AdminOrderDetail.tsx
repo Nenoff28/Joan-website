@@ -1,5 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -14,11 +15,12 @@ import {
   Phone,
   Save,
   ShieldAlert,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import "./adminOrderDetail.css";
 
 type OrderStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
@@ -55,6 +57,7 @@ type OrderDetail = {
   city: string;
   postcode: string;
   status: OrderStatus;
+  isDeleted: boolean;
   quantity: number;
   totalEur: string | null;
   createdAt: Date;
@@ -88,6 +91,7 @@ const money = (value: string | null) =>
 
 function RequestDetailContent() {
   const [, params] = useRoute("/admin/requests/:id");
+  const [, setLocation] = useLocation();
   const requestId = Number(params?.id);
   const utils = trpc.useUtils();
   const staff = trpc.staff.me.useQuery();
@@ -111,9 +115,18 @@ function RequestDetailContent() {
     onError: error =>
       toast.error(error.message || "Промяната по заявката не беше записана."),
   });
+  const remove = trpc.admin.deleteOrder.useMutation({
+    onSuccess: async () => {
+      await Promise.all([utils.admin.orders.invalidate(), utils.admin.summary.invalidate(), utils.admin.operations.invalidate()]);
+      toast.success("Заявката е изтрита от списъка. Историята и продуктите са запазени.");
+      setLocation("/admin/orders");
+    },
+    onError: error => toast.error(error.message || "Заявката не беше изтрита."),
+  });
   const order = detail.data as OrderDetail | undefined;
   const [status, setStatus] = useState<OrderStatus>("new");
   const [comment, setComment] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (order) setStatus(order.status);
@@ -183,8 +196,9 @@ function RequestDetailContent() {
           <h1>{order.requestNumber}</h1>
           <span>Получена на {formatDate(order.createdAt)}</span>
         </div>
-        <div className={`ord-status ord-status-${order.status}`}>
-          <CheckCircle2 size={17} /> {statusLabels[order.status]}
+        <div className="ord-detail-heading-actions">
+          <div className={`ord-status ord-status-${order.status}`}><CheckCircle2 size={17} /> {statusLabels[order.status]}</div>
+          {order.isDeleted ? <span className="ord-deleted-badge">Изтрита</span> : canWrite && <Button type="button" className="ord-delete-button" disabled={remove.isPending} onClick={() => setDeleteOpen(true)}><Trash2 size={16} /> Изтрий</Button>}
         </div>
       </header>
 
@@ -314,7 +328,7 @@ function RequestDetailContent() {
               <h2>Промяна на статуса</h2>
               <span>Авторът се добавя автоматично от активния профил.</span>
             </div>
-            <fieldset disabled={!canWrite || update.isPending}>
+            <fieldset disabled={!canWrite || update.isPending || order.isDeleted}>
               <label>
                 Нов статус
                 <select
@@ -340,7 +354,7 @@ function RequestDetailContent() {
                 />
               </label>
               <small>{comment.length}/4000 знака</small>
-              {canWrite ? (
+              {order.isDeleted ? <p className="ord-read-only"><FileText size={15} /> Изтритата заявка е само за преглед.</p> : canWrite ? (
                 <Button
                   type="button"
                   className="ord-save-status"
@@ -369,6 +383,12 @@ function RequestDetailContent() {
           </section>
         </aside>
       </div>
+      <AlertDialog open={deleteOpen} onOpenChange={open => { if (!open && !remove.isPending) setDeleteOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Изтриване на заявката?</AlertDialogTitle><AlertDialogDescription>Заявката ще бъде скрита от стандартния списък. Историята на статусите, коментарите, продуктите и audit записът ще бъдат запазени. Действието не може да се отмени от този екран.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={remove.isPending}>Отказ</AlertDialogCancel><AlertDialogAction disabled={remove.isPending} onClick={event => { event.preventDefault(); if (!remove.isPending) remove.mutate({ id: order.id }); }}>{remove.isPending ? "Изтриване…" : "Да, изтрий заявката"}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

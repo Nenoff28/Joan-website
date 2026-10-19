@@ -8,6 +8,8 @@ const service = vi.hoisted(() => ({
   createAdminProduct: vi.fn(),
   createContactEnquiry: vi.fn(),
   createOrderRequest: vi.fn(),
+  deleteContactEnquiry: vi.fn(),
+  deleteOrderRequest: vi.fn(),
   getAdminContactEnquiryDetail: vi.fn(),
   getAdminContactEnquiries: vi.fn(),
   getAdminCategories: vi.fn(),
@@ -139,6 +141,16 @@ describe("administrator management procedures", () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.updateContactEnquiry({ id: 11, status: "contacted", adminNote: "Customer contacted by email." })).resolves.toBeUndefined();
     expect(service.updateContactEnquiry).toHaveBeenCalledWith(11, "contacted", "Customer contacted by email.", 17, "Admin");
+  });
+
+  it("passes the authenticated staff identity to both protected delete workflows", async () => {
+    service.deleteOrderRequest.mockResolvedValueOnce(undefined);
+    service.deleteContactEnquiry.mockResolvedValueOnce(undefined);
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.deleteOrder({ id: 12 })).resolves.toBeUndefined();
+    await expect(caller.admin.deleteContactEnquiry({ id: 13 })).resolves.toBeUndefined();
+    expect(service.deleteOrderRequest).toHaveBeenCalledWith(12, 17, "Admin");
+    expect(service.deleteContactEnquiry).toHaveBeenCalledWith(13, 17, "Admin");
   });
 
   it("passes a bounded inventory adjustment to the authenticated administrator service", async () => {

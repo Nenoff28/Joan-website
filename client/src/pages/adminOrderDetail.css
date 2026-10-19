@@ -22,6 +22,10 @@
 .ord-status-confirmed { background: #e8f4ed; color: #276b4d; }
 .ord-status-closed { background: #e7edf5; color: #31577d; }
 .ord-status-cancelled { background: #fff0ef; color: #a4292e; }
+.ord-detail-heading-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
+.ord-deleted-badge { background: #ece9e7; border-radius: 999px; color: #6b625e; font-size: .69rem; font-weight: 800; padding: .42rem .65rem; }
+.ord-delete-button { background: #fff0ef; border: 1px solid #e2b5b5; border-radius: .25rem; color: #a4292e; font-size: .72rem; }
+.ord-delete-button:hover { background: #fbe0df; color: #821f24; }
 .ord-detail-layout { align-items: start; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(280px, .38fr); }
 .ord-detail-main,.ord-detail-side { display: grid; gap: 1rem; min-width: 0; }
 .ord-detail-card { background: #fff; border: 1px solid var(--ord-line); box-shadow: 0 12px 30px rgba(30, 38, 44, .06); min-width: 0; }
@@ -88,4 +92,4 @@
 .ord-detail-denied p { font-size: .75rem; margin: .15rem 0 0; }
 .ord-detail-denied .ord-detail-back-link { margin-left: auto; }
 @media (max-width: 980px) { .ord-detail-layout { grid-template-columns: 1fr; } .ord-detail-side { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-@media (max-width: 700px) { .ord-detail-shell { padding: 0; } .ord-detail-topline { align-items: start; flex-direction: column; gap: .35rem; } .ord-detail-heading { align-items: start; flex-direction: column; padding: .9rem; } .ord-detail-card-head { align-items: start; flex-direction: column; gap: .35rem; padding: .85rem .9rem; } .ord-detail-card-head > span { padding: 0; text-align: left; } .ord-item { grid-template-columns: 78px minmax(0,1fr); padding: .85rem .9rem; } .ord-item-image { height: 78px; } .ord-item-parameters ul { grid-template-columns: 1fr; } .ord-total-row,.ord-enquiry-message { padding: .8rem .9rem; } .ord-history-note,.ord-history-list { padding-left: .9rem; padding-right: .9rem; } .ord-detail-side { grid-template-columns: 1fr; } .ord-customer-card,.ord-status-form-card > div,.ord-status-form-card fieldset { padding-left: .9rem; padding-right: .9rem; } }
+@media (max-width: 700px) { .ord-detail-shell { padding: 0; } .ord-detail-topline { align-items: start; flex-direction: column; gap: .35rem; } .ord-detail-heading { align-items: start; flex-direction: column; padding: .9rem; } .ord-detail-heading-actions { justify-content: flex-start; } .ord-detail-card-head { align-items: start; flex-direction: column; gap: .35rem; padding: .85rem .9rem; } .ord-detail-card-head > span { padding: 0; text-align: left; } .ord-item { grid-template-columns: 78px minmax(0,1fr); padding: .85rem .9rem; } .ord-item-image { height: 78px; } .ord-item-parameters ul { grid-template-columns: 1fr; } .ord-total-row,.ord-enquiry-message { padding: .8rem .9rem; } .ord-history-note,.ord-history-list { padding-left: .9rem; padding-right: .9rem; } .ord-detail-side { grid-template-columns: 1fr; } .ord-customer-card,.ord-status-form-card > div,.ord-status-form-card fieldset { padding-left: .9rem; padding-right: .9rem; } }

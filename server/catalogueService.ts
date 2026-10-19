@@ -621,7 +621,7 @@ export async function getAdminProducts(options?: { includeArchived?: boolean }) 
 
 export async function getAdminOrders() {
   const db = await requireDb();
-  const orders = await db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt));
+  const orders = await db.select().from(orderRequests).where(eq(orderRequests.isDeleted, false)).orderBy(desc(orderRequests.createdAt));
   if (!orders.length) return orders.map((order) => ({ ...order, items: [] as Array<typeof orderRequestItems.$inferSelect> }));
   const items = await db.select().from(orderRequestItems).where(inArray(orderRequestItems.orderRequestId, orders.map((order) => order.id)));
   return orders.map((order) => ({ ...order, items: items.filter((item) => item.orderRequestId === order.id) }));
@@ -649,7 +649,7 @@ export async function getAdminOrderDetail(id: number) {
 
 export async function getAdminContactEnquiries() {
   const db = await requireDb();
-  return db.select().from(contactEnquiries).orderBy(desc(contactEnquiries.createdAt));
+  return db.select().from(contactEnquiries).where(eq(contactEnquiries.isDeleted, false)).orderBy(desc(contactEnquiries.createdAt));
 }
 
 export async function getAdminContactEnquiryDetail(id: number) {
@@ -677,9 +677,9 @@ export async function getAdminSummary() {
   const [[productCount], [categoryCount], [newOrderCount], [lowStockCount], recentOrders] = await Promise.all([
     db.select({ total: count() }).from(catalogueProducts).where(eq(catalogueProducts.isActive, true)),
     db.select({ total: count() }).from(catalogueCategories).where(and(eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false))),
-    db.select({ total: count() }).from(orderRequests).where(eq(orderRequests.status, "new")),
+    db.select({ total: count() }).from(orderRequests).where(and(eq(orderRequests.status, "new"), eq(orderRequests.isDeleted, false))),
     db.select({ total: count() }).from(catalogueProducts).where(and(eq(catalogueProducts.isActive, true), eq(catalogueProducts.availability, "in_stock"))),
-    db.select().from(orderRequests).orderBy(desc(orderRequests.createdAt)).limit(5),
+    db.select().from(orderRequests).where(eq(orderRequests.isDeleted, false)).orderBy(desc(orderRequests.createdAt)).limit(5),
   ]);
   return {
     products: productCount?.total ?? 0,
@@ -1012,8 +1012,9 @@ export async function updateOrderRequest(id: number, status: OrderRequestStatus,
   const comment = adminNote?.trim() || null;
   const authorName = adminName.trim().slice(0, 255) || "Администратор";
   await db.transaction(async (tx) => {
-    const [order] = await tx.select({ id: orderRequests.id }).from(orderRequests).where(eq(orderRequests.id, id)).limit(1).for("update");
+    const [order] = await tx.select({ id: orderRequests.id, isDeleted: orderRequests.isDeleted }).from(orderRequests).where(eq(orderRequests.id, id)).limit(1).for("update");
     if (!order) throw new Error("Поръчката не е намерена.");
+    if (order.isDeleted) throw new Error("Поръчката е изтрита и не може да се променя.");
     await tx.update(orderRequests).set({ status, adminNote: comment }).where(eq(orderRequests.id, id));
     await tx.insert(orderStatusHistory).values({ orderRequestId: id, status, comment, authorId: adminUserId, authorName });
     await tx.insert(adminActivities).values({ adminUserId, action: "order.updated", entityType: "order_request", entityId: id, metadataJson: JSON.stringify({ status }) });
@@ -1025,11 +1026,34 @@ export async function updateContactEnquiry(id: number, status: ContactEnquirySta
   const comment = adminNote?.trim() || null;
   const authorName = adminName.trim().slice(0, 255) || "Администратор";
   await db.transaction(async tx => {
-    const [enquiry] = await tx.select({ id: contactEnquiries.id }).from(contactEnquiries).where(eq(contactEnquiries.id, id)).limit(1).for("update");
+    const [enquiry] = await tx.select({ id: contactEnquiries.id, isDeleted: contactEnquiries.isDeleted }).from(contactEnquiries).where(eq(contactEnquiries.id, id)).limit(1).for("update");
     if (!enquiry) throw new Error("Запитването не е намерено.");
+    if (enquiry.isDeleted) throw new Error("Запитването е изтрито и не може да се променя.");
     await tx.update(contactEnquiries).set({ status, adminNote: comment }).where(eq(contactEnquiries.id, id));
     await tx.insert(contactEnquiryHistory).values({ contactEnquiryId: id, status, comment, authorId: adminUserId, authorName });
     await tx.insert(adminActivities).values({ adminUserId, action: "contact_enquiry.updated", entityType: "contact_enquiry", entityId: id, metadataJson: JSON.stringify({ status }) });
+  });
+}
+
+export async function deleteOrderRequest(id: number, adminUserId: number, adminName: string) {
+  const db = await requireDb();
+  await db.transaction(async tx => {
+    const [order] = await tx.select({ id: orderRequests.id, requestNumber: orderRequests.requestNumber, isDeleted: orderRequests.isDeleted }).from(orderRequests).where(eq(orderRequests.id, id)).limit(1).for("update");
+    if (!order) throw new Error("Поръчката не е намерена.");
+    if (order.isDeleted) return;
+    await tx.update(orderRequests).set({ isDeleted: true }).where(eq(orderRequests.id, id));
+    await tx.insert(adminActivities).values({ adminUserId, action: "order.deleted", entityType: "order_request", entityId: id, metadataJson: JSON.stringify({ requestNumber: order.requestNumber, actorName: adminName }) });
+  });
+}
+
+export async function deleteContactEnquiry(id: number, adminUserId: number, adminName: string) {
+  const db = await requireDb();
+  await db.transaction(async tx => {
+    const [enquiry] = await tx.select({ id: contactEnquiries.id, referenceNumber: contactEnquiries.referenceNumber, isDeleted: contactEnquiries.isDeleted }).from(contactEnquiries).where(eq(contactEnquiries.id, id)).limit(1).for("update");
+    if (!enquiry) throw new Error("Запитването не е намерено.");
+    if (enquiry.isDeleted) return;
+    await tx.update(contactEnquiries).set({ isDeleted: true }).where(eq(contactEnquiries.id, id));
+    await tx.insert(adminActivities).values({ adminUserId, action: "contact_enquiry.deleted", entityType: "contact_enquiry", entityId: id, metadataJson: JSON.stringify({ referenceNumber: enquiry.referenceNumber, actorName: adminName }) });
   });
 }
 

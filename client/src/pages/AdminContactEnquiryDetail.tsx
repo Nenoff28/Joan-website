@@ -1,5 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -10,11 +11,12 @@ import {
   Phone,
   Save,
   ShieldAlert,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import "./adminOrderDetail.css";
 
 type ContactEnquiryStatus = "new" | "contacted" | "closed";
@@ -35,6 +37,7 @@ type ContactEnquiryDetail = {
   subject: string;
   message: string;
   status: ContactEnquiryStatus;
+  isDeleted: boolean;
   adminNote: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +59,7 @@ const formatDate = (value: Date) =>
 
 function ContactEnquiryDetailContent() {
   const [, params] = useRoute("/admin/enquiries/:id");
+  const [, setLocation] = useLocation();
   const enquiryId = Number(params?.id);
   const utils = trpc.useUtils();
   const staff = trpc.staff.me.useQuery();
@@ -77,9 +81,18 @@ function ContactEnquiryDetailContent() {
     },
     onError: error => toast.error(error.message || "Промяната не беше записана."),
   });
+  const remove = trpc.admin.deleteContactEnquiry.useMutation({
+    onSuccess: async () => {
+      await Promise.all([utils.admin.contactEnquiries.invalidate(), utils.admin.operations.invalidate()]);
+      toast.success("Запитването е изтрито от списъка. Историята и коментарите са запазени.");
+      setLocation("/admin/enquiries");
+    },
+    onError: error => toast.error(error.message || "Запитването не беше изтрито."),
+  });
   const enquiry = detail.data as ContactEnquiryDetail | undefined;
   const [status, setStatus] = useState<ContactEnquiryStatus>("new");
   const [comment, setComment] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (enquiry) setStatus(enquiry.status);
@@ -129,7 +142,10 @@ function ContactEnquiryDetailContent() {
           <h1>{enquiry.referenceNumber}</h1>
           <span>Получено на {formatDate(enquiry.createdAt)}</span>
         </div>
-        <div className={`ord-status ord-status-${enquiry.status}`}><CheckCircle2 size={17} /> {statusLabels[enquiry.status]}</div>
+        <div className="ord-detail-heading-actions">
+          <div className={`ord-status ord-status-${enquiry.status}`}><CheckCircle2 size={17} /> {statusLabels[enquiry.status]}</div>
+          {enquiry.isDeleted ? <span className="ord-deleted-badge">Изтрито</span> : canWrite && <Button type="button" className="ord-delete-button" disabled={remove.isPending} onClick={() => setDeleteOpen(true)}><Trash2 size={16} /> Изтрий</Button>}
+        </div>
       </header>
       <div className="ord-detail-layout">
         <div className="ord-detail-main">
@@ -162,15 +178,21 @@ function ContactEnquiryDetailContent() {
           </section>
           <section className="ord-detail-card ord-status-form-card">
             <div><p>НОВ ЗАПИС В ИСТОРИЯТА</p><h2>Обработка на запитването</h2><span>Авторът се добавя автоматично от активния профил.</span></div>
-            <fieldset disabled={!canWrite || update.isPending}>
+            <fieldset disabled={!canWrite || update.isPending || enquiry.isDeleted}>
               <label>Нов статус<select value={status} onChange={event => setStatus(event.target.value as ContactEnquiryStatus)}>{(Object.keys(statusLabels) as ContactEnquiryStatus[]).map(item => <option key={item} value={item}>{statusLabels[item]}</option>)}</select></label>
               <label>Коментар към този статус<textarea value={comment} onChange={event => setComment(event.target.value)} maxLength={4000} placeholder="Например: Свързахме се с клиента и уточнихме детайлите." /></label>
               <small>{comment.length}/4000 знака</small>
-              {canWrite ? <Button type="button" className="ord-save-status" onClick={() => update.mutate({ id: enquiry.id, status, adminNote: comment.trim() || null })}>{update.isPending ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />} Добави в историята</Button> : <p className="ord-read-only"><FileText size={15} /> Само преглед — нямате право да променяте статуса.</p>}
+              {enquiry.isDeleted ? <p className="ord-read-only"><FileText size={15} /> Изтритото запитване е само за преглед.</p> : canWrite ? <Button type="button" className="ord-save-status" onClick={() => update.mutate({ id: enquiry.id, status, adminNote: comment.trim() || null })}>{update.isPending ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />} Добави в историята</Button> : <p className="ord-read-only"><FileText size={15} /> Само преглед — нямате право да променяте статуса.</p>}
             </fieldset>
           </section>
         </aside>
       </div>
+      <AlertDialog open={deleteOpen} onOpenChange={open => { if (!open && !remove.isPending) setDeleteOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Изтриване на запитването?</AlertDialogTitle><AlertDialogDescription>Запитването ще бъде скрито от стандартния списък. Историята на статусите, коментарите и audit записът ще бъдат запазени. Действието не може да се отмени от този екран.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={remove.isPending}>Отказ</AlertDialogCancel><AlertDialogAction disabled={remove.isPending} onClick={event => { event.preventDefault(); if (!remove.isPending) remove.mutate({ id: enquiry.id }); }}>{remove.isPending ? "Изтриване…" : "Да, изтрий запитването"}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

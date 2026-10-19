@@ -113,11 +113,11 @@ describe("granular administrator UI permission contract", () => {
       'const canWrite = Boolean(staff.data?.permissions.includes("orders.write"));'
     );
     expect(orderDetailPage).toContain(
-      "fieldset disabled={!canWrite || update.isPending}"
+      "fieldset disabled={!canWrite || update.isPending || order.isDeleted}"
     );
     expect(orderDetailPage).toContain("update.mutate({");
     expect(orderDetailPage).toContain("adminNote: comment.trim() || null");
-    expect(contactDetailPage).toContain("fieldset disabled={!canWrite || update.isPending}");
+    expect(contactDetailPage).toContain("fieldset disabled={!canWrite || update.isPending || enquiry.isDeleted}");
     expect(contactDetailPage).toContain("update.mutate({");
     expect(contactDetailPage).toContain("adminNote: comment.trim() || null");
     expect(adminPage).toContain(

@@ -15,6 +15,8 @@ import {
   createAdminProduct,
   createContactEnquiry,
   createOrderRequest,
+  deleteContactEnquiry,
+  deleteOrderRequest,
   getAdminContactEnquiryDetail,
   getAdminContactEnquiries,
   getAdminCategories,
@@ -168,6 +170,8 @@ export const appRouter = router({
     uploadCategoryImage: permissionProcedure("categories.write").input(z.object({ dataUrl: z.string().min(32).max(15_000_000), fileName: z.string().trim().min(1).max(160) })).mutation(({ input, ctx }) => uploadCategoryImage(input, ctx.staff.id ?? ctx.user.id)),
     updateOrder: permissionProcedure("orders.write").input(z.object({ id: z.number().int().positive(), status: orderStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => { const actorId = ctx.staff.id; if (!actorId) throw new Error("Липсва идентичност на оператора."); return updateOrderRequest(input.id, input.status, input.adminNote, actorId, ctx.staff.name); }),
     updateContactEnquiry: permissionProcedure("enquiries.write").input(z.object({ id: z.number().int().positive(), status: contactEnquiryStatusSchema, adminNote: z.string().trim().max(4000).nullable() })).mutation(({ input, ctx }) => updateContactEnquiry(input.id, input.status, input.adminNote, ctx.staff.id ?? ctx.user.id, ctx.staff.name)),
+    deleteOrder: permissionProcedure("orders.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => { const actorId = ctx.staff.id; if (!actorId) throw new Error("Липсва идентичност на оператора."); return deleteOrderRequest(input.id, actorId, ctx.staff.name); }),
+    deleteContactEnquiry: permissionProcedure("enquiries.write").input(z.object({ id: z.number().int().positive() })).mutation(({ input, ctx }) => deleteContactEnquiry(input.id, ctx.staff.id ?? ctx.user.id, ctx.staff.name)),
   }),
 });
 

@@ -276,6 +276,7 @@ export const orderRequests = mysqlTable("order_requests", {
   postcode: varchar("postcode", { length: 20 }).notNull(),
   status: mysqlEnum("status", ["new", "contacted", "confirmed", "closed", "cancelled"]).default("new").notNull(),
   adminNote: text("adminNote"),
+  isDeleted: boolean("isDeleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("order_requests_status_created_idx").on(table.status, table.createdAt)]);
@@ -317,6 +318,7 @@ export const contactEnquiries = mysqlTable("contact_enquiries", {
   message: text("message").notNull(),
   status: mysqlEnum("status", ["new", "contacted", "closed"]).default("new").notNull(),
   adminNote: text("adminNote"),
+  isDeleted: boolean("isDeleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("contact_enquiries_status_created_idx").on(table.status, table.createdAt)]);
