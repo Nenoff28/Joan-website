@@ -3,6 +3,7 @@ import type { TrpcContext } from "./_core/context";
 
 const service = vi.hoisted(() => ({
   adjustProductStock: vi.fn(),
+  saveProductStockChanges: vi.fn(),
   activateAdminBrochure: vi.fn(),
   archiveAdminBrochure: vi.fn(),
   createAdminProduct: vi.fn(),
@@ -158,6 +159,19 @@ describe("administrator management procedures", () => {
     const caller = appRouter.createCaller(adminContext());
     await expect(caller.admin.adjustStock({ id: 9, delta: 2 })).resolves.toEqual({ id: 9, stockQuantity: 7 });
     expect(service.adjustProductStock).toHaveBeenCalledWith(9, 2, 17);
+  });
+
+  it("passes a batch of absolute inventory quantities to the authenticated administrator service", async () => {
+    const changes = [{ id: 9, stockQuantity: 5 }, { id: 12, stockQuantity: 31 }];
+    service.saveProductStockChanges.mockResolvedValueOnce({ changes });
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.saveStockChanges({ changes })).resolves.toEqual({ changes });
+    expect(service.saveProductStockChanges).toHaveBeenCalledWith(changes, 17);
+  });
+
+  it("rejects duplicate products in one inventory batch", async () => {
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.saveStockChanges({ changes: [{ id: 9, stockQuantity: 5 }, { id: 9, stockQuantity: 31 }] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("passes completed price details and a promotion label to the protected promotion workflow", async () => {

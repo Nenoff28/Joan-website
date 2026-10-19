@@ -11,8 +11,6 @@ import { uploadProductImagesSequentially } from "@/lib/productImageUpload";
 import {
   AlertTriangle,
   Archive,
-  ArrowDown,
-  ArrowUp,
   ArrowUpRight,
   BadgePercent,
   BookOpen,
@@ -1510,7 +1508,10 @@ function AdminInventory({ permissions }: AdminPageProps) {
   const canReadInventory = can(permissions, "inventory.read");
   const canWriteInventory = can(permissions, "inventory.write");
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadInventory });
-  const adjust = trpc.admin.adjustStock.useMutation({
+  const [stockDrafts, setStockDrafts] = useState<Record<number, string>>({});
+  const [stockConfirmOpen, setStockConfirmOpen] = useState(false);
+  const [stockSaveError, setStockSaveError] = useState("");
+  const saveStock = trpc.admin.saveStockChanges.useMutation({
     onSuccess: async () => {
       await Promise.all([
         utils.admin.operations.invalidate(),
@@ -1518,9 +1519,27 @@ function AdminInventory({ permissions }: AdminPageProps) {
         utils.admin.summary.invalidate(),
         utils.catalogue.list.invalidate(),
       ]);
-      toast("Наличността е актуализирана.");
+      setStockConfirmOpen(false);
+      setStockSaveError("");
+      toast("Промените в наличностите са записани.");
     },
+    onError: error => setStockSaveError(error.message || "Промените не бяха записани."),
   });
+  useEffect(() => {
+    if (!operations.data) return;
+    setStockDrafts(Object.fromEntries(operations.data.inventoryQueue.map(product => [product.id, String(product.stockQuantity ?? 0)])));
+  }, [operations.data]);
+  const stockChanges = operations.data?.inventoryQueue.flatMap(product => {
+    const value = stockDrafts[product.id] ?? String(product.stockQuantity ?? 0);
+    const next = Number(value);
+    return /^\d+$/.test(value) && Number.isSafeInteger(next) && next >= 0 && next <= 999999 && next !== (product.stockQuantity ?? 0)
+      ? [{ id: product.id, name: product.name, oldQuantity: product.stockQuantity ?? 0, newQuantity: next }]
+      : [];
+  }) ?? [];
+  const hasInvalidStockDraft = operations.data?.inventoryQueue.some(product => {
+    const value = stockDrafts[product.id] ?? String(product.stockQuantity ?? 0);
+    return !/^\d+$/.test(value) || Number(value) > 999999;
+  }) ?? false;
   if (operations.isLoading) return <LoadingState />;
   if (!operations.data) return <ErrorState />;
   return (
@@ -1554,11 +1573,13 @@ function AdminInventory({ permissions }: AdminPageProps) {
         <div className="admin-panel-head">
           <div>
             <p className="admin-kicker">ИНВЕНТАРНА ОПАШКА</p>
-            <h2>Артикули за преглед</h2>
+            <h2>Артикули за преглед и редакция</h2>
+            <p className="admin-panel-caption">Въведете крайната наличност директно. Можете да промените няколко артикула и да ги запишете наведнъж.</p>
           </div>
-          <span className="admin-count">
-            {operations.data.inventoryQueue.length} записа
-          </span>
+          <div className="admin-inventory-actions">
+            <span className="admin-count">{operations.data.inventoryQueue.length} записа</span>
+            {canWriteInventory && <button type="button" className="admin-primary" disabled={!stockChanges.length || hasInvalidStockDraft || saveStock.isPending} onClick={() => { setStockSaveError(""); setStockConfirmOpen(true); }}>{saveStock.isPending ? "Записване…" : `Запиши промените${stockChanges.length ? ` (${stockChanges.length})` : ""}`}</button>}
+          </div>
         </div>
         {operations.data.inventoryQueue.length ? (
           <div className="admin-inventory-list">
@@ -1577,30 +1598,9 @@ function AdminInventory({ permissions }: AdminPageProps) {
                     <b>{product.stockQuantity ?? 0}</b>
                   </p>
                 </div>
-                <div className="admin-stock-stepper">
-                  <button
-                    type="button"
-                    disabled={
-                      !canWriteInventory || adjust.isPending || (product.stockQuantity ?? 0) === 0
-                    }
-                    onClick={() => {
-                      if (canWriteInventory) adjust.mutate({ id: product.id, delta: -1 });
-                    }}
-                    aria-label={`Намали количество: ${product.name}`}
-                  >
-                    <ArrowDown size={16} />
-                  </button>
-                  <b>{product.stockQuantity ?? 0}</b>
-                  <button
-                    type="button"
-                    disabled={!canWriteInventory || adjust.isPending}
-                    onClick={() => {
-                      if (canWriteInventory) adjust.mutate({ id: product.id, delta: 1 });
-                    }}
-                    aria-label={`Увеличи количество: ${product.name}`}
-                  >
-                    <ArrowUp size={16} />
-                  </button>
+                <div className="admin-stock-editor">
+                  <label htmlFor={`stock-${product.id}`}>Крайна наличност</label>
+                  <input id={`stock-${product.id}`} type="number" min="0" max="999999" step="1" inputMode="numeric" value={stockDrafts[product.id] ?? String(product.stockQuantity ?? 0)} disabled={!canWriteInventory || saveStock.isPending} onChange={event => setStockDrafts(current => ({ ...current, [product.id]: event.target.value.replace(/[^0-9]/g, "").slice(0, 6) }))} aria-label={`Наличност за ${product.name}`} />
                 </div>
               </article>
             ))}
@@ -1613,6 +1613,19 @@ function AdminInventory({ permissions }: AdminPageProps) {
           />
         )}
       </section>
+      <AlertDialog open={stockConfirmOpen} onOpenChange={open => { if (!open && !saveStock.isPending) setStockConfirmOpen(false); }}>
+        <AlertDialogContent className="admin-stock-confirmation">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Потвърждавате ли промените?</AlertDialogTitle>
+            <AlertDialogDescription asChild><div><p>Ще бъдат записани следните промени:</p><ul>{stockChanges.map(change => <li key={change.id}><strong>{change.name}</strong> {change.oldQuantity} → {change.newQuantity}</li>)}</ul></div></AlertDialogDescription>
+          </AlertDialogHeader>
+          {stockSaveError && <p role="alert" className="admin-form-error">{stockSaveError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saveStock.isPending}>Отказ</AlertDialogCancel>
+            <AlertDialogAction disabled={saveStock.isPending || !stockChanges.length} onClick={event => { event.preventDefault(); if (!saveStock.isPending && stockChanges.length) saveStock.mutate({ changes: stockChanges.map(change => ({ id: change.id, stockQuantity: change.newQuantity })) }); }}>{saveStock.isPending ? "Записване…" : "Да, запиши промените"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

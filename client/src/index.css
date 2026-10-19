@@ -847,3 +847,24 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-product-confirmation button { min-height: 42px; padding: .65rem 1rem; border: 1px solid #303739; border-radius: 7px; background: #303739; color: #fff; font-size: .875rem; font-weight: 700; cursor: pointer; }
 .admin-product-confirmation button:first-child { border-color: #ced3d0; background: #f4f5f3; color: #303739; }
 .admin-product-confirmation button:disabled { opacity: .5; cursor: wait; }
+
+.admin-panel-caption { color: var(--slate); font-size: .68rem; line-height: 1.4; margin-top: .35rem; max-width: 620px; }
+.admin-inventory-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
+.admin-stock-editor { align-items: end; display: grid; gap: .3rem; min-width: 150px; }
+.admin-stock-editor label { color: var(--slate); font-size: .6rem; font-weight: 800; }
+.admin-stock-editor input { background: white; border: 1px solid var(--line); color: var(--ink); font-family: "Manrope", sans-serif; font-size: 1.05rem; font-weight: 800; min-height: 42px; outline: none; padding: .45rem .6rem; text-align: center; width: 150px; }
+.admin-stock-editor input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.1); }
+.admin-stock-editor input:disabled { background: #eef0eb; cursor: wait; opacity: .65; }
+.admin-stock-confirmation [data-slot="alert-dialog-description"] { color: #535e59; font-size: .875rem; line-height: 1.6; }
+.admin-stock-confirmation ul { display: grid; gap: .35rem; margin: .65rem 0 0; padding-left: 1.2rem; }
+.admin-stock-confirmation li { color: var(--ink); }
+.admin-stock-confirmation button { min-height: 42px; padding: .65rem 1rem; border: 1px solid #303739; border-radius: 7px; background: #303739; color: #fff; font-size: .875rem; font-weight: 700; cursor: pointer; }
+.admin-stock-confirmation button:first-child { border-color: #ced3d0; background: #f4f5f3; color: #303739; }
+.admin-stock-confirmation button:disabled { opacity: .5; cursor: wait; }
+@media (max-width: 700px) {
+  .admin-inventory-actions { align-items: stretch; flex-direction: column; width: 100%; }
+  .admin-inventory-actions .admin-count { text-align: center; }
+  .admin-inventory-actions .admin-primary { width: 100%; }
+  .admin-stock-editor { grid-column: span 2; justify-items: stretch; margin-top: .25rem; }
+  .admin-stock-editor input { width: 100%; }
+}

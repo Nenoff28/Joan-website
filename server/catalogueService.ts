@@ -889,6 +889,26 @@ export async function adjustProductStock(id: number, delta: number, adminUserId:
   return { id, stockQuantity, availability };
 }
 
+export async function saveProductStockChanges(changes: Array<{ id: number; stockQuantity: number }>, adminUserId: number) {
+  const db = await requireDb();
+  const uniqueChanges = Array.from(new Map(changes.map(change => [change.id, { id: change.id, stockQuantity: Math.max(0, Math.min(999999, Math.trunc(change.stockQuantity))) }])).values());
+  if (!uniqueChanges.length) return { changes: [] };
+  return db.transaction(async tx => {
+    const saved: Array<{ id: number; name: string; oldStockQuantity: number; stockQuantity: number; availability: ProductAvailability }> = [];
+    for (const change of uniqueChanges) {
+      const [product] = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, slug: catalogueProducts.slug, stockQuantity: catalogueProducts.stockQuantity, availability: catalogueProducts.availability, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(eq(catalogueProducts.id, change.id)).limit(1).for("update");
+      if (!product) throw new Error("Един от избраните артикули не е намерен.");
+      if (product.isArchived) throw new Error(`Артикулът „${product.name}“ е архивиран и не може да се променя.`);
+      if (product.stockQuantity === change.stockQuantity) continue;
+      const availability: ProductAvailability = change.stockQuantity > 0 ? "in_stock" : product.availability === "in_stock" ? "on_request" : product.availability;
+      await tx.update(catalogueProducts).set({ stockQuantity: change.stockQuantity, availability }).where(eq(catalogueProducts.id, change.id));
+      await tx.insert(adminActivities).values({ adminUserId, action: "inventory.updated", entityType: "product", entityId: change.id, metadataJson: JSON.stringify({ slug: product.slug, name: product.name, oldStockQuantity: product.stockQuantity, stockQuantity: change.stockQuantity, availability }) });
+      saved.push({ id: change.id, name: product.name, oldStockQuantity: product.stockQuantity, stockQuantity: change.stockQuantity, availability });
+    }
+    return { changes: saved };
+  });
+}
+
 export async function saveProductPromotion(input: { id: number; priceEur: number | null; oldPriceEur: number | null; discountLabel: string | null }, adminUserId: number) {
   const db = await requireDb();
   const [product] = await db.select().from(catalogueProducts).where(eq(catalogueProducts.id, input.id)).limit(1);

@@ -104,7 +104,8 @@ describe("granular administrator UI permission contract", () => {
     expect(adminPage).toContain("if (!canEditProductForm) return;");
     expect(adminPage).toContain("fieldset disabled={!canWriteProducts}");
     expect(adminPage).toContain("disabled={!categoryOptions.length}");
-    expect(adminPage).toMatch(/if\s*\(canWriteInventory\)\s*adjust\.mutate/);
+    expect(adminPage).toContain("disabled={!canWriteInventory || saveStock.isPending}");
+    expect(adminPage).toContain("canWriteInventory && <button");
     expect(adminPage).toContain("if (!canWrite) return;");
     expect(categoryEditor).toContain("fieldset disabled={!canWrite || busy}");
     expect(categoryEditor).toContain('hasPermission(permissions, "categories.write")');
