@@ -16,7 +16,8 @@ describe("SuperHosting readiness materials", () => {
   it("keeps the preflight script secret-safe and non-destructive", () => {
     const script = fs.readFileSync(path.resolve(import.meta.dirname, "../scripts/superhosting-preflight.mjs"), "utf8");
 
-    expect(script).toContain("minimumRuntime = [20, 11, 0]");
+    expect(script).toContain("minimumRuntime = [20, 19, 0]");
+    expect(script).toContain("alternativeRuntime = [22, 12, 0]");
     expect(script).toContain("does not read or print secret values");
     expect(script).not.toMatch(/fetch\(|axios|mysql|storagePut|process\.env\.[A-Z_]+/);
   });
@@ -35,7 +36,8 @@ describe("SuperHosting readiness materials", () => {
     const checklist = fs.readFileSync(path.resolve(import.meta.dirname, "../docs/superhosting-cpanel-day-one-checklist.md"), "utf8");
 
     expect(checklist).toContain("Setup Node.js App");
-    expect(checklist).toContain("Node 20.11");
+    expect(checklist).toContain("Node 20.19+");
+    expect(checklist).toContain("Node 22.12+");
     expect(checklist).toContain("Не пипаме DNS");
     expect(checklist).toContain("rollback");
   });

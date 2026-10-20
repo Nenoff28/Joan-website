@@ -17,8 +17,8 @@
 | Резултат | Следваща стъпка |
 |---|---|
 | Няма Setup Node.js App | Спираме full-stack staging. Не пипаме DNS и не качваме production data. |
-| Runtime е под Node 20.11 | Означаваме средата като compatibility candidate. Първо се прави отделна runtime adaptation и proof; няма production ангажимент. |
-| Runtime е Node 20.11+ | Качваме source release към staging и изпълняваме preflight. |
+| Runtime е под Node 20.19 и под Node 22.12 | Означаваме средата като compatibility candidate. Първо се прави отделна runtime adaptation и proof; няма production ангажимент. |
+| Runtime е Node 20.19+ или Node 22.12+ | Качваме source release към staging и изпълняваме preflight. |
 | Runtime и staging proof са успешни | Едва тогава прехвърляме ограничен staging DB/media комплект за функционален тест. |
 
 ## Преди какъвто и да е DNS запис
