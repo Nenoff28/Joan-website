@@ -100,4 +100,11 @@ describe("admin product entry workflow", () => {
     expect(adminSource).toContain('"quality-asc"');
     expect(stylesheet).toContain(".admin-sort-header");
   });
+
+  it("can isolate hidden products for bulk publication", () => {
+    expect(adminSource).toContain('publicationFilter');
+    expect(adminSource).toContain('<option value="hidden">Само скрити ({hiddenProductCount.toLocaleString("bg-BG")})</option>');
+    expect(adminSource).toContain('(publicationFilter === "hidden" && !product.isActive && !product.isArchived)');
+    expect(adminSource).toContain('setBulkVisibilityTarget(true)');
+  });
 });

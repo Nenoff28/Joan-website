@@ -805,6 +805,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const [brandFilter, setBrandFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState<"all" | Availability>("all");
+  const [publicationFilter, setPublicationFilter] = useState<"all" | "published" | "hidden" | "archived">("all");
   const [productSort, setProductSort] = useState<AdminProductSort>("updated-desc");
   const [page, setPage] = useState(1);
   const categoryOptions = useMemo<ProductCategoryOption[]>(() => {
@@ -850,6 +851,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const availabilityRank: Record<Availability, number> = { in_stock: 0, on_request: 1, out_of_stock: 2 };
   const publicationRank = (product: AdminProduct) => product.isArchived ? 2 : product.isActive ? 0 : 1;
   const qualityRank = (product: AdminProduct) => issueIds.has(product.id) ? 0 : 1;
+  const hiddenProductCount = (productsQuery.data ?? []).filter(product => !product.isActive && !product.isArchived).length;
   const sortDirection = (asc: AdminProductSort, desc: AdminProductSort): "asc" | "desc" | null => productSort === asc ? "asc" : productSort === desc ? "desc" : null;
   const toggleColumnSort = (asc: AdminProductSort, desc: AdminProductSort) => {
     setProductSort(current => current === asc ? desc : asc);
@@ -862,7 +864,11 @@ function AdminProducts({ permissions }: AdminPageProps) {
       const matchesBrand = !brandFilter || product.brand === brandFilter;
       const matchesCategory = !categoryFilter || product.categoryId === Number(categoryFilter) || product.subcategoryIds?.includes(Number(categoryFilter));
       const matchesAvailability = availabilityFilter === "all" || product.availabilityCode === availabilityFilter;
-      return searchable.includes(normalizedSearch) && matchesBrand && matchesCategory && matchesAvailability && (!qualityOnly || issueIds.has(product.id));
+      const matchesPublication = publicationFilter === "all"
+        || (publicationFilter === "published" && product.isActive && !product.isArchived)
+        || (publicationFilter === "hidden" && !product.isActive && !product.isArchived)
+        || (publicationFilter === "archived" && product.isArchived);
+      return searchable.includes(normalizedSearch) && matchesBrand && matchesCategory && matchesAvailability && matchesPublication && (!qualityOnly || issueIds.has(product.id));
     });
     return filtered.sort((a, b) => {
       if (productSort === "category-asc") return a.categoryName.localeCompare(b.categoryName, "bg") || a.name.localeCompare(b.name, "bg");
@@ -881,7 +887,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
       if (productSort === "stock-asc") return (a.stockQuantity ?? 0) - (b.stockQuantity ?? 0) || a.name.localeCompare(b.name, "bg");
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
-  }, [productsQuery.data, search, brandFilter, categoryFilter, availabilityFilter, productSort, qualityOnly, issueIds]);
+  }, [productsQuery.data, search, brandFilter, categoryFilter, availabilityFilter, publicationFilter, productSort, qualityOnly, issueIds]);
   const pageSize = 50;
   const totalPages = Math.max(1, Math.ceil(visibleProducts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -1507,6 +1513,20 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 <option value="in_stock">Само на склад</option>
                 <option value="on_request">Само по запитване</option>
                 <option value="out_of_stock">Само изчерпани</option>
+              </select>
+            </label>
+            <label>
+              В сайта
+              <select value={publicationFilter} onChange={event => {
+                const next = event.target.value as "all" | "published" | "hidden" | "archived";
+                setPublicationFilter(next);
+                if (next === "archived" && !showArchived) setShowArchived(true);
+                setPage(1);
+              }}>
+                <option value="all">Всички статуси</option>
+                <option value="published">Само публикувани</option>
+                <option value="hidden">Само скрити ({hiddenProductCount.toLocaleString("bg-BG")})</option>
+                <option value="archived">Само премахнати</option>
               </select>
             </label>
             <label>
