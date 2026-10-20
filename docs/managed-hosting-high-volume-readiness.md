@@ -28,3 +28,11 @@
 ## Решение към момента
 
 Преди тези условия да са изпълнени, правилният статус е **не одобрено за high-volume production cutover**. Текущата среда остава приложима за development и controlled staging, но не трябва да бъде представяна като доказано production решение за голям онлайн магазин.
+
+## Повторяем локален SSR baseline
+
+Добавен е read-only скриптът `scripts/measure-public-load.mjs`. Той изпраща паралелни GET заявки без вход, без заявки за поръчки и без промени в базата. Изпълнението с 8 заявки на маршрут и concurrency 4 върху локалния dev server даде 32/32 отговора `200`: `/` p50 162 ms / p95 853 ms, `/products` p50 299 ms / p95 322 ms, `/products?page=2` p50 129 ms / p95 605 ms и `/checkout` p50 106 ms / p95 152 ms.
+
+Тези числа са локален regression baseline, а не доказателство за production капацитет. За приемане на high-volume deployment трябва да се повтори срещу staging build с реално избрани peak параметри, database snapshot, media restore, monitoring и одобрени hosting limits.
+
+Пример: `LOAD_TEST_BASE_URL=https://staging.example LOAD_TEST_REQUESTS=50 LOAD_TEST_CONCURRENCY=10 node scripts/measure-public-load.mjs`.

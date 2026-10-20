@@ -76,6 +76,7 @@
 - [ ] Map Zeron products, prices, stock, promotions, and relevant catalogue fields to the Joan storefront data model.
 - [ ] Build a secure controlled synchronization workflow with logging, retry handling, and administrator visibility.
 - [ ] Validate data accuracy and operational recovery paths before enabling the Zeron synchronization in production.
+- [x] Подготвен е български шаблон за запитване към Zeron с нужните API endpoint-и, удостоверяване, SKU/цени/наличности, поръчки, idempotency, retry правила, тестов пакет и безопасно подаване на ключове. Реалната интеграция остава блокирана до официалния договор и sandbox достъп.
 - [x] Restore complete adjacent-page previews without visible upper white margins in the brochure viewer.
 - [x] Stabilize the brochure fullscreen layout and controls across desktop and mobile devices.
 - [x] Remove brochure pause controls and set automatic page rotation to seven seconds.
@@ -231,7 +232,8 @@
 - [x] Build administrator-only preflight and import controls that process the legacy customer export without storing legacy password hashes.
 - [x] Build customer account activation, sign-in, password reset, and profile-access screens with secure token expiry and single-use semantics.
 - [ ] Connect verified transactional email delivery for customer activation and password-reset links.
-- [ ] Defer customer-account activation email configuration until after the catalogue image and price work is complete.
+- [x] Каталожната image/price работа е завършена; email configuration вече може да продължи, но реалното включване остава блокирано до избор на provider и verified sender домейн.
+- [x] Подготвен е provider-neutral email intake документ за SMTP/HTTP provider, sender домейн, SPF/DKIM/DMARC, secrets, безопасно логване и retry правила. Реалното изпращане остава блокирано до избор на доставчик и verified sender домейн.
 - [x] Verify customer migration counts, credential security, protected account flows, and regression coverage before publishing.
 - [x] Audit the supplied Universal Import/Export Pro product CSV for parsing integrity, field coverage, image URL references, and import readiness.
 - [x] Identify any remaining product, category, manufacturer, order, or image export gaps before controlled catalogue migration.
@@ -348,6 +350,7 @@
 - [x] Confirm that the current SuperHosting SuperPro server has no installed Node.js runtime and must not receive the full-stack application in public_html.
 - [ ] Prepare the joan.bg custom-domain DNS cutover from SuperHosting to the current managed Node hosting, including an approved rollback plan.
 - [ ] Complete a high-volume operational readiness assessment for backup, restore, availability monitoring, capacity and incident response before any production DNS cutover.
+- [x] Добавен е repeatable read-only SSR baseline script `scripts/measure-public-load.mjs`; локалната проверка с 32 заявки и concurrency 4 върна 32/32 HTTP 200 за home, catalogue page 1/page 2 и checkout. Това е regression baseline, не production capacity/SLA доказателство; външните hosting, monitoring, restore и incident зависимости остават открити.
 - [x] Create and verify a portable local ZIP export with independent static media and documented local backend/database requirements.
 - [x] Create complete PRODUCTION_DEPLOYMENT.md with architecture, dependencies, commands, environment inventory, DNS, SEO and self-hosted compatibility requirements.
 - [x] Create complete DATABASE_MIGRATION.md with backup, restore, validation queries, record counts and zero-data-loss cutover procedure.
