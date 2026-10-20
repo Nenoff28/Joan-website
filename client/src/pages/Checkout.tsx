@@ -48,6 +48,7 @@ type FormValues = {
   consent: boolean;
 };
 type FormErrors = Partial<Record<keyof FormValues, string>>;
+type CheckoutConfirmationItem = { name: string; sku: string | null; quantity: number };
 
 function getCheckoutProduct(products: ManagedProduct[], search: string) {
   const query = new URLSearchParams(search);
@@ -156,6 +157,7 @@ export default function Checkout() {
   const [invoiceRegionSuggestionsOpen, setInvoiceRegionSuggestionsOpen] = useState(false);
   const [invoiceCitySuggestionsOpen, setInvoiceCitySuggestionsOpen] = useState(false);
   const [requestNumbers, setRequestNumbers] = useState<string[]>([]);
+  const [submittedItems, setSubmittedItems] = useState<CheckoutConfirmationItem[]>([]);
   const createOrderRequest = trpc.catalogue.createOrderRequest.useMutation({
     onError: () =>
       toast(
@@ -454,6 +456,7 @@ export default function Checkout() {
         invoiceAddressAdditional: values.invoiceRequested ? values.invoiceAddressAdditional.trim() || null : null,
         invoiceAdditionalInfo: values.invoiceRequested ? values.invoiceAdditionalInfo.trim() || null : null,
       });
+      setSubmittedItems(checkoutRows.map(row => ({ name: row.product.name, sku: row.product.sku?.trim() || null, quantity: row.quantity })));
       setRequestNumbers([result.requestNumber]);
       clearCart();
     } catch {
@@ -502,6 +505,12 @@ export default function Checkout() {
                   ? `Номера ${requestNumbers.join(", ")}. Не е извършено онлайн плащане. Екипът на Жоан ще се свърже с Вас за потвърждение на наличност, цена и доставка.`
                   : `References ${requestNumbers.join(", ")}. No online payment was taken. The Joan team will contact you to confirm availability, price, and delivery.`}
               </p>
+              {submittedItems.length > 0 && <div className="checkout-confirmation-items" aria-label={language === "bg" ? "Избрани продукти" : "Selected products"}>
+                {submittedItems.map((item, index) => <div key={`${item.sku ?? item.name}-${index}`}>
+                  <span>{item.name} × {item.quantity}</span>
+                  {item.sku && <b>{language === "bg" ? "Модел" : "Model"}: {item.sku}</b>}
+                </div>)}
+              </div>}
               <Link href="/category/instrumenti" className="button-solid">
                 {t("continueShopping")} <ArrowRight size={18} />
               </Link>
@@ -901,6 +910,7 @@ export default function Checkout() {
                           <div>
                             <p className="product-brand">{row.product.brand}</p>
                             <h2>{row.product.name}</h2>
+                            {row.product.sku?.trim() && <small className="checkout-product-code">{language === "bg" ? "Модел" : "Model"}: {row.product.sku}</small>}
                             <b>{row.product.price ?? t("enquiry")}</b>
                             <div className="checkout-cart-controls">
                               <button

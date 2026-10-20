@@ -959,3 +959,12 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
   .admin-campaign-row .admin-icon-button { justify-self: end; }
   .admin-campaign-actions { justify-content: flex-start; }
 }
+
+/* Canonical internal code visibility in cart and order confirmation. */
+.checkout-product-code, .mini-cart-product-code { color: var(--slate); display: block; font-family: "Manrope", sans-serif; font-size: .62rem; font-weight: 800; letter-spacing: .02em; margin: .18rem 0 .28rem; }
+.checkout-confirmation-items { background: #eff1ed; border-left: 3px solid var(--red); display: grid; gap: .45rem; margin: 1.25rem auto 0; max-width: 560px; padding: .8rem 1rem; text-align: left; }
+.checkout-confirmation-items > div { align-items: baseline; border-bottom: 1px solid #dfe4dd; display: flex; gap: .8rem; justify-content: space-between; padding-bottom: .4rem; }
+.checkout-confirmation-items > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.checkout-confirmation-items span { color: var(--ink); font-size: .75rem; }
+.checkout-confirmation-items b { color: var(--red); font-family: "Manrope", sans-serif; font-size: .68rem; white-space: nowrap; }
+@media (max-width: 560px) { .checkout-confirmation-items > div { align-items: start; flex-direction: column; gap: .18rem; } }
