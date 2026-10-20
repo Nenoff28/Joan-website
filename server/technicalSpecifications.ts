@@ -1,5 +1,52 @@
 export type TechnicalSpecification = { label: string; value: string };
 
+const modelLabels = new Set(["модел", "model", "вътрешен код", "internal code"]);
+
+/**
+ * Keeps the catalogue's internal code consistent wherever it is presented.
+ * The database source is intentionally untouched: legacy imported model
+ * values are replaced only in the presentation layer so two different codes
+ * are never shown as the product's model.
+ */
+export function alignInternalCodeTechnicalSpecs(specs: TechnicalSpecification[], sku: string | null | undefined, language: "bg" | "en" = "bg") {
+  const internalCode = sku?.trim();
+  if (!internalCode) return specs;
+  const internalLabel = language === "en" ? "Model" : "Модел";
+  let hasCanonicalModel = false;
+  const aligned: TechnicalSpecification[] = [];
+  for (const specification of specs) {
+    if (!modelLabels.has(specification.label.trim().toLocaleLowerCase("bg-BG"))) {
+      aligned.push(specification);
+      continue;
+    }
+    if (!hasCanonicalModel) {
+      aligned.push({ label: internalLabel, value: internalCode });
+      hasCanonicalModel = true;
+    }
+  }
+  return hasCanonicalModel ? aligned : [{ label: internalLabel, value: internalCode }, ...aligned];
+}
+
+export function alignInternalCodeFeatures(features: string[], sku: string | null | undefined, language: "bg" | "en" = "bg") {
+  const internalCode = sku?.trim();
+  if (!internalCode) return features;
+  const internalLabel = language === "en" ? "Model" : "Модел";
+  let hasCanonicalModel = false;
+  const aligned: string[] = [];
+  for (const feature of features) {
+    const match = feature.match(/^\s*([^:]{2,72}):\s*(.+?)\s*$/);
+    if (!match || !modelLabels.has(match[1].trim().toLocaleLowerCase("bg-BG"))) {
+      aligned.push(feature);
+      continue;
+    }
+    if (!hasCanonicalModel) {
+      aligned.push(`${internalLabel}: ${internalCode}`);
+      hasCanonicalModel = true;
+    }
+  }
+  return aligned;
+}
+
 const technicalSectionPattern = /(?:технически\s+данни|техническа\s+информация|допълнителна\s+информация|характеристики|спецификации?)\s*:/i;
 const bulletPattern = /^\s*(?:[•▪●◦\-*–—]+\s*)?([^:\n]{2,72}):\s*(.+?)\s*$/;
 const ignoredLabels = new Set(["описание", "допълнителна информация", "технически данни", "техническа информация", "характеристики", "спецификация", "спецификации"]);

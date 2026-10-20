@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitProductDescription } from "./technicalSpecifications";
+import { alignInternalCodeFeatures, alignInternalCodeTechnicalSpecs, splitProductDescription } from "./technicalSpecifications";
 
 describe("splitProductDescription", () => {
   it("moves labelled bullet specifications into technical data and preserves prose", () => {
@@ -36,5 +36,23 @@ describe("splitProductDescription", () => {
     const result = splitProductDescription("• Може да се боядисва\n• Употреба на закрито", []);
     expect(result.description).toBe("");
     expect(result.technicalSpecs).toEqual([{ label: "Характеристика", value: "Може да се боядисва" }, { label: "Характеристика", value: "Употреба на закрито" }]);
+  });
+
+  it("uses the catalogue sku as the only canonical model when legacy data differs", () => {
+    expect(alignInternalCodeTechnicalSpecs([
+      { label: "Модел", value: "33037" },
+      { label: "Размер", value: "M" },
+    ], "12829")).toEqual([
+      { label: "Модел", value: "12829" },
+      { label: "Размер", value: "M" },
+    ]);
+  });
+
+  it("does not duplicate the canonical model when the technical data already matches sku", () => {
+    expect(alignInternalCodeTechnicalSpecs([{ label: "Модел", value: "12829" }], "12829")).toEqual([{ label: "Модел", value: "12829" }]);
+  });
+
+  it("replaces a legacy model feature with the canonical internal code", () => {
+    expect(alignInternalCodeFeatures(["Модел: 33037", "Размер: M"], "12829")).toEqual(["Модел: 12829", "Размер: M"]);
   });
 });

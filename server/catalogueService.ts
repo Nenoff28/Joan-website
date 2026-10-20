@@ -6,7 +6,7 @@ import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCate
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
-import { splitProductDescription } from "./technicalSpecifications";
+import { alignInternalCodeFeatures, alignInternalCodeTechnicalSpecs, splitProductDescription } from "./technicalSpecifications";
 import { buildProductCategoryOptions, canonicalSelectedSubcategoryPath, categoryPathNodes, legacyCategoryRootsByPublicSlug as categoryRootsByPublicSlug, validateSelectedSubcategoryPath, type ProductCategoryTreeRow } from "./productCategoryAssignments";
 import type { CategoryPayload as SharedCategoryPayload } from "../shared/categoryValidation";
 
@@ -440,8 +440,9 @@ async function activePromotionsByProductIds(db: Awaited<ReturnType<typeof requir
 function publicProduct(product: typeof catalogueProducts.$inferSelect, category: typeof catalogueCategories.$inferSelect, english?: PublicProductTranslation, language: CatalogueLanguage = "bg", brandLogo?: string | null, activePromotion?: ActivePromotion, colorVariants: PaintColorVariant[] = []) {
   const translated = language === "en" ? english : undefined;
   const sourceDescription = translated?.description ?? product.description;
-  const features = publicProductFeatures(translated?.featuresJson ?? product.featuresJson);
+  const features = alignInternalCodeFeatures(publicProductFeatures(translated?.featuresJson ?? product.featuresJson), product.sku, language);
   const presentation = splitProductDescription(sourceDescription, features);
+  const technicalSpecs = alignInternalCodeTechnicalSpecs(presentation.technicalSpecs, product.sku, language);
   const basePrice = product.priceEur === null ? null : Number(product.priceEur);
   const promotionPrice = activePromotion && basePrice !== null
     ? activePromotion.fixedPriceEur !== null ? activePromotion.fixedPriceEur : Math.max(0, Math.round(basePrice * (1 - (activePromotion.discountPercent ?? 0) / 100) * 100) / 100)
@@ -468,7 +469,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
     colorRgb: product.colorRgb ?? undefined,
     features,
     description: presentation.description,
-    technicalSpecs: presentation.technicalSpecs,
+    technicalSpecs,
     isActive: product.isActive,
     metaTitle: translated?.seoTitle ?? (language === "en" ? product.legacyMetaTitleEn : product.legacyMetaTitleBg) ?? undefined,
     metaDescription: translated?.seoDescription ?? (language === "en" ? product.legacyMetaDescriptionEn : product.legacyMetaDescriptionBg) ?? undefined,
