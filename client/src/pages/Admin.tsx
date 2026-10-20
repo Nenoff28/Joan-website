@@ -16,6 +16,7 @@ import {
   BookOpen,
   Boxes,
   CheckCircle2,
+  ChevronsUpDown,
   ClipboardList,
   Download,
   FileCheck2,
@@ -56,7 +57,7 @@ import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 
 type Availability = "in_stock" | "on_request" | "out_of_stock";
-type AdminProductSort = "updated-desc" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc";
+type AdminProductSort = "updated-desc" | "name-asc" | "name-desc" | "category-asc" | "category-desc" | "price-asc" | "price-desc" | "availability-asc" | "availability-desc" | "publication-asc" | "publication-desc" | "quality-asc" | "quality-desc" | "stock-desc" | "stock-asc";
 type OrderStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
 type ContactEnquiryStatus = "new" | "contacted" | "closed";
 type TechnicalRow = { label: string; value: string };
@@ -117,6 +118,7 @@ type AdminProduct = {
   features: string[];
   description: string;
   isActive: boolean;
+  isArchived?: boolean;
 };
 type AdminOrderItem = {
   id: number;
@@ -234,6 +236,21 @@ const can = (permissions: readonly string[], permission: Permission) =>
 
 function ReadOnlyBadge({ text = "Само преглед" }: { text?: string }) {
   return <span className="admin-count">{text}</span>;
+}
+
+function SortableHeader({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: "asc" | "desc" | null;
+  onClick: () => void;
+}) {
+  return <button type="button" className={`admin-sort-header ${active ? "is-active" : ""}`} onClick={onClick} aria-label={`Сортирай по ${label}`}>
+    <span>{label}</span>
+    {active === "asc" ? <span aria-hidden="true">↑</span> : active === "desc" ? <span aria-hidden="true">↓</span> : <ChevronsUpDown size={13} aria-hidden="true" />}
+  </button>;
 }
 
 function AccessDeniedState({ text = "Нямате права за тази административна секция." }: { text?: string }) {
@@ -829,6 +846,15 @@ function AdminProducts({ permissions }: AdminPageProps) {
       new Set(operations.data?.qualityQueue.map(product => product.id) ?? []),
     [operations.data]
   );
+  const priceValue = (product: AdminProduct) => Number.parseFloat(product.price?.replace(/[^0-9,.-]/g, "").replace(",", ".") ?? "") || 0;
+  const availabilityRank: Record<Availability, number> = { in_stock: 0, on_request: 1, out_of_stock: 2 };
+  const publicationRank = (product: AdminProduct) => product.isArchived ? 2 : product.isActive ? 0 : 1;
+  const qualityRank = (product: AdminProduct) => issueIds.has(product.id) ? 0 : 1;
+  const sortDirection = (asc: AdminProductSort, desc: AdminProductSort): "asc" | "desc" | null => productSort === asc ? "asc" : productSort === desc ? "desc" : null;
+  const toggleColumnSort = (asc: AdminProductSort, desc: AdminProductSort) => {
+    setProductSort(current => current === asc ? desc : asc);
+    setPage(1);
+  };
   const visibleProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("bg");
     const filtered = (productsQuery.data ?? []).filter(product => {
@@ -839,6 +865,16 @@ function AdminProducts({ permissions }: AdminPageProps) {
       return searchable.includes(normalizedSearch) && matchesBrand && matchesCategory && matchesAvailability && (!qualityOnly || issueIds.has(product.id));
     });
     return filtered.sort((a, b) => {
+      if (productSort === "category-asc") return a.categoryName.localeCompare(b.categoryName, "bg") || a.name.localeCompare(b.name, "bg");
+      if (productSort === "category-desc") return b.categoryName.localeCompare(a.categoryName, "bg") || a.name.localeCompare(b.name, "bg");
+      if (productSort === "price-asc") return priceValue(a) - priceValue(b) || a.name.localeCompare(b.name, "bg");
+      if (productSort === "price-desc") return priceValue(b) - priceValue(a) || a.name.localeCompare(b.name, "bg");
+      if (productSort === "availability-asc") return availabilityRank[a.availabilityCode ?? "on_request"] - availabilityRank[b.availabilityCode ?? "on_request"] || a.name.localeCompare(b.name, "bg");
+      if (productSort === "availability-desc") return availabilityRank[b.availabilityCode ?? "on_request"] - availabilityRank[a.availabilityCode ?? "on_request"] || a.name.localeCompare(b.name, "bg");
+      if (productSort === "publication-asc") return publicationRank(a) - publicationRank(b) || a.name.localeCompare(b.name, "bg");
+      if (productSort === "publication-desc") return publicationRank(b) - publicationRank(a) || a.name.localeCompare(b.name, "bg");
+      if (productSort === "quality-asc") return qualityRank(a) - qualityRank(b) || a.name.localeCompare(b.name, "bg");
+      if (productSort === "quality-desc") return qualityRank(b) - qualityRank(a) || a.name.localeCompare(b.name, "bg");
       if (productSort === "name-asc") return a.name.localeCompare(b.name, "bg");
       if (productSort === "name-desc") return b.name.localeCompare(a.name, "bg");
       if (productSort === "stock-desc") return (b.stockQuantity ?? 0) - (a.stockQuantity ?? 0) || a.name.localeCompare(b.name, "bg");
@@ -1512,11 +1548,11 @@ function AdminProducts({ permissions }: AdminPageProps) {
                   <tr>
                     <th><input type="checkbox" checked={allVisibleSelected} disabled={!canWriteProducts} onChange={event => toggleAllVisibleProducts(event.target.checked)} aria-label="Маркирай всички филтрирани артикули" /></th>
                     <th>Артикул</th>
-                    <th>Категория</th>
-                    <th>Цена</th>
-                    <th>Наличност</th>
-                    <th>В сайта</th>
-                    <th>Качество</th>
+                    <th><SortableHeader label="Категория" active={sortDirection("category-asc", "category-desc")} onClick={() => toggleColumnSort("category-asc", "category-desc")} /></th>
+                    <th><SortableHeader label="Цена" active={sortDirection("price-asc", "price-desc")} onClick={() => toggleColumnSort("price-asc", "price-desc")} /></th>
+                    <th><SortableHeader label="Наличност" active={sortDirection("availability-asc", "availability-desc")} onClick={() => toggleColumnSort("availability-asc", "availability-desc")} /></th>
+                    <th><SortableHeader label="В сайта" active={sortDirection("publication-asc", "publication-desc")} onClick={() => toggleColumnSort("publication-asc", "publication-desc")} /></th>
+                    <th><SortableHeader label="Качество" active={sortDirection("quality-asc", "quality-desc")} onClick={() => toggleColumnSort("quality-asc", "quality-desc")} /></th>
                     <th />
                   </tr>
                 </thead>

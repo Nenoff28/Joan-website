@@ -988,6 +988,10 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-table-controls > .admin-filter-button { align-self: end; }
 .admin-table-controls > .admin-checkbox { align-self: end; margin-bottom: .55rem; }
 .admin-table { min-width: 1030px; }
+.admin-sort-header { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: inline-flex; font: inherit; gap: .3rem; letter-spacing: inherit; padding: .2rem 0; text-align: left; text-transform: inherit; }
+.admin-sort-header:hover, .admin-sort-header:focus-visible, .admin-sort-header.is-active { color: var(--red); }
+.admin-sort-header:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+.admin-sort-header span:last-of-type { font-size: .78rem; line-height: 1; }
 .admin-table tbody tr { transition: background-color 140ms var(--ease-out); }
 .admin-table tbody tr:hover { background: #fafbf8; }
 .admin-table td.admin-product-availability, .admin-table td.admin-product-publication, .admin-table td.admin-product-quality { white-space: nowrap; }

@@ -78,12 +78,26 @@ describe("admin product entry workflow", () => {
   });
 
   it("shows publication status between availability and quality", () => {
-    expect(adminSource).toContain("<th>В сайта</th>");
-    expect(adminSource.indexOf("<th>Наличност</th>")).toBeLessThan(adminSource.indexOf("<th>В сайта</th>"));
-    expect(adminSource.indexOf("<th>В сайта</th>")).toBeLessThan(adminSource.indexOf("<th>Качество</th>"));
+    expect(adminSource).toContain('label="В сайта"');
+    expect(adminSource.indexOf('label="Наличност"')).toBeLessThan(adminSource.indexOf('label="В сайта"'));
+    expect(adminSource.indexOf('label="В сайта"')).toBeLessThan(adminSource.indexOf('label="Качество"'));
     expect(adminSource).toContain('label: "Публикуван"');
     expect(adminSource).toContain('label: "Скрит"');
     expect(adminSource).toContain('label: "Премахнат"');
     expect(stylesheet).toContain(".admin-publication-status");
+  });
+
+  it("supports sorting by category, price, availability, publication and quality", () => {
+    expect(adminSource).toContain('label="Категория"');
+    expect(adminSource).toContain('label="Цена"');
+    expect(adminSource).toContain('label="Наличност"');
+    expect(adminSource).toContain('label="В сайта"');
+    expect(adminSource).toContain('label="Качество"');
+    expect(adminSource).toContain('"category-asc"');
+    expect(adminSource).toContain('"price-desc"');
+    expect(adminSource).toContain('"availability-asc"');
+    expect(adminSource).toContain('"publication-desc"');
+    expect(adminSource).toContain('"quality-asc"');
+    expect(stylesheet).toContain(".admin-sort-header");
   });
 });

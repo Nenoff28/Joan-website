@@ -747,3 +747,5 @@
 - [x] Regression тестът за admin product entry е разширен; преминаха 5 targeted теста, TypeScript, production build и пълният suite с 82 файла / 349 теста.
 
 - [x] Админ каталогът е подреден с responsive toolbar и по-ясни product rows. Добавена е колона „В сайта“ между „Наличност“ и „Качество“ със статуси „Публикуван“, „Скрит“ и „Премахнат“, цветни badges и regression coverage. Проверки: 82 Vitest файла / 350 теста, TypeScript, production client+SSR build и `git diff --check`.
+
+- [x] Добавено е сортиране с клик върху заглавията „Категория“, „Цена“, „Наличност“, „В сайта“ и „Качество“, с двупосочни стрелки и стабилни tie-break правила. Проверки: 82 Vitest файла / 351 теста, TypeScript, production build и `git diff --check`.
