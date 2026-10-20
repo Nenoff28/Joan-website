@@ -779,6 +779,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   }
   const [search, setSearch] = useState("");
   const [qualityOnly, setQualityOnly] = useState(false);
+  const [brandFilter, setBrandFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState<"all" | Availability>("all");
   const [productSort, setProductSort] = useState<AdminProductSort>("updated-desc");
@@ -792,6 +793,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
     return Array.from(derived.values());
   }, [canReadCategories, canWriteProducts, categoriesQuery.data, productsQuery.data]);
   const flatCategoryOptions = useMemo(() => flattenProductCategories(categoryOptions), [categoryOptions]);
+  const brandOptions = useMemo(() => Array.from(new Set((productsQuery.data ?? []).map(product => product.brand?.trim()).filter((brand): brand is string => Boolean(brand)))).sort((a, b) => a.localeCompare(b, "bg")), [productsQuery.data]);
   const subcategoryLevels = useMemo(() => {
     const levels: ProductCategoryOption[][] = [];
     let options = categoryOptions.find(category => category.id === form.categoryId)?.children ?? [];
@@ -825,9 +827,10 @@ function AdminProducts({ permissions }: AdminPageProps) {
     const normalizedSearch = search.trim().toLocaleLowerCase("bg");
     const filtered = (productsQuery.data ?? []).filter(product => {
       const searchable = `${product.name} ${product.brand ?? ""} ${product.sku ?? ""}`.toLocaleLowerCase("bg");
+      const matchesBrand = !brandFilter || product.brand === brandFilter;
       const matchesCategory = !categoryFilter || product.categoryId === Number(categoryFilter) || product.subcategoryIds?.includes(Number(categoryFilter));
       const matchesAvailability = availabilityFilter === "all" || product.availabilityCode === availabilityFilter;
-      return searchable.includes(normalizedSearch) && matchesCategory && matchesAvailability && (!qualityOnly || issueIds.has(product.id));
+      return searchable.includes(normalizedSearch) && matchesBrand && matchesCategory && matchesAvailability && (!qualityOnly || issueIds.has(product.id));
     });
     return filtered.sort((a, b) => {
       if (productSort === "name-asc") return a.name.localeCompare(b.name, "bg");
@@ -836,7 +839,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
       if (productSort === "stock-asc") return (a.stockQuantity ?? 0) - (b.stockQuantity ?? 0) || a.name.localeCompare(b.name, "bg");
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
-  }, [productsQuery.data, search, categoryFilter, availabilityFilter, productSort, qualityOnly, issueIds]);
+  }, [productsQuery.data, search, brandFilter, categoryFilter, availabilityFilter, productSort, qualityOnly, issueIds]);
   const pageSize = 50;
   const totalPages = Math.max(1, Math.ceil(visibleProducts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -1440,6 +1443,13 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 }}
                 placeholder="име, марка, код"
               />
+            </label>
+            <label>
+              Доставчик / марка
+              <select value={brandFilter} onChange={event => { setBrandFilter(event.target.value); setPage(1); }}>
+                <option value="">Всички доставчици и марки</option>
+                {brandOptions.map(brand => <option key={brand} value={brand}>{brand}</option>)}
+              </select>
             </label>
             <label>
               Категория
