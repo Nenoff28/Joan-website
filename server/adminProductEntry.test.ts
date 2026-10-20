@@ -63,4 +63,17 @@ describe("admin product entry workflow", () => {
     expect(validationSource).toContain('.max(180, "Всеки технически ред');
     expect(validationSource).toContain('.max(30, "Добавете най-много 30');
   });
+
+  it("supports filtering, sorting and reversible bulk site visibility", () => {
+    expect(adminSource).toContain("categoryFilter");
+    expect(adminSource).toContain("availabilityFilter");
+    expect(adminSource).toContain("productSort");
+    expect(adminSource).toContain("Маркирай всички филтрирани артикули");
+    expect(adminSource).toContain("Покажи в сайта");
+    expect(adminSource).toContain("Скрий от сайта");
+    expect(routerSource).toContain("setProductsActive");
+    expect(serviceSource).toContain("export async function setAdminProductsActive");
+    expect(serviceSource).toContain("product.published");
+    expect(serviceSource).toContain("product.unpublished");
+  });
 });

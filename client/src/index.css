@@ -968,3 +968,13 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .checkout-confirmation-items span { color: var(--ink); font-size: .75rem; }
 .checkout-confirmation-items b { color: var(--red); font-family: "Manrope", sans-serif; font-size: .68rem; white-space: nowrap; }
 @media (max-width: 560px) { .checkout-confirmation-items > div { align-items: start; flex-direction: column; gap: .18rem; } }
+
+/* Admin catalogue filters and reversible bulk visibility actions. */
+.admin-table-controls > label:not(.admin-checkbox) { display: grid; gap: .28rem; min-width: 150px; }
+.admin-table-controls > label:not(.admin-checkbox) select { min-height: 38px; }
+.admin-bulk-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; margin-left: auto; }
+.admin-bulk-actions .admin-secondary { font-size: .67rem; padding: .48rem .62rem; }
+.admin-table th:first-child, .admin-table td:first-child { padding-left: .75rem; width: 38px; }
+.admin-table input[type="checkbox"] { accent-color: var(--red); height: 1rem; width: 1rem; }
+@media (max-width: 900px) { .admin-table-controls { align-items: stretch; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.admin-table-controls .admin-search, .admin-bulk-actions, .admin-table-controls > .admin-checkbox { grid-column: 1 / -1; margin-left: 0; }.admin-table-controls > label:not(.admin-checkbox) { min-width: 0; } }
+@media (max-width: 560px) { .admin-table-controls { grid-template-columns: 1fr; }.admin-table-controls .admin-search, .admin-bulk-actions, .admin-table-controls > .admin-checkbox { grid-column: auto; }.admin-bulk-actions { align-items: stretch; flex-direction: column; }.admin-bulk-actions .admin-secondary { width: 100%; } }

@@ -56,6 +56,7 @@ import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 
 type Availability = "in_stock" | "on_request" | "out_of_stock";
+type AdminProductSort = "updated-desc" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc";
 type OrderStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
 type ContactEnquiryStatus = "new" | "contacted" | "closed";
 type TechnicalRow = { label: string; value: string };
@@ -203,6 +204,8 @@ const categoryNodeCount = (nodes: CategoryNode[]): number =>
     (total, node) => total + 1 + categoryNodeCount(node.children ?? []),
     0
   );
+const flattenProductCategories = (nodes: ProductCategoryOption[], depth = 0): Array<ProductCategoryOption & { depth: number }> =>
+  nodes.flatMap(node => [{ ...node, depth }, ...flattenProductCategories(node.children ?? [], depth + 1)]);
 const formatDate = (value: Date | string) =>
   new Date(value).toLocaleString("bg-BG", {
     dateStyle: "medium",
@@ -711,6 +714,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts && catalogueReady });
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const uploadingRef = useRef(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const [uploadError, setUploadError] = useState("");
@@ -759,12 +763,25 @@ function AdminProducts({ permissions }: AdminPageProps) {
     },
     onError: error => setArchiveError(readableProductError(error)),
   });
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<number>>(() => new Set());
+  const [bulkVisibilityTarget, setBulkVisibilityTarget] = useState<boolean | null>(null);
+  const setProductsActive = trpc.admin.setProductsActive.useMutation({
+    onSuccess: async result => {
+      setSelectedProductIds(new Set());
+      setBulkVisibilityTarget(null);
+      await onSaved(result.isActive ? `Публикувани са ${result.updated} артикула.` : `Скрити са ${result.updated} артикула. Страниците им са запазени.`);
+    },
+    onError: error => toast.error(error.message || "Промените по видимостта не бяха записани."),
+  });
   function requestArchive(product: { id: number; name: string; sku?: string | null }, archived: boolean) {
     setArchiveError("");
     setArchiveTarget({ id: product.id, name: product.name, sku: product.sku, archived });
   }
   const [search, setSearch] = useState("");
   const [qualityOnly, setQualityOnly] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState<"all" | Availability>("all");
+  const [productSort, setProductSort] = useState<AdminProductSort>("updated-desc");
   const [page, setPage] = useState(1);
   const categoryOptions = useMemo<ProductCategoryOption[]>(() => {
     if (canReadCategories || canWriteProducts) return (categoriesQuery.data ?? []) as ProductCategoryOption[];
@@ -774,6 +791,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
     });
     return Array.from(derived.values());
   }, [canReadCategories, canWriteProducts, categoriesQuery.data, productsQuery.data]);
+  const flatCategoryOptions = useMemo(() => flattenProductCategories(categoryOptions), [categoryOptions]);
   const subcategoryLevels = useMemo(() => {
     const levels: ProductCategoryOption[][] = [];
     let options = categoryOptions.find(category => category.id === form.categoryId)?.children ?? [];
@@ -793,22 +811,32 @@ function AdminProducts({ permissions }: AdminPageProps) {
     if (form.categoryId === 0 && categoryOptions[0])
       setForm(current => current.categoryId === 0 ? { ...current, categoryId: categoryOptions[0].id } : current);
   }, [categoryOptions, form.categoryId]);
+  useEffect(() => {
+    if (!form.id) return;
+    const timer = window.setTimeout(() => descriptionRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [form.id]);
   const issueIds = useMemo(
     () =>
       new Set(operations.data?.qualityQueue.map(product => product.id) ?? []),
     [operations.data]
   );
-  const visibleProducts = useMemo(
-    () =>
-      (productsQuery.data ?? []).filter(
-        product =>
-          `${product.name} ${product.brand ?? ""} ${product.sku ?? ""}`
-            .toLocaleLowerCase("bg")
-            .includes(search.toLocaleLowerCase("bg")) &&
-          (!qualityOnly || issueIds.has(product.id))
-      ),
-    [productsQuery.data, search, qualityOnly, issueIds]
-  );
+  const visibleProducts = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase("bg");
+    const filtered = (productsQuery.data ?? []).filter(product => {
+      const searchable = `${product.name} ${product.brand ?? ""} ${product.sku ?? ""}`.toLocaleLowerCase("bg");
+      const matchesCategory = !categoryFilter || product.categoryId === Number(categoryFilter) || product.subcategoryIds?.includes(Number(categoryFilter));
+      const matchesAvailability = availabilityFilter === "all" || product.availabilityCode === availabilityFilter;
+      return searchable.includes(normalizedSearch) && matchesCategory && matchesAvailability && (!qualityOnly || issueIds.has(product.id));
+    });
+    return filtered.sort((a, b) => {
+      if (productSort === "name-asc") return a.name.localeCompare(b.name, "bg");
+      if (productSort === "name-desc") return b.name.localeCompare(a.name, "bg");
+      if (productSort === "stock-desc") return (b.stockQuantity ?? 0) - (a.stockQuantity ?? 0) || a.name.localeCompare(b.name, "bg");
+      if (productSort === "stock-asc") return (a.stockQuantity ?? 0) - (b.stockQuantity ?? 0) || a.name.localeCompare(b.name, "bg");
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }, [productsQuery.data, search, categoryFilter, availabilityFilter, productSort, qualityOnly, issueIds]);
   const pageSize = 50;
   const totalPages = Math.max(1, Math.ceil(visibleProducts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -816,7 +844,23 @@ function AdminProducts({ permissions }: AdminPageProps) {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  const saving = createProduct.isPending || updateProduct.isPending || archiveProduct.isPending;
+  const selectedVisibleCount = visibleProducts.reduce((count, product) => count + (selectedProductIds.has(product.id) ? 1 : 0), 0);
+  const allVisibleSelected = visibleProducts.length > 0 && selectedVisibleCount === visibleProducts.length;
+  function toggleProductSelection(id: number, checked: boolean) {
+    setSelectedProductIds(current => {
+      const next = new Set(current);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  }
+  function toggleAllVisibleProducts(checked: boolean) {
+    setSelectedProductIds(current => {
+      const next = new Set(current);
+      visibleProducts.forEach(product => checked ? next.add(product.id) : next.delete(product.id));
+      return next;
+    });
+  }
+  const saving = createProduct.isPending || updateProduct.isPending || archiveProduct.isPending || setProductsActive.isPending;
   const editingProduct = form.id ? (productsQuery.data ?? []).find(product => product.id === form.id) ?? savedProduct : null;
   const suggestedSlug = form.name.trim() ? latinPathToken(form.name) : "";
   const galleryUrls = textLines(form.galleryText).slice(0, 10);
@@ -1294,7 +1338,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
             </div>
             <label>
               Описание
-              <textarea required minLength={10} rows={5} aria-label="Описание" aria-invalid={Boolean(formErrors.description)} aria-describedby="product-description-help product-description-error" value={form.description} onChange={event => update("description", event.target.value)} placeholder="Опишете продукта с кратки, ясни изречения (поне 10 знака)." />
+              <textarea ref={descriptionRef} required minLength={10} rows={7} aria-label="Описание" aria-invalid={Boolean(formErrors.description)} aria-describedby="product-description-help product-description-error" value={form.description} onChange={event => update("description", event.target.value)} placeholder="Опишете продукта с кратки, ясни изречения (поне 10 знака)." />
               <small id="product-description-help">Минимум 10 знака · въведени {form.description.trim().length}</small>
               {formErrors.description && <span id="product-description-error" className="admin-form-error" role="alert">{formErrors.description}</span>}
             </label>
@@ -1397,6 +1441,32 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 placeholder="име, марка, код"
               />
             </label>
+            <label>
+              Категория
+              <select value={categoryFilter} onChange={event => { setCategoryFilter(event.target.value); setPage(1); }}>
+                <option value="">Всички категории</option>
+                {flatCategoryOptions.map(category => <option key={category.id} value={category.id}>{`${"— ".repeat(category.depth)}${category.label}`}</option>)}
+              </select>
+            </label>
+            <label>
+              Наличност
+              <select value={availabilityFilter} onChange={event => { setAvailabilityFilter(event.target.value as "all" | Availability); setPage(1); }}>
+                <option value="all">Всички статуси</option>
+                <option value="in_stock">Само на склад</option>
+                <option value="on_request">Само по запитване</option>
+                <option value="out_of_stock">Само изчерпани</option>
+              </select>
+            </label>
+            <label>
+              Сортиране
+              <select value={productSort} onChange={event => { setProductSort(event.target.value as AdminProductSort); setPage(1); }}>
+                <option value="updated-desc">Последно променени</option>
+                <option value="name-asc">Име: А–Я</option>
+                <option value="name-desc">Име: Я–А</option>
+                <option value="stock-desc">Наличност: първо най-много</option>
+                <option value="stock-asc">Наличност: първо най-малко</option>
+              </select>
+            </label>
             <button
               type="button"
               className={`admin-filter-button ${qualityOnly ? "is-active" : ""}`}
@@ -1409,6 +1479,11 @@ function AdminProducts({ permissions }: AdminPageProps) {
               {operations.data?.qualityQueue.length ?? 0})
             </button>
             <label className="admin-checkbox"><input type="checkbox" checked={showArchived} disabled={saving} onChange={event => { setShowArchived(event.target.checked); setPage(1); }} /> Покажи премахнатите</label>
+            {canWriteProducts && <div className="admin-bulk-actions" aria-label="Масови действия за видимост">
+              <span className="admin-count">Избрани: {selectedVisibleCount}</span>
+              <button type="button" className="admin-secondary" disabled={!selectedVisibleCount || saving} onClick={() => setBulkVisibilityTarget(true)}>Покажи в сайта</button>
+              <button type="button" className="admin-secondary" disabled={!selectedVisibleCount || saving} onClick={() => setBulkVisibilityTarget(false)}>Скрий от сайта</button>
+            </div>}
           </div>
         </div>
         {productsQuery.isLoading ? (
@@ -1419,6 +1494,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
               <table className="admin-table">
                 <thead>
                   <tr>
+                    <th><input type="checkbox" checked={allVisibleSelected} disabled={!canWriteProducts} onChange={event => toggleAllVisibleProducts(event.target.checked)} aria-label="Маркирай всички филтрирани артикули" /></th>
                     <th>Артикул</th>
                     <th>Категория</th>
                     <th>Цена</th>
@@ -1430,6 +1506,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 <tbody>
                   {pageProducts.map(product => (
                     <tr key={product.id}>
+                      <td><input type="checkbox" checked={selectedProductIds.has(product.id)} disabled={!canWriteProducts} onChange={event => toggleProductSelection(product.id, event.target.checked)} aria-label={`Маркирай ${product.name}`} /></td>
                       <td>
                         <div className="admin-product-cell">
                           <img src={product.image} alt="" />
@@ -1524,6 +1601,22 @@ function AdminProducts({ permissions }: AdminPageProps) {
           </>
         )}
       </section>
+      <AlertDialog open={bulkVisibilityTarget !== null} onOpenChange={open => { if (!open && !setProductsActive.isPending) setBulkVisibilityTarget(null); }}>
+        <AlertDialogContent className="admin-product-confirmation">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{bulkVisibilityTarget ? "Показване на избраните артикули" : "Скриване на избраните артикули"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkVisibilityTarget ? `Ще бъдат показани ${selectedVisibleCount} избрани артикула в сайта.` : `Ще бъдат скрити ${selectedVisibleCount} избрани артикула от сайта.`} Страниците, снимките, SKU, цените и наличностите ще бъдат запазени. Действието може да бъде отменено по-късно.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={setProductsActive.isPending}>Отказ</AlertDialogCancel>
+            <AlertDialogAction disabled={setProductsActive.isPending} onClick={() => setProductsActive.mutate({ ids: Array.from(selectedProductIds), isActive: bulkVisibilityTarget ?? false })}>
+              {setProductsActive.isPending ? "Записване…" : bulkVisibilityTarget ? "Покажи в сайта" : "Скрий от сайта"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={Boolean(archiveTarget)} onOpenChange={open => { if (!open && !archiveProduct.isPending) setArchiveTarget(null); }}>
         <AlertDialogContent className="admin-product-confirmation">
           <AlertDialogHeader>

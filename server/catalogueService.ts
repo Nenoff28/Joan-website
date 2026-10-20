@@ -1103,6 +1103,22 @@ export async function setAdminProductArchived(id: number, archived: boolean, act
   });
 }
 
+export async function setAdminProductsActive(ids: number[], isActive: boolean, actorId: number) {
+  const uniqueIds = Array.from(new Set(ids.filter(id => Number.isInteger(id) && id > 0)));
+  if (!uniqueIds.length) throw new Error("Изберете поне един артикул.");
+  const db = await requireDb();
+  return db.transaction(async tx => {
+    const products = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, sku: catalogueProducts.sku, slug: catalogueProducts.slug, isActive: catalogueProducts.isActive, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(inArray(catalogueProducts.id, uniqueIds)).for("update");
+    if (products.length !== uniqueIds.length) throw new Error("Един или повече избрани артикули не са намерени.");
+    const editable = products.filter(product => !product.isArchived && product.isActive !== isActive);
+    if (editable.length) {
+      await tx.update(catalogueProducts).set({ isActive }).where(inArray(catalogueProducts.id, editable.map(product => product.id)));
+      await tx.insert(adminActivities).values(editable.map(product => ({ adminUserId: actorId, action: isActive ? "product.published" : "product.unpublished", entityType: "product", entityId: product.id, metadataJson: JSON.stringify({ name: product.name, slug: product.slug, sku: product.sku ?? null }) })));
+    }
+    return { requested: uniqueIds.length, updated: editable.length, skippedArchived: products.filter(product => product.isArchived).length, isActive };
+  });
+}
+
 export async function adjustProductStock(id: number, delta: number, adminUserId: number) {
   const db = await requireDb();
   const [product] = await db.select().from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1);
