@@ -978,3 +978,25 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-table input[type="checkbox"] { accent-color: var(--red); height: 1rem; width: 1rem; }
 @media (max-width: 900px) { .admin-table-controls { align-items: stretch; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.admin-table-controls .admin-search, .admin-bulk-actions, .admin-table-controls > .admin-checkbox { grid-column: 1 / -1; margin-left: 0; }.admin-table-controls > label:not(.admin-checkbox) { min-width: 0; } }
 @media (max-width: 560px) { .admin-table-controls { grid-template-columns: 1fr; }.admin-table-controls .admin-search, .admin-bulk-actions, .admin-table-controls > .admin-checkbox { grid-column: auto; }.admin-bulk-actions { align-items: stretch; flex-direction: column; }.admin-bulk-actions .admin-secondary { width: 100%; } }
+
+/* Admin catalogue table: publication state is explicit and sits between stock and quality. */
+.admin-table-controls { align-items: end; flex-wrap: wrap; row-gap: .7rem; }
+.admin-table-controls > label:not(.admin-checkbox) { flex: 1 1 155px; min-width: 145px; }
+.admin-table-controls > label:not(.admin-checkbox) > select { width: 100%; }
+.admin-table-controls .admin-search { flex: 1.35 1 210px; }
+.admin-table-controls .admin-search input { width: 100%; }
+.admin-table-controls > .admin-filter-button { align-self: end; }
+.admin-table-controls > .admin-checkbox { align-self: end; margin-bottom: .55rem; }
+.admin-table { min-width: 1030px; }
+.admin-table tbody tr { transition: background-color 140ms var(--ease-out); }
+.admin-table tbody tr:hover { background: #fafbf8; }
+.admin-table td.admin-product-availability, .admin-table td.admin-product-publication, .admin-table td.admin-product-quality { white-space: nowrap; }
+.admin-table td.admin-product-publication { min-width: 118px; }
+.admin-publication-status { align-items: center; border: 1px solid transparent; border-radius: 999px; display: inline-flex; font-family: "Manrope", sans-serif; font-size: .61rem; font-weight: 800; gap: .35rem; padding: .34rem .52rem; white-space: nowrap; }
+.admin-publication-dot { background: currentColor; border-radius: 50%; height: 7px; width: 7px; }
+.admin-publication-active { background: #e9f5ed; border-color: #b8d9c2; color: #236a42; }
+.admin-publication-hidden { background: #f0f2ef; border-color: #d2d8d2; color: #5f6965; }
+.admin-publication-archived { background: #fff0ef; border-color: #e6bbb8; color: #a4292e; }
+.admin-product-actions { justify-content: flex-end; min-width: 184px; }
+.admin-product-actions .admin-text-action, .admin-product-actions .admin-product-remove { white-space: nowrap; }
+@media (max-width: 700px) { .admin-table { min-width: 970px; } }

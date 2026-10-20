@@ -76,4 +76,14 @@ describe("admin product entry workflow", () => {
     expect(serviceSource).toContain("product.published");
     expect(serviceSource).toContain("product.unpublished");
   });
+
+  it("shows publication status between availability and quality", () => {
+    expect(adminSource).toContain("<th>В сайта</th>");
+    expect(adminSource.indexOf("<th>Наличност</th>")).toBeLessThan(adminSource.indexOf("<th>В сайта</th>"));
+    expect(adminSource.indexOf("<th>В сайта</th>")).toBeLessThan(adminSource.indexOf("<th>Качество</th>"));
+    expect(adminSource).toContain('label: "Публикуван"');
+    expect(adminSource).toContain('label: "Скрит"');
+    expect(adminSource).toContain('label: "Премахнат"');
+    expect(stylesheet).toContain(".admin-publication-status");
+  });
 });

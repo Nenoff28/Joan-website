@@ -185,6 +185,12 @@ const availabilityLabels: Record<Availability, string> = {
   on_request: "По запитване",
   out_of_stock: "Изчерпан",
 };
+const publicationStatus = (product: { isActive: boolean; isArchived?: boolean }) =>
+  product.isArchived
+    ? { label: "Премахнат", className: "admin-publication-archived" }
+    : product.isActive
+      ? { label: "Публикуван", className: "admin-publication-active" }
+      : { label: "Скрит", className: "admin-publication-hidden" };
 const numericOrNull = (value: string) =>
   value.trim() === "" ? null : Number(value);
 const textLines = (value: string) =>
@@ -1509,6 +1515,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
                     <th>Категория</th>
                     <th>Цена</th>
                     <th>Наличност</th>
+                    <th>В сайта</th>
                     <th>Качество</th>
                     <th />
                   </tr>
@@ -1532,14 +1539,23 @@ function AdminProducts({ permissions }: AdminPageProps) {
                       </td>
                       <td>{product.categoryName}</td>
                       <td>{product.price ?? "Запитване"}</td>
-                      <td>
+                      <td className="admin-product-availability">
                         <span
                           className={`admin-status availability-${product.availabilityCode}`}
                         >
                           {product.availability} · {product.stockQuantity ?? 0}
                         </span>
                       </td>
-                      <td>
+                      <td className="admin-product-publication">
+                        {(() => {
+                          const publication = publicationStatus(product);
+                          return <span className={`admin-publication-status ${publication.className}`} title={publication.label}>
+                            <span className="admin-publication-dot" aria-hidden="true" />
+                            {publication.label}
+                          </span>;
+                        })()}
+                      </td>
+                      <td className="admin-product-quality">
                         {issueIds.has(product.id) ? (
                           <span className="admin-quality-flag">
                             <AlertTriangle size={13} /> Проверка
