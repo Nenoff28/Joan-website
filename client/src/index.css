@@ -1191,3 +1191,20 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-category-search input::placeholder { color: var(--slate); }
 @media (max-width: 1050px) { .admin-ai-filter-panel .admin-ai-category-search { grid-column: 1 / -1; } }
 @media (max-width: 700px) { .admin-ai-filter-panel .admin-ai-category-search { grid-column: auto; } }
+
+/* AI settings cards */
+.admin-ai-settings-grid { display: grid; gap: .85rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-ai-setting-card { background: #fff; border: 1px solid var(--line); display: grid; gap: .45rem; padding: .9rem 1rem; }
+.admin-ai-setting-card:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.07); }
+.admin-ai-setting-label { color: var(--ink); font-family: "Manrope", sans-serif; font-size: .78rem; font-weight: 800; }
+.admin-ai-setting-card > input, .admin-ai-number-field input { background: #fbfbf9; border: 1px solid var(--line); color: var(--ink); min-height: 42px; padding: .55rem .65rem; width: 100%; }
+.admin-ai-setting-card > input:focus, .admin-ai-number-field input:focus { border-color: var(--red); outline: 0; }
+.admin-ai-setting-card small { color: var(--slate); font-size: .67rem; line-height: 1.4; }
+.admin-ai-number-field { align-items: center; display: flex; gap: .55rem; }
+.admin-ai-number-field input { font-size: 1.15rem; font-weight: 800; max-width: 145px; }
+.admin-ai-number-field span { color: var(--slate); font-size: .72rem; white-space: nowrap; }
+.admin-ai-confirm-limit { align-items: center; background: #f1f7f2; border: 1px solid #c7dfcc; color: var(--green); display: flex; font-size: .72rem; gap: .45rem; margin-top: .2rem; padding: .55rem .6rem; }
+.admin-ai-confirm-limit input { accent-color: var(--green); height: 1rem; width: 1rem; }
+.admin-ai-confirm-limit strong { font-weight: 800; }
+.admin-ai-confirm-hint { background: #fff7e6; border-left: 3px solid #d49b29; color: #76520b; font-size: .7rem; margin: -.25rem 0 0; padding: .5rem .65rem; }
+@media (max-width: 700px) { .admin-ai-settings-grid { grid-template-columns: 1fr; } .admin-ai-number-field input { max-width: none; } }

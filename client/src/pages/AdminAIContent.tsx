@@ -77,6 +77,7 @@ export default function AdminAIContent() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [model, setModel] = useState("gemini-3.8-flash");
   const [dailyGenerationLimit, setDailyGenerationLimit] = useState(20);
+  const [dailyLimitConfirmed, setDailyLimitConfirmed] = useState(false);
   const [connectionResults, setConnectionResults] = useState<{ basic?: { ok: boolean; status: number; message: string }; search?: { ok: boolean; status: number; message: string } }>({});
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
@@ -175,6 +176,10 @@ export default function AdminAIContent() {
 
   const saveSettings = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!dailyLimitConfirmed) {
+      toast.error("Потвърдете дневния лимит с тикчето преди запис.");
+      return;
+    }
     saveSettingsMutation.mutate({ systemPrompt, model, dailyGenerationLimit });
   };
 
@@ -214,11 +219,14 @@ export default function AdminAIContent() {
             <h2>Системен prompt</h2>
             <p>Този текст се подава като system инструкция при всяко AI генериране. Продуктът се изпраща отделно като марка, име и EAN/артикулен номер.</p>
           </div>
-          <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази prompt-а"}</button>
+          <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20 || !dailyLimitConfirmed}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази настройките"}</button>
         </div>
         <textarea value={systemPrompt} onChange={event => setSystemPrompt(event.target.value)} rows={12} aria-label="AI системен prompt" placeholder="Въведете системния prompt за AI съдържанието…" />
-        <label className="admin-ai-limit-field">Модел<input value={model} onChange={event => setModel(event.target.value)} placeholder="gemini-3.8-flash" aria-label="AI модел" /><small>Моделът се подава към Gemini server-side. Не се задава thinking параметър.</small></label>
-        <label className="admin-ai-limit-field">Дневен лимит за генерирания<input type="number" min={0} max={100000} value={dailyGenerationLimit} onChange={event => setDailyGenerationLimit(Math.max(0, Number(event.target.value) || 0))} /><small>0 блокира генерирането; лимитът се прилага за UTC ден.</small></label>
+        <div className="admin-ai-settings-grid">
+          <label className="admin-ai-setting-card"><span className="admin-ai-setting-label">Модел</span><input value={model} onChange={event => setModel(event.target.value)} placeholder="gemini-3.8-flash" aria-label="AI модел" /><small>Моделът се подава към Gemini server-side. Не се задава thinking параметър.</small></label>
+          <div className="admin-ai-setting-card admin-ai-limit-card"><label htmlFor="daily-ai-limit" className="admin-ai-setting-label">Дневен лимит за генерирания</label><div className="admin-ai-number-field"><input id="daily-ai-limit" type="number" min={0} max={100000} value={dailyGenerationLimit} onChange={event => { setDailyGenerationLimit(Math.max(0, Number(event.target.value) || 0)); setDailyLimitConfirmed(false); }} aria-describedby="daily-ai-limit-help" /><span>продукта / ден</span></div><small id="daily-ai-limit-help">0 блокира генерирането. Лимитът се прилага за UTC ден.</small><label className="admin-ai-confirm-limit"><input type="checkbox" checked={dailyLimitConfirmed} onChange={event => setDailyLimitConfirmed(event.target.checked)} /> <span>Потвърждавам лимит от <strong>{dailyGenerationLimit}</strong> продукта на ден.</span></label></div>
+        </div>
+        {!dailyLimitConfirmed && <p className="admin-ai-confirm-hint">Поставете тикче, за да потвърдите дневния лимит и да активирате бутона за запис.</p>}
         <div className="admin-ai-connection-checks">
           <strong>Връзка с Gemini</strong>
           <button type="button" onClick={() => checkGeminiMutation.mutate({ model, withSearch: false })} disabled={checkGeminiMutation.isPending}>Провери без търсене</button>
