@@ -1100,7 +1100,7 @@ export async function updateAdminProduct(id: number, payload: ProductPayload, ad
 
 export async function setAdminProductArchived(id: number, archived: boolean, actorId: number) {
   const db = await requireDb();
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [product] = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, slug: catalogueProducts.slug, sku: catalogueProducts.sku, isArchived: catalogueProducts.isArchived, isActive: catalogueProducts.isActive }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1).for("update");
     if (!product) throw new Error("Продуктът не е намерен.");
     if (product.isArchived === archived) return { id, isArchived: product.isArchived, isActive: product.isActive };
@@ -1108,13 +1108,15 @@ export async function setAdminProductArchived(id: number, archived: boolean, act
     await insertProductAdminActivity(tx, actorId, archived ? "product.archived" : "product.restored", id, { name: product.name, slug: product.slug, sku: product.sku ?? null });
     return { id, isArchived: archived, isActive: false };
   });
+  invalidatePublicReadCache();
+  return result;
 }
 
 export async function setAdminProductsActive(ids: number[], isActive: boolean, actorId: number) {
   const uniqueIds = Array.from(new Set(ids.filter(id => Number.isInteger(id) && id > 0)));
   if (!uniqueIds.length) throw new Error("Изберете поне един артикул.");
   const db = await requireDb();
-  return db.transaction(async tx => {
+  const result = await db.transaction(async tx => {
     const products = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, sku: catalogueProducts.sku, slug: catalogueProducts.slug, isActive: catalogueProducts.isActive, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(inArray(catalogueProducts.id, uniqueIds)).for("update");
     if (products.length !== uniqueIds.length) throw new Error("Един или повече избрани артикули не са намерени.");
     const editable = products.filter(product => !product.isArchived && product.isActive !== isActive);
@@ -1124,6 +1126,8 @@ export async function setAdminProductsActive(ids: number[], isActive: boolean, a
     }
     return { requested: uniqueIds.length, updated: editable.length, skippedArchived: products.filter(product => product.isArchived).length, isActive };
   });
+  invalidatePublicReadCache();
+  return result;
 }
 
 export async function adjustProductStock(id: number, delta: number, adminUserId: number) {
@@ -1134,6 +1138,7 @@ export async function adjustProductStock(id: number, delta: number, adminUserId:
   const availability: ProductAvailability = stockQuantity > 0 ? "in_stock" : product.availability === "in_stock" ? "on_request" : product.availability;
   await db.update(catalogueProducts).set({ stockQuantity, availability }).where(eq(catalogueProducts.id, id));
   await logAdminActivity(adminUserId, "inventory.adjusted", "product", id, { delta, stockQuantity, availability, slug: product.slug, name: product.name });
+  invalidatePublicReadCache();
   return { id, stockQuantity, availability };
 }
 
@@ -1141,7 +1146,7 @@ export async function saveProductStockChanges(changes: Array<{ id: number; stock
   const db = await requireDb();
   const uniqueChanges = Array.from(new Map(changes.map(change => [change.id, { id: change.id, stockQuantity: Math.max(0, Math.min(999999, Math.trunc(change.stockQuantity))) }])).values());
   if (!uniqueChanges.length) return { changes: [] };
-  return db.transaction(async tx => {
+  const result = await db.transaction(async tx => {
     const saved: Array<{ id: number; name: string; oldStockQuantity: number; stockQuantity: number; availability: ProductAvailability }> = [];
     for (const change of uniqueChanges) {
       const [product] = await tx.select({ id: catalogueProducts.id, name: catalogueProducts.name, slug: catalogueProducts.slug, stockQuantity: catalogueProducts.stockQuantity, availability: catalogueProducts.availability, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(eq(catalogueProducts.id, change.id)).limit(1).for("update");
@@ -1155,6 +1160,8 @@ export async function saveProductStockChanges(changes: Array<{ id: number; stock
     }
     return { changes: saved };
   });
+  if (result.changes.length) invalidatePublicReadCache();
+  return result;
 }
 
 export async function saveProductPromotion(input: { id: number; priceEur: number | null; oldPriceEur: number | null; discountLabel: string | null }, adminUserId: number) {
@@ -1163,6 +1170,7 @@ export async function saveProductPromotion(input: { id: number; priceEur: number
   if (!product) throw new Error("Product was not found");
   await db.update(catalogueProducts).set({ priceEur: asDecimal(input.priceEur), oldPriceEur: asDecimal(input.oldPriceEur), discountLabel: input.discountLabel?.trim() || null }).where(eq(catalogueProducts.id, input.id));
   await logAdminActivity(adminUserId, "promotion.updated", "product", input.id, { slug: product.slug, name: product.name, discountLabel: input.discountLabel ?? null });
+  invalidatePublicReadCache();
 }
 
 export type PromotionCampaignInput = {
