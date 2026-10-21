@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
 import { canVisitAdminSection, firstAdminPath, hasPermission, type Permission } from "@shared/permissions";
 import { productPayloadSchema, productFieldErrors, readableProductError } from "@shared/productValidation";
-import { uploadProductImagesSequentially } from "@/lib/productImageUpload";
+import { productImageType, readProductImage, uploadProductImagesSequentially } from "@/lib/productImageUpload";
 import {
   AlertTriangle,
   Archive,
@@ -737,6 +737,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadProducts && catalogueReady });
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const uploadingRef = useRef(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
@@ -929,6 +930,40 @@ function AdminProducts({ permissions }: AdminPageProps) {
     const nextGallery = galleryUrls.filter(item => item !== url);
     update("galleryText", nextGallery.join("\n"));
     update("imageUrl", nextGallery[0] ?? "");
+  }
+  function reorderGalleryImage(index: number, targetIndex: number) {
+    if (targetIndex < 0 || targetIndex >= galleryUrls.length || index === targetIndex) return;
+    const nextGallery = [...galleryUrls];
+    const [moved] = nextGallery.splice(index, 1);
+    nextGallery.splice(targetIndex, 0, moved);
+    setForm(current => ({ ...current, galleryText: nextGallery.join("\n"), imageUrl: nextGallery[0] ?? "" }));
+  }
+  async function replaceGalleryImage(event: ChangeEvent<HTMLInputElement>, index: number) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !canWriteProducts || uploadingRef.current) return;
+    uploadingRef.current = true;
+    setUploadError("");
+    setUploadProgress({ current: 1, total: 1 });
+    try {
+      productImageType(file);
+      const image = await uploadImage.mutateAsync({ dataUrl: await readProductImage(file), fileName: file.name.slice(0, 160) });
+      if (!image.url) throw new Error("Липсва адрес на качената снимка.");
+      setForm(current => {
+        const nextGallery = textLines(current.galleryText).slice(0, 10);
+        if (index >= nextGallery.length) return current;
+        nextGallery[index] = image.url;
+        return { ...current, imageUrl: nextGallery[0] ?? "", galleryText: nextGallery.join("\n") };
+      });
+      toast.success(`Снимка ${index + 1} е заменена. Натиснете „Запази артикула“, за да запишете промяната.`);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "неизвестна грешка";
+      setUploadError(reason);
+      toast.error(reason);
+    } finally {
+      uploadingRef.current = false;
+      setUploadProgress(null);
+    }
   }
   function selectCategory(categoryId: number) {
     setCategorySelectionChanged(true);
@@ -1421,16 +1456,34 @@ function AdminProducts({ permissions }: AdminPageProps) {
                 <ImagePlus size={20} />
                 <span>{uploadProgress ? `Качване ${uploadProgress.current}/${uploadProgress.total}…` : "Избери до 10 снимки"}<small>JPG, PNG или WEBP · до 10 MB всяка</small></span>
               </button>
-              <p>Снимките се качват наведнъж и се подреждат автоматично. Кликнете „Премахни“, ако искате да замените някоя.</p>
+              <p>Качете до 10 снимки. За всяка снимка можете да я замените, да я направите основна или да промените реда ѝ.</p>
             </div>
             {uploadProgress && <p className="admin-upload-progress" role="status">Качване на снимка {uploadProgress.current} от {uploadProgress.total}. Изчакайте преди запазване.</p>}
             {uploadError && <p className="admin-form-error" role="alert">{uploadError}</p>}
             {galleryUrls.length ? (
               <div className="admin-gallery-preview">
                 {galleryUrls.map((url, index) => (
-                  <figure key={url} className={index === 0 ? "is-primary" : ""}>
+                  <figure key={`${url}-${index}`} className={index === 0 ? "is-primary" : ""}>
                     <img src={url} alt={form.imageAlt || `Снимка ${index + 1}`} />
-                    <figcaption>{index === 0 ? "Основна снимка" : `Снимка ${index + 1}`}<button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => removeGalleryImage(url)}>Премахни</button></figcaption>
+                    <input
+                      ref={element => { replaceInputRefs.current[index] = element; }}
+                      type="file"
+                      className="admin-product-file-input"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={event => replaceGalleryImage(event, index)}
+                      disabled={!canWriteProducts || Boolean(uploadProgress) || saving}
+                      aria-label={`Смени снимка ${index + 1}`}
+                    />
+                    <figcaption>
+                      <strong>{index === 0 ? "Основна снимка" : `Снимка ${index + 1}`}</strong>
+                      <div className="admin-gallery-actions">
+                        {index !== 0 && <button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => reorderGalleryImage(index, 0)}>Основна</button>}
+                        {index > 0 && <button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => reorderGalleryImage(index, index - 1)} aria-label={`Премести снимка ${index + 1} нагоре`}>←</button>}
+                        {index < galleryUrls.length - 1 && <button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => reorderGalleryImage(index, index + 1)} aria-label={`Премести снимка ${index + 1} надолу`}>→</button>}
+                        <button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => replaceInputRefs.current[index]?.click()}>Смени</button>
+                        <button type="button" disabled={Boolean(uploadProgress) || saving} onClick={() => removeGalleryImage(url)}>Премахни</button>
+                      </div>
+                    </figcaption>
                   </figure>
                 ))}
               </div>

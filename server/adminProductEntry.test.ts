@@ -48,11 +48,21 @@ describe("admin product entry workflow", () => {
     expect(adminSource).toContain('accept="image/jpeg,image/png,image/webp"');
     expect(adminSource).toContain("files.length > 10");
     expect(adminSource).toContain("galleryUrls[0]");
-    expect(adminSource).toContain("Снимките се качват наведнъж");
+    expect(adminSource).toContain("Качете до 10 снимки");
     expect(routerSource).toContain(
       "dataUrl: z.string().min(32).max(15_000_000)"
     );
     expect(serviceSource).toContain("bytes.length > 10 * 1024 * 1024");
+  });
+
+  it("supports replacing, promoting and reordering individual gallery images", () => {
+    expect(adminSource).toContain("replaceGalleryImage");
+    expect(adminSource).toContain("reorderGalleryImage");
+    expect(adminSource).toContain("Смени");
+    expect(adminSource).toContain("Основна");
+    expect(adminSource).toContain("Премести снимка");
+    expect(adminSource).toContain("imageUrl: nextGallery[0]");
+    expect(stylesheet).toContain(".admin-gallery-actions");
   });
 
   it("serializes technical rows into the existing product features contract", () => {
