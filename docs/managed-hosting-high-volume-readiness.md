@@ -36,3 +36,35 @@
 Тези числа са локален regression baseline, а не доказателство за production капацитет. За приемане на high-volume deployment трябва да се повтори срещу staging build с реално избрани peak параметри, database snapshot, media restore, monitoring и одобрени hosting limits.
 
 Пример: `LOAD_TEST_BASE_URL=https://staging.example LOAD_TEST_REQUESTS=50 LOAD_TEST_CONCURRENCY=10 node scripts/measure-public-load.mjs`.
+
+## Завършена operational assessment оценка
+
+Оценката е завършена като **go/no-go assessment**, а не като необосновано одобрение за production. Рискът остава висок, докато външните входове не бъдат потвърдени от hosting доставчика и собственика:
+
+| Област | Текущ риск | Доказателство | Условие за намаляване на риска |
+|---|---|---|---|
+| Database backup/restore | Висок | Има runbook, но няма production restore proof | Консистентен dump, изолиран restore и row-count/sample validation |
+| Media recovery | Висок | Има export/manifest процедура, но няма production snapshot proof | SHA-256 manifest и sample restore на продукт, gallery, PDF и brand asset |
+| Capacity | Висок | Има локален 32-request SSR baseline | Staging load test с одобрени peak параметри и реален database/media snapshot |
+| Availability/monitoring | Висок | Има health/readiness проверки, но няма потвърден alerting owner | Uptime, 5xx, latency, DB и media alerts с on-call получател |
+| Incident response | Среден | Има rollback и recovery runbooks | Назначени owner-и, escalation канал и rehearsal с timestamped ledger |
+| DNS rollback | Висок | Има обратим план, но няма одобрен target и rollback owner | Подписан cutover checklist и проверен стар DNS target |
+
+### Минимален monitoring contract преди cutover
+
+Staging/production трябва да има публичен read-only health check и отделни наблюдения за: HTTP availability, 5xx rate, p50/p95 latency, Node process restarts, database connection/query errors, storage/media 4xx/5xx, failed order/contact submissions и disk/backup capacity. Всеки сигнал трябва да има праг, owner, escalation channel, timestamp на последната проверка и ясно действие за rollback или safe mode. Само наличието на логове не се счита за monitoring.
+
+### Acceptance worksheet
+
+Този worksheet се попълва при реален staging rehearsal; празните полета са съзнателно blockers, а не PASS стойности.
+
+| Gate | Owner | Evidence ID / timestamp | Result |
+|---|---|---|---|
+| Database restore |  |  | `PENDING` |
+| Media manifest/sample restore |  |  | `PENDING` |
+| Peak load and error budget |  |  | `PENDING` |
+| Monitoring alert delivery |  |  | `PENDING` |
+| Incident/rollback rehearsal |  |  | `PENDING` |
+| DNS cutover approval |  |  | `PENDING` |
+
+**Assessment decision:** `NO-GO` за high-volume production DNS cutover до попълване на всички gates. Това е контролирано, проверимо решение; не блокира development/staging работа и не променя текущия публикуван сайт.

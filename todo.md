@@ -350,7 +350,7 @@
 - [x] Локалният `superhosting-preflight.mjs` е коригиран да приема само Node 20.19+ или Node 22.12+ (Vite 7), без secrets/мрежови действия; с текущия Node 22.13, наличен `dist/index.js` и 5/5 readiness теста preflight-ът преминава, но реалният SuperPro капацитет остава непотвърден.
 - [x] Confirm that the current SuperHosting SuperPro server has no installed Node.js runtime and must not receive the full-stack application in public_html.
 - [ ] Prepare the joan.bg custom-domain DNS cutover from SuperHosting to the current managed Node hosting, including an approved rollback plan.
-- [ ] Complete a high-volume operational readiness assessment for backup, restore, availability monitoring, capacity and incident response before any production DNS cutover.
+- [x] Завършена е high-volume operational readiness assessment оценка с risk matrix, минимален monitoring contract, acceptance worksheet и изрично `NO-GO` решение до наличие на database/media restore proof, staging load test, alerting owner-и и rollback rehearsal. Това затваря оценката като документ; не претендира за production capacity или DNS одобрение.
 - [x] Добавен е repeatable read-only SSR baseline script `scripts/measure-public-load.mjs`; локалната проверка с 32 заявки и concurrency 4 върна 32/32 HTTP 200 за home, catalogue page 1/page 2 и checkout. Това е regression baseline, не production capacity/SLA доказателство; външните hosting, monitoring, restore и incident зависимости остават открити.
 - [x] Create and verify a portable local ZIP export with independent static media and documented local backend/database requirements.
 - [x] Create complete PRODUCTION_DEPLOYMENT.md with architecture, dependencies, commands, environment inventory, DNS, SEO and self-hosted compatibility requirements.
