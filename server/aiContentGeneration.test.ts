@@ -17,7 +17,7 @@ describe("AI product content generation", () => {
   });
 
   it("enforces the product-content quality limits", () => {
-    expect(validateAiPayload({ description: "Описание", features: [], seo_title: "Кратко заглавие", seo_description: "Кратко SEO описание", keywords: "боя, лак", confidence: "висока", source_urls: [] })).toEqual([]);
+    expect(validateAiPayload({ description: "Описание", features: [], seo_title: "Кратко заглавие", seo_description: "Кратко SEO описание", keywords: "боя, лак", confidence: "висока", source_urls: ["https://example.com/product"] })).toEqual([]);
     expect(validateAiPayload({ description: "", features: {}, seo_title: "x".repeat(61), seo_description: "x".repeat(201), keywords: "x".repeat(256), confidence: "medium" })).toEqual([
       "description трябва да е непразен текст",
       "seo_title трябва да е до 60 знака",
@@ -25,7 +25,9 @@ describe("AI product content generation", () => {
       "keywords трябва да е до 255 знака",
       "features трябва да е масив от низове; празен масив е допустим",
       "confidence трябва да е „висока“ или „ниска“",
+      "source_urls трябва да съдържа поне един валиден URL",
     ]);
+    expect(validateAiPayload({ description: "Няма информация", features: [], seo_title: "Заглавие", seo_description: "Описание", keywords: "ключова дума", confidence: "ниска", source_urls: ["https://example.com"] })).toContain("съдържанието не трябва да съдържа фрази без информационна стойност");
   });
 
   it("keeps AI fields isolated and records generation errors without clearing previous content", () => {

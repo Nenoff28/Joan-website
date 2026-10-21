@@ -202,13 +202,17 @@ function textField(value: unknown) { return typeof value === "string" ? value.tr
 
 export function validateAiPayload(payload: Record<string, unknown>): string[] {
   const errors: string[] = [];
+  const features = payload.features;
+  const sourceUrls = payload.source_urls;
   if (!textField(payload.description)) errors.push("description трябва да е непразен текст");
   if (typeof payload.seo_title !== "string" || payload.seo_title.trim().length > 60) errors.push("seo_title трябва да е до 60 знака");
   if (typeof payload.seo_description !== "string" || payload.seo_description.trim().length > 200) errors.push("seo_description трябва да е до 200 знака");
   if (typeof payload.keywords !== "string" || payload.keywords.trim().length > 255) errors.push("keywords трябва да е до 255 знака");
-  if (!Array.isArray(payload.features)) errors.push("features трябва да е масив от низове; празен масив е допустим");
+  if (!Array.isArray(features) || features.some(item => typeof item !== "string" || !item.trim())) errors.push("features трябва да е масив от низове; празен масив е допустим");
   if (typeof payload.confidence !== "string" || !["висока", "ниска"].includes(payload.confidence.trim().toLowerCase())) errors.push('confidence трябва да е „висока“ или „ниска“');
-  if (payload.source_urls !== undefined && !Array.isArray(payload.source_urls)) errors.push("source_urls трябва да е масив");
+  if (!Array.isArray(sourceUrls) || sourceUrls.length === 0 || sourceUrls.some(item => typeof item !== "string" || !/^https?:\/\//i.test(item))) errors.push("source_urls трябва да съдържа поне един валиден URL");
+  const searchableText = [payload.description, payload.seo_title, payload.seo_description, payload.keywords, ...(Array.isArray(features) ? features : [])].filter((value): value is string => typeof value === "string").join(" ").toLowerCase();
+  if (/няма информация|не е налично|не е налична|няма данни|неизвестно/.test(searchableText)) errors.push("съдържанието не трябва да съдържа фрази без информационна стойност");
   return errors;
 }
 
