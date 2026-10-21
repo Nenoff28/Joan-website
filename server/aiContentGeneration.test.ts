@@ -35,6 +35,8 @@ describe("AI product content generation", () => {
     const service = fs.readFileSync(path.resolve(import.meta.dirname, "./aiContentService.ts"), "utf8");
     const router = fs.readFileSync(path.resolve(import.meta.dirname, "./routers.ts"), "utf8");
     expect(schema).toContain('mysqlTable("catalogue_product_ai_content"');
+    expect(schema).toContain('mysqlTable("catalogue_product_ai_backups"');
+    expect(schema).toContain('unique().references(() => catalogueProducts.id)');
     expect(schema).toContain('mysqlTable("ai_content_settings"');
     expect(service).toContain('model: DEFAULT_AI_MODEL');
     expect(service).toContain('name: "web_search"');
@@ -43,7 +45,12 @@ describe("AI product content generation", () => {
     expect(service).toContain("parseAiJsonObject(raw)");
     expect(service).toContain('aiStatus: "error"');
     expect(service).toContain("onDuplicateKeyUpdate({ set: { aiStatus: \"error\"");
+    expect(service).toContain("publishApprovedAiContent");
+    expect(service).toContain("restoreAiBackups");
+    expect(service).toContain("aiFeaturesToJson");
     expect(router).toContain("generateAiContent");
     expect(router).toContain("saveAiSettings");
+    expect(router).toContain("publishApprovedAiContent");
+    expect(router).toContain("restoreAiBackups");
   });
 });

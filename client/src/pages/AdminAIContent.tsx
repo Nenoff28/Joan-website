@@ -29,6 +29,7 @@ type AiItem = {
   aiConfidence: AiConfidence | null;
   aiError: string | null;
   aiGeneratedAt: Date | string | null;
+  canRestore: boolean;
 };
 
 const statusLabels: Record<AiStatus, string> = {
@@ -96,6 +97,12 @@ export default function AdminAIContent() {
   const reviewMutation = trpc.admin.reviewAiContent.useMutation({
     onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
   });
+  const publishMutation = trpc.admin.publishApprovedAiContent.useMutation({
+    onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); },
+  });
+  const restoreMutation = trpc.admin.restoreAiBackups.useMutation({
+    onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); },
+  });
   const items = (contentQuery.data?.items ?? []) as AiItem[];
   const selected = items.find(item => item.productId === selectedId) ?? null;
 
@@ -157,6 +164,8 @@ export default function AdminAIContent() {
   const displayValue = (value: string | null | undefined) => value?.trim() || "—";
   const newFeatures = form.aiFeatures.trim() || "—";
   const newSourceUrls = form.aiSourceUrls.split(/\r?\n|,/).map(value => value.trim()).filter(Boolean);
+  const selectedApprovedIds = Array.from(selectedIds);
+  const selectedRestorableIds = Array.from(selectedIds);
 
   return (
     <section className="admin-workspace">
@@ -218,7 +227,13 @@ export default function AdminAIContent() {
           <button type="button" onClick={selectAllMatching} disabled={matchingIdsQuery.isFetching}>{matchingIdsQuery.isFetching ? "Зареждане…" : `Маркирай всички от филтъра (${matchingIdsQuery.data?.length ?? "…"})`}</button>
           <button type="button" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size}>Изчисти избора</button>
           <button type="button" className="admin-primary" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds) })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай за избраните"}</button>
+          <button type="button" className="admin-primary" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай одобрените (${selectedApprovedIds.length})`}</button>
+          <button type="button" onClick={() => restoreMutation.mutate({ productIds: selectedRestorableIds })} disabled={!selectedRestorableIds.length || restoreMutation.isPending}>{restoreMutation.isPending ? "Възстановяване…" : `Върни старото (${selectedRestorableIds.length})`}</button>
         </div>
+        {publishMutation.error && <div className="admin-form-error" role="alert">Публикуването не бе завършено: {publishMutation.error.message}</div>}
+        {restoreMutation.error && <div className="admin-form-error" role="alert">Възстановяването не бе завършено: {restoreMutation.error.message}</div>}
+        {publishMutation.data && <div className="admin-ai-saved" role="status">Публикувани: {publishMutation.data.published}. Пропуснати, защото не са одобрени: {publishMutation.data.skipped.length}.</div>}
+        {restoreMutation.data && <div className="admin-ai-saved" role="status">Върнати стари данни: {restoreMutation.data.restored}. Пропуснати без backup: {restoreMutation.data.skipped.length}.</div>}
         {queue && <div className="admin-ai-queue" role="status">
           <div><strong>Фонова опашка #{queue.batchId}</strong><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "Пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div>
           <div className="admin-ai-queue-metrics"><span>Общо <b>{queue.total}</b></span><span>Готови <b>{queue.progress.succeeded}</b></span><span>Грешки <b>{queue.progress.failed}</b></span><span>В процес <b>{queue.progress.running}</b></span><span>Днес <b>{queue.dailyUsed}/{queue.dailyLimit}</b></span></div>
@@ -233,6 +248,7 @@ export default function AdminAIContent() {
                   <img src={item.imageUrl} alt="" />
                   <span><strong>{item.name}</strong><small>{item.brand || "Без марка"} · SKU {item.sku || "—"}</small></span>
                   <em className={statusClass(item.aiStatus)}>{statusLabels[item.aiStatus]}</em>
+                  {item.canRestore && <small className="admin-ai-restore-ready">Има backup</small>}
                   <button type="button" className="admin-ai-row-generate" onClick={event => { event.stopPropagation(); generateMutation.mutate({ productId: item.productId }); }} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}>Генерирай</button>
                 </div>
               ))}

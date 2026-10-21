@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { administratorOnlyProcedure, permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
-import { enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, reviewAdminAiContent, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
+import { enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, publishApprovedAiContent, restoreAiBackups, reviewAdminAiContent, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
 import { categoryPayloadSchema } from "../shared/categoryValidation";
@@ -189,6 +189,8 @@ export const appRouter = router({
       aiGeneratedAt: z.string().datetime().nullable().optional(),
     })).mutation(({ input }) => saveAdminAiContent(input)),
     reviewAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive(), action: z.enum(["approve", "reject"]) })).mutation(({ input }) => reviewAdminAiContent(input.productId, input.action)),
+    publishApprovedAiContent: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000) })).mutation(({ input }) => publishApprovedAiContent(input.productIds)),
+    restoreAiBackups: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000) })).mutation(({ input }) => restoreAiBackups(input.productIds)),
     summary: permissionProcedure("dashboard.read").query(async ({ ctx }) => { const summary = await getAdminSummary(); return { ...summary, recentOrders: ctx.staff.permissions.includes("orders.read") ? summary.recentOrders : [] }; }),
     operations: anyPermissionProcedure(["dashboard.read", "products.read", "inventory.read", "promotions.read", "orders.read", "activity.read"]).query(({ ctx }) => getAdminOperations(ctx.staff.permissions)),
     products: anyPermissionProcedure(["products.read", "inventory.read", "promotions.read"]).input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(({ input }) => getAdminProducts(input)),

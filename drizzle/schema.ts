@@ -216,6 +216,19 @@ export const catalogueProductAiContent = mysqlTable("catalogue_product_ai_conten
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("product_ai_status_idx").on(table.aiStatus)]);
 
+/** One reversible snapshot per product, kept until the administrator restores the old content. */
+export const catalogueProductAiBackups = mysqlTable("catalogue_product_ai_backups", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull().unique().references(() => catalogueProducts.id),
+  description: text("description").notNull(),
+  featuresJson: text("featuresJson").notNull(),
+  seoTitle: varchar("seoTitle", { length: 500 }),
+  seoDescription: text("seoDescription"),
+  keywords: varchar("keywords", { length: 255 }),
+  backedUpAt: timestamp("backedUpAt").defaultNow().notNull(),
+  restoredAt: timestamp("restoredAt"),
+}, (table) => [index("product_ai_backup_product_idx").on(table.productId)]);
+
 /** Administrator-editable system prompt used for AI product-content generation. */
 export const aiContentSettings = mysqlTable("ai_content_settings", {
   id: int("id").primaryKey(),

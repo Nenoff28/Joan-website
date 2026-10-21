@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, inArray, isNull, like, lt, lte, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
+import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiBackups, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
 import { invokeLLM, type Message, type Tool } from "./_core/llm";
 
@@ -52,7 +52,7 @@ function formatLegacyFeatures(value: string) {
   return value;
 }
 
-function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category: typeof catalogueCategories.$inferSelect; ai: typeof catalogueProductAiContent.$inferSelect | null }) {
+function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category: typeof catalogueCategories.$inferSelect; ai: typeof catalogueProductAiContent.$inferSelect | null; backup: typeof catalogueProductAiBackups.$inferSelect | null }) {
   return {
     productId: row.product.id,
     name: row.product.name,
@@ -77,6 +77,7 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
     aiConfidence: row.ai?.aiConfidence ?? null,
     aiError: row.ai?.aiError ?? null,
     aiGeneratedAt: row.ai?.aiGeneratedAt ?? null,
+    canRestore: Boolean(row.backup && !row.backup.restoredAt),
   };
 }
 
@@ -91,10 +92,11 @@ export async function getAdminAiContent(input?: { status?: AiContentStatus; conf
   if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
 
   const [rows, totals, statusCounts] = await Promise.all([
-    db.select({ product: catalogueProducts, category: catalogueCategories, ai: catalogueProductAiContent })
+    db.select({ product: catalogueProducts, category: catalogueCategories, ai: catalogueProductAiContent, backup: catalogueProductAiBackups })
       .from(catalogueProducts)
       .innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id))
       .leftJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id))
+      .leftJoin(catalogueProductAiBackups, eq(catalogueProductAiBackups.productId, catalogueProducts.id))
       .where(and(...conditions))
       .orderBy(desc(sql`CASE WHEN ${catalogueProductAiContent.aiConfidence} = 'low' THEN 1 ELSE 0 END`), asc(catalogueProducts.name), asc(catalogueProducts.id))
       .limit(pageSize)
@@ -157,6 +159,61 @@ export async function reviewAdminAiContent(productId: number, action: "approve" 
   const nextStatus = action === "approve" ? "reviewed" as const : "pending" as const;
   await db.insert(catalogueProductAiContent).values({ productId, aiStatus: nextStatus, aiError: null }).onDuplicateKeyUpdate({ set: { aiStatus: nextStatus, aiError: null } });
   return { success: true, aiStatus: nextStatus } as const;
+}
+
+function aiFeaturesToJson(value: string | null) {
+  return JSON.stringify((value ?? "").split(/\r?\n/).map(item => item.trim()).filter(Boolean));
+}
+
+export async function publishApprovedAiContent(productIds: number[]) {
+  const db = await database();
+  const ids = Array.from(new Set(productIds)).slice(0, 10_000);
+  if (!ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Изберете поне един продукт." });
+  let published = 0;
+  const skipped: number[] = [];
+  await db.transaction(async tx => {
+    const rows = await tx.select({ product: catalogueProducts, ai: catalogueProductAiContent })
+      .from(catalogueProducts)
+      .innerJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id))
+      .where(and(inArray(catalogueProducts.id, ids), eq(catalogueProductAiContent.aiStatus, "reviewed")));
+    const found = new Set(rows.map(row => row.product.id));
+    for (const id of ids) if (!found.has(id)) skipped.push(id);
+    for (const row of rows) {
+      const [existingBackup] = await tx.select().from(catalogueProductAiBackups).where(eq(catalogueProductAiBackups.productId, row.product.id)).limit(1);
+      if (!existingBackup || existingBackup.restoredAt) {
+        const backupValues = { productId: row.product.id, description: row.product.description, featuresJson: row.product.featuresJson, seoTitle: row.product.legacyMetaTitleBg, seoDescription: row.product.legacyMetaDescriptionBg, keywords: row.product.legacySeoKeywordBg, restoredAt: null };
+        if (existingBackup) await tx.update(catalogueProductAiBackups).set(backupValues).where(eq(catalogueProductAiBackups.productId, row.product.id));
+        else await tx.insert(catalogueProductAiBackups).values(backupValues);
+      }
+      await tx.update(catalogueProducts).set({ description: row.ai.aiDescription ?? row.product.description, featuresJson: aiFeaturesToJson(row.ai.aiFeatures), legacyMetaTitleBg: row.ai.aiSeoTitle, legacyMetaDescriptionBg: row.ai.aiSeoDescription, legacySeoKeywordBg: row.ai.aiKeywords }).where(eq(catalogueProducts.id, row.product.id));
+      await tx.update(catalogueProductAiContent).set({ aiStatus: "published", aiError: null }).where(eq(catalogueProductAiContent.productId, row.product.id));
+      published += 1;
+    }
+  });
+  return { published, skipped } as const;
+}
+
+export async function restoreAiBackups(productIds: number[]) {
+  const db = await database();
+  const ids = Array.from(new Set(productIds)).slice(0, 10_000);
+  if (!ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Изберете поне един продукт." });
+  let restored = 0;
+  const skipped: number[] = [];
+  await db.transaction(async tx => {
+    const rows = await tx.select({ product: catalogueProducts, backup: catalogueProductAiBackups })
+      .from(catalogueProducts)
+      .innerJoin(catalogueProductAiBackups, eq(catalogueProductAiBackups.productId, catalogueProducts.id))
+      .where(and(inArray(catalogueProducts.id, ids), isNull(catalogueProductAiBackups.restoredAt)));
+    const found = new Set(rows.map(row => row.product.id));
+    for (const id of ids) if (!found.has(id)) skipped.push(id);
+    for (const row of rows) {
+      await tx.update(catalogueProducts).set({ description: row.backup.description, featuresJson: row.backup.featuresJson, legacyMetaTitleBg: row.backup.seoTitle, legacyMetaDescriptionBg: row.backup.seoDescription, legacySeoKeywordBg: row.backup.keywords }).where(eq(catalogueProducts.id, row.product.id));
+      await tx.update(catalogueProductAiBackups).set({ restoredAt: new Date() }).where(eq(catalogueProductAiBackups.productId, row.product.id));
+      await tx.update(catalogueProductAiContent).set({ aiStatus: "reviewed" }).where(eq(catalogueProductAiContent.productId, row.product.id));
+      restored += 1;
+    }
+  });
+  return { restored, skipped } as const;
 }
 
 export async function getAdminAiSettings() {
