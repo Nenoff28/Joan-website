@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { administratorOnlyProcedure, permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
-import { checkGeminiConnection, enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, publishApprovedAiContent, restoreAiBackups, reviewAdminAiContent, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
+import { checkGeminiConnection, enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, publishApprovedAiContent, restoreAiBackups, reviewAdminAiContent, reviewAdminAiContentBatch, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
 import { categoryPayloadSchema } from "../shared/categoryValidation";
@@ -174,7 +174,7 @@ export const appRouter = router({
     saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000), model: z.string().trim().min(2).max(160), dailyGenerationLimit: z.number().int().min(0).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt, input.model, input.dailyGenerationLimit)),
     checkGeminiConnection: administratorOnlyProcedure().input(z.object({ withSearch: z.boolean(), model: z.string().trim().min(2).max(160).optional() })).mutation(({ input }) => checkGeminiConnection(input.withSearch, input.model)),
     generateAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => generateAdminAiContent(input.productId)),
-    aiCategories: administratorOnlyProcedure().query(() => getAdminAiCategories()),
+    aiCategories: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), availability: aiAvailabilityFilterSchema.optional(), visibility: aiVisibilityFilterSchema.optional() }).optional()).query(({ input }) => getAdminAiCategories(input)),
     aiProductIds: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional(), availability: aiAvailabilityFilterSchema.optional(), visibility: aiVisibilityFilterSchema.optional() }).optional()).query(({ input }) => getAdminAiProductIds(input)),
     aiQueue: administratorOnlyProcedure().input(z.object({ batchId: z.number().int().positive().optional() }).optional()).query(({ input }) => getAdminAiQueueStatus(input?.batchId)),
     enqueueAiGeneration: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10_000) })).mutation(({ input, ctx }) => enqueueAiGeneration({ productIds: input.productIds, createdBy: ctx.user?.id ?? null })),
@@ -193,6 +193,7 @@ export const appRouter = router({
       aiGeneratedAt: z.string().datetime().nullable().optional(),
     })).mutation(({ input }) => saveAdminAiContent(input)),
     reviewAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive(), action: z.enum(["approve", "reject"]) })).mutation(({ input }) => reviewAdminAiContent(input.productId, input.action)),
+    reviewAiContentBatch: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000), action: z.enum(["approve", "reject"]) })).mutation(({ input }) => reviewAdminAiContentBatch(input.productIds, input.action)),
     publishApprovedAiContent: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000).optional() })).mutation(({ input }) => publishApprovedAiContent(input.productIds)),
     restoreAiBackups: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000) })).mutation(({ input }) => restoreAiBackups(input.productIds)),
     summary: permissionProcedure("dashboard.read").query(async ({ ctx }) => { const summary = await getAdminSummary(); return { ...summary, recentOrders: ctx.staff.permissions.includes("orders.read") ? summary.recentOrders : [] }; }),

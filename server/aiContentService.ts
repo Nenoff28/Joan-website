@@ -52,7 +52,7 @@ function descendantCategoryIds(selectedId: number, rows: AiCategoryRow[]) {
   return Array.from(ids);
 }
 
-function flattenCategoryOptions(rows: AiCategoryRow[]) {
+function flattenCategoryOptions(rows: AiCategoryRow[], counts = new Map<number, number>()) {
   const children = new Map<number | null, AiCategoryRow[]>();
   for (const row of rows.filter(item => (item.isActive || item.legacyCategoryId != null) && !item.isArchived)) {
     const parentId = categoryParentId(row, rows);
@@ -60,11 +60,11 @@ function flattenCategoryOptions(rows: AiCategoryRow[]) {
     current.push(row);
     children.set(parentId, current);
   }
-  const result: Array<{ id: number; name: string }> = [];
+  const result: Array<{ id: number; name: string; count: number }> = [];
   const visit = (parentId: number | null, depth: number) => {
     const siblings = (children.get(parentId) ?? []).sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "bg") || left.id - right.id);
     for (const row of siblings) {
-      result.push({ id: row.id, name: `${depth ? `${"— ".repeat(depth)}` : ""}${row.name}` });
+      result.push({ id: row.id, name: `${depth ? `${"— ".repeat(depth)}` : ""}${row.name}`, count: counts.get(row.id) ?? 0 });
       visit(row.id, depth + 1);
     }
   };
@@ -248,6 +248,20 @@ export async function reviewAdminAiContent(productId: number, action: "approve" 
   const nextStatus = action === "approve" ? "reviewed" as const : "pending" as const;
   await db.insert(catalogueProductAiContent).values({ productId, aiStatus: nextStatus, aiError: null }).onDuplicateKeyUpdate({ set: { aiStatus: nextStatus, aiError: null } });
   return { success: true, aiStatus: nextStatus } as const;
+}
+
+export async function reviewAdminAiContentBatch(productIds: number[], action: "approve" | "reject") {
+  const db = await database();
+  const ids = Array.from(new Set(productIds)).slice(0, 10_000);
+  if (!ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Изберете поне един продукт за преглед." });
+  const nextStatus = action === "approve" ? "reviewed" as const : "pending" as const;
+  const eligibleStatuses = action === "approve" ? ["generated", "reviewed"] as const : ["generated", "reviewed", "error"] as const;
+  const rows = await db.select({ productId: catalogueProductAiContent.productId }).from(catalogueProductAiContent).where(and(inArray(catalogueProductAiContent.productId, ids), inArray(catalogueProductAiContent.aiStatus, eligibleStatuses)));
+  const eligible = rows.map(row => row.productId);
+  const eligibleSet = new Set(eligible);
+  const skipped = ids.filter(id => !eligibleSet.has(id));
+  if (eligible.length) await db.update(catalogueProductAiContent).set({ aiStatus: nextStatus, aiError: null }).where(inArray(catalogueProductAiContent.productId, eligible));
+  return { success: true, aiStatus: nextStatus, reviewed: eligible.length, skipped } as const;
 }
 
 function aiFeaturesToJson(value: string | null) {
@@ -520,10 +534,30 @@ export async function generateAdminAiContent(productId: number, options?: { skip
 
 export type AiBatchStatus = "queued" | "running" | "paused" | "completed" | "failed";
 
-export async function getAdminAiCategories() {
+export async function getAdminAiCategories(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; availability?: AiAvailabilityFilter; visibility?: AiVisibilityFilter }) {
   const db = await database();
   const rows = await getCategoryRows(db);
-  return flattenCategoryOptions(rows);
+  const productIds = await getAdminAiProductIds(input);
+  const counts = new Map<number, number>();
+  if (productIds.length) {
+    const primaryRows = await db.select({ productId: catalogueProducts.id, categoryId: catalogueProducts.categoryId }).from(catalogueProducts).where(inArray(catalogueProducts.id, productIds));
+    const linkedRows = await db.select({ productId: catalogueProductCategoryLinks.productId, categoryId: catalogueProductCategoryLinks.categoryId }).from(catalogueProductCategoryLinks).where(inArray(catalogueProductCategoryLinks.productId, productIds));
+    const assignments = new Map<number, number[]>();
+    for (const row of primaryRows) assignments.set(row.productId, [...(assignments.get(row.productId) ?? []), row.categoryId]);
+    for (const row of linkedRows) assignments.set(row.productId, [...(assignments.get(row.productId) ?? []), row.categoryId]);
+    for (const productCategoryIds of Array.from(assignments.values())) {
+      const countedForProduct = new Set<number>();
+      for (const assignedId of productCategoryIds) {
+        let currentId: number | null = assignedId;
+        while (currentId != null && !countedForProduct.has(currentId)) {
+          countedForProduct.add(currentId);
+          currentId = categoryParentId(rows.find(row => row.id === currentId)!, rows);
+        }
+      }
+      for (const categoryId of Array.from(countedForProduct)) counts.set(categoryId, (counts.get(categoryId) ?? 0) + 1);
+    }
+  }
+  return flattenCategoryOptions(rows, counts);
 }
 
 export async function getAdminAiProductIds(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number; availability?: AiAvailabilityFilter; visibility?: AiVisibilityFilter }) {

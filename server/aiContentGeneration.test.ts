@@ -52,6 +52,8 @@ describe("AI product content generation", () => {
     expect(service).toContain('descendantCategoryIds');
     expect(service).toContain('catalogueProductCategoryLinks');
     expect(service).toContain('flattenCategoryOptions');
+    expect(service).toContain('reviewAdminAiContentBatch');
+    expect(service).toContain('count: counts.get(row.id)');
     expect(service).toContain("validateAiPayload");
     expect(service).toContain("for (let attempt = 0; attempt <= 2");
     expect(service).toContain("parseAiJsonObject(raw)");
@@ -65,5 +67,6 @@ describe("AI product content generation", () => {
     expect(router).toContain("checkGeminiConnection");
     expect(router).toContain("publishApprovedAiContent");
     expect(router).toContain("restoreAiBackups");
+    expect(router).toContain("reviewAiContentBatch");
   });
 });

@@ -1177,3 +1177,9 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-product-meta .is-out-of-stock, .admin-ai-product-meta .is-hidden { background: #f4e8e7; color: #9f2b27; }
 @media (max-width: 1050px) { .admin-ai-filter-panel .admin-ai-filters { grid-template-columns: repeat(3, minmax(150px, 1fr)); }.admin-ai-filter-panel .admin-search { grid-column: 1 / -1; } }
 @media (max-width: 700px) { .admin-ai-filter-panel { margin: .65rem .55rem 0; }.admin-ai-filter-panel .admin-ai-filters { grid-template-columns: 1fr; }.admin-ai-filter-panel .admin-search { grid-column: auto; } }
+
+/* AI filter loading and review navigation */
+.admin-ai-filter-loading { align-items: center; background: #fff7e6; border: 1px solid #e8c978; color: #76520b; display: flex; font-size: .72rem; font-weight: 700; gap: .45rem; padding: .5rem .65rem; }
+.admin-ai-approve-all, .admin-ai-approve-next { background: #247448 !important; border-color: #247448 !important; color: #fff !important; }
+.admin-ai-approve-all:hover:not(:disabled), .admin-ai-approve-next:hover:not(:disabled) { background: #1c5c39 !important; border-color: #1c5c39 !important; }
+.admin-ai-approve-next:disabled { background: #b7c9bc !important; border-color: #b7c9bc !important; }

@@ -39,6 +39,8 @@ type AiItem = {
   canRestore: boolean;
 };
 
+type AiCategoryOption = { id: number; name: string; count: number };
+
 const statusLabels: Record<AiStatus, string> = {
   pending: "Чакащ",
   generated: "Генериран",
@@ -89,7 +91,7 @@ export default function AdminAIContent() {
   const input = useMemo(() => ({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, availability, visibility, sort, page, pageSize: 50 }), [status, confidence, query, categoryId, availability, visibility, sort, page]);
   const contentQuery = trpc.admin.aiContent.useQuery(input);
   const settingsQuery = trpc.admin.aiSettings.useQuery();
-  const categoriesQuery = trpc.admin.aiCategories.useQuery();
+  const categoriesQuery = trpc.admin.aiCategories.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, availability, visibility });
   const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, availability, visibility });
   const queueQuery = trpc.admin.aiQueue.useQuery(undefined, { refetchInterval: 5000 });
   const utils = trpc.useUtils();
@@ -111,6 +113,9 @@ export default function AdminAIContent() {
   });
   const reviewMutation = trpc.admin.reviewAiContent.useMutation({
     onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
+  });
+  const reviewBatchMutation = trpc.admin.reviewAiContentBatch.useMutation({
+    onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
   });
   const publishMutation = trpc.admin.publishApprovedAiContent.useMutation({
     onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); },
@@ -182,6 +187,10 @@ export default function AdminAIContent() {
   const newSourceUrls = form.aiSourceUrls.split(/\r?\n|,/).map(value => value.trim()).filter(Boolean);
   const selectedApprovedIds = Array.from(selectedIds);
   const selectedRestorableIds = Array.from(selectedIds);
+  const currentIndex = selected ? items.findIndex(item => item.productId === selected.productId) : -1;
+  const reviewCandidates = selectedIds.size ? items.filter(item => selectedIds.has(item.productId) && item.aiStatus === "generated") : items.filter(item => item.aiStatus === "generated");
+  const nextReviewable = currentIndex >= 0 ? reviewCandidates.find(item => items.indexOf(item) > currentIndex) ?? reviewCandidates.find(item => items.indexOf(item) < currentIndex) ?? null : null;
+  const filtersBusy = contentQuery.isFetching || categoriesQuery.isFetching || matchingIdsQuery.isFetching;
 
   return (
     <section className="admin-workspace">
@@ -232,6 +241,7 @@ export default function AdminAIContent() {
         </div>
         <div className="admin-ai-filter-panel">
           <div className="admin-ai-filter-heading"><strong>Филтриране и сортиране</strong><span>Комбинирайте филтрите, после маркирайте всички съвпаднали продукти.</span></div>
+          {filtersBusy && <div className="admin-ai-filter-loading" role="status" aria-live="polite"><Loader2 size={16} className="animate-spin" /> Прилагам филтрите и обновявам списъка…</div>}
           <div className="admin-ai-filters">
             <label className="admin-search"><Search size={15} /><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder="Име, марка или SKU" aria-label="Търсене в AI съдържанието" /></label>
             <select value={status} onChange={event => { setStatus(event.target.value as AiStatus | ""); setPage(1); }} aria-label="Филтър по AI статус">
@@ -245,7 +255,7 @@ export default function AdminAIContent() {
             </select>
             <select value={categoryId} onChange={event => { setCategoryId(event.target.value ? Number(event.target.value) : ""); setPage(1); }} aria-label="Филтър по категория">
               <option value="">Всички категории</option>
-              {(categoriesQuery.data ?? []).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+              {(categoriesQuery.data ?? []).map((category: AiCategoryOption) => <option key={category.id} value={category.id}>{category.name} ({category.count})</option>)}
             </select>
             <select value={availability} onChange={event => { setAvailability(event.target.value as typeof availability); setPage(1); }} aria-label="Филтър по наличност">
               <option value="all">Всички наличности</option>
@@ -273,6 +283,7 @@ export default function AdminAIContent() {
           <button type="button" onClick={selectAllMatching} disabled={matchingIdsQuery.isFetching}>{matchingIdsQuery.isFetching ? "Зареждане…" : `Маркирай всички от филтъра (${matchingIdsQuery.data?.length ?? "…"})`}</button>
           <button type="button" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size}>Изчисти избора</button>
           <button type="button" className="admin-primary" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds) })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай за избраните"}</button>
+          <button type="button" className="admin-primary admin-ai-approve-all" onClick={() => reviewBatchMutation.mutate({ productIds: Array.from(selectedIds), action: "approve" })} disabled={!selectedIds.size || reviewBatchMutation.isPending}>{reviewBatchMutation.isPending ? "Одобряване…" : `Одобри избраните (${selectedIds.size})`}</button>
           <button type="button" className="admin-primary" onClick={() => publishMutation.mutate({})} disabled={publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : "Публикувай одобрените"}</button>
           <button type="button" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай избраните одобрени (${selectedApprovedIds.length})`}</button>
           <button type="button" onClick={() => restoreMutation.mutate({ productIds: selectedRestorableIds })} disabled={!selectedRestorableIds.length || restoreMutation.isPending}>{restoreMutation.isPending ? "Възстановяване…" : `Върни старото (${selectedRestorableIds.length})`}</button>
@@ -281,6 +292,8 @@ export default function AdminAIContent() {
         {restoreMutation.error && <div className="admin-form-error" role="alert">Възстановяването не бе завършено: {restoreMutation.error.message}</div>}
         {publishMutation.data && <div className="admin-ai-saved" role="status">Публикувани: {publishMutation.data.published}. Пропуснати, защото не са одобрени: {publishMutation.data.skipped.length}.</div>}
         {restoreMutation.data && <div className="admin-ai-saved" role="status">Върнати стари данни: {restoreMutation.data.restored}. Пропуснати без backup: {restoreMutation.data.skipped.length}.</div>}
+        {reviewBatchMutation.error && <div className="admin-form-error" role="alert">Bulk одобряването не бе завършено: {reviewBatchMutation.error.message}</div>}
+        {reviewBatchMutation.data && <div className="admin-ai-saved" role="status">Одобрени: {reviewBatchMutation.data.reviewed}. Пропуснати: {reviewBatchMutation.data.skipped.length}.</div>}
         {queue && <div className="admin-ai-queue" role="status">
           <div><strong>Фонова опашка #{queue.batchId}</strong><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "Пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div>
           <div className="admin-ai-queue-metrics"><span>Общо <b>{queue.total}</b></span><span>Готови <b>{queue.progress.succeeded}</b></span><span>Грешки <b>{queue.progress.failed}</b></span><span>В процес <b>{queue.progress.running}</b></span><span>Днес <b>{queue.dailyUsed}/{queue.dailyLimit}</b></span></div>
@@ -324,7 +337,7 @@ export default function AdminAIContent() {
               <label>AI грешка<textarea value={form.aiError} onChange={event => setForm(current => ({ ...current, aiError: event.target.value }))} rows={2} placeholder="Попълва се при статус „Грешка“" /></label>
               {saveMutation.error && <div className="admin-form-error" role="alert">{saveMutation.error.message}</div>}
               {saveMutation.isSuccess && <div className="admin-ai-saved" role="status"><CheckCircle2 size={15} /> AI полетата са запазени отделно от продукта.</div>}
-              <div className="admin-ai-review-actions"><button type="button" className="admin-primary" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "approve" })} disabled={reviewMutation.isPending}>Одобри</button><button type="button" className="admin-ai-reject" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "reject" })} disabled={reviewMutation.isPending}>Отхвърли</button>{reviewMutation.error && <span className="admin-form-error" role="alert">{reviewMutation.error.message}</span>}</div>
+              <div className="admin-ai-review-actions"><button type="button" className="admin-primary" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "approve" })} disabled={reviewMutation.isPending}>Одобри</button><button type="button" className="admin-primary admin-ai-approve-next" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "approve" }, { onSuccess: () => { if (nextReviewable) setSelectedId(nextReviewable.productId); } })} disabled={reviewMutation.isPending || !nextReviewable}>Одобри и следващия</button><button type="button" className="admin-ai-reject" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "reject" })} disabled={reviewMutation.isPending}>Отхвърли</button>{reviewMutation.error && <span className="admin-form-error" role="alert">{reviewMutation.error.message}</span>}</div>
               <button type="submit" className="admin-primary" disabled={saveMutation.isPending}><Save size={15} /> {saveMutation.isPending ? "Записване…" : "Запази AI съдържанието"}</button>
             </form>}
           </div>
