@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parseAiJsonObject } from "./aiContentService";
+import { parseAiJsonObject, validateAiPayload } from "./aiContentService";
 
 describe("AI product content generation", () => {
   it("extracts the first balanced JSON object from surrounding prose or markdown", () => {
@@ -16,6 +16,18 @@ describe("AI product content generation", () => {
     expect(() => parseAiJsonObject('{"description":"незавършен"')).toThrow("незавършен JSON");
   });
 
+  it("enforces the product-content quality limits", () => {
+    expect(validateAiPayload({ description: "Описание", features: [], seo_title: "Кратко заглавие", seo_description: "Кратко SEO описание", keywords: "боя, лак", confidence: "висока", source_urls: [] })).toEqual([]);
+    expect(validateAiPayload({ description: "", features: {}, seo_title: "x".repeat(61), seo_description: "x".repeat(201), keywords: "x".repeat(256), confidence: "medium" })).toEqual([
+      "description трябва да е непразен текст",
+      "seo_title трябва да е до 60 знака",
+      "seo_description трябва да е до 200 знака",
+      "keywords трябва да е до 255 знака",
+      "features трябва да е масив от низове; празен масив е допустим",
+      "confidence трябва да е „висока“ или „ниска“",
+    ]);
+  });
+
   it("keeps AI fields isolated and records generation errors without clearing previous content", () => {
     const schema = fs.readFileSync(path.resolve(import.meta.dirname, "../drizzle/schema.ts"), "utf8");
     const service = fs.readFileSync(path.resolve(import.meta.dirname, "./aiContentService.ts"), "utf8");
@@ -23,6 +35,9 @@ describe("AI product content generation", () => {
     expect(schema).toContain('mysqlTable("catalogue_product_ai_content"');
     expect(schema).toContain('mysqlTable("ai_content_settings"');
     expect(service).toContain('model: DEFAULT_AI_MODEL');
+    expect(service).toContain('name: "web_search"');
+    expect(service).toContain("validateAiPayload");
+    expect(service).toContain("for (let attempt = 0; attempt <= 2");
     expect(service).toContain("parseAiJsonObject(raw)");
     expect(service).toContain('aiStatus: "error"');
     expect(service).toContain("onDuplicateKeyUpdate({ set: { aiStatus: \"error\"");

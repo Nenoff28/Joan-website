@@ -2,12 +2,20 @@ import { and, asc, count, eq, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { aiContentSettings, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
-import { invokeLLM } from "./_core/llm";
+import { invokeLLM, type Message, type Tool } from "./_core/llm";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 export type AiContentConfidence = "high" | "low";
 
 const DEFAULT_AI_MODEL = "gpt-6-luna";
+const WEB_SEARCH_TOOL: Tool = {
+  type: "function",
+  function: {
+    name: "web_search",
+    description: "Търси актуални продуктови данни в публичния интернет и връща заглавие, URL и кратък откъс.",
+    parameters: { type: "object", properties: { query: { type: "string", minLength: 2, maxLength: 240 } }, required: ["query"], additionalProperties: false },
+  },
+};
 
 async function database() {
   const db = await getDb();
@@ -139,6 +147,27 @@ function llmResponseText(content: unknown) {
   return content.filter((part): part is { type: "text"; text: string } => Boolean(part && typeof part === "object" && (part as { type?: unknown }).type === "text" && typeof (part as { text?: unknown }).text === "string")).map(part => part.text).join("\n");
 }
 
+function stripHtml(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/\s+/g, " ").trim();
+}
+
+async function runWebSearch(query: string) {
+  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query.slice(0, 240))}`;
+  const response = await fetch(url, { headers: { "user-agent": "Joan.bg product research bot/1.0" } });
+  if (!response.ok) throw new Error(`Web search failed with HTTP ${response.status}.`);
+  const html = await response.text();
+  const results: Array<{ title: string; url: string; snippet: string }> = [];
+  const pattern = /<a[^>]+href="([^"]*uddg=[^"]+)"[^>]+class='result-link'[^>]*>([\s\S]*?)<\/a>[\s\S]*?<td class='result-snippet'>\s*([\s\S]*?)<\/td>/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(html)) !== null) {
+    const resultUrl = new URLSearchParams(match[1].split("?")[1] || "").get("uddg");
+    if (!resultUrl || !/^https?:\/\//i.test(resultUrl)) continue;
+    results.push({ title: stripHtml(match[2]), url: resultUrl, snippet: stripHtml(match[3]) });
+    if (results.length >= 6) break;
+  }
+  return { query, results };
+}
+
 /** Finds and parses the first balanced JSON object, even when the model adds prose or markdown around it. */
 export function parseAiJsonObject(raw: string): Record<string, unknown> {
   const start = raw.indexOf("{");
@@ -171,6 +200,18 @@ export function parseAiJsonObject(raw: string): Record<string, unknown> {
 
 function textField(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
 
+export function validateAiPayload(payload: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  if (!textField(payload.description)) errors.push("description трябва да е непразен текст");
+  if (typeof payload.seo_title !== "string" || payload.seo_title.trim().length > 60) errors.push("seo_title трябва да е до 60 знака");
+  if (typeof payload.seo_description !== "string" || payload.seo_description.trim().length > 200) errors.push("seo_description трябва да е до 200 знака");
+  if (typeof payload.keywords !== "string" || payload.keywords.trim().length > 255) errors.push("keywords трябва да е до 255 знака");
+  if (!Array.isArray(payload.features)) errors.push("features трябва да е масив от низове; празен масив е допустим");
+  if (typeof payload.confidence !== "string" || !["висока", "ниска"].includes(payload.confidence.trim().toLowerCase())) errors.push('confidence трябва да е „висока“ или „ниска“');
+  if (payload.source_urls !== undefined && !Array.isArray(payload.source_urls)) errors.push("source_urls трябва да е масив");
+  return errors;
+}
+
 function normalizeAiPayload(payload: Record<string, unknown>) {
   const confidence = textField(payload.confidence).toLowerCase();
   return {
@@ -191,22 +232,48 @@ export async function generateAdminAiContent(productId: number) {
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
 
-  try {
-    const response = await invokeLLM({
-      model: DEFAULT_AI_MODEL,
-      maxTokens: 5000,
-      reasoning: { effort: "low" },
-      messages: [
-        { role: "system", content: settings.systemPrompt },
-        { role: "user", content: `Марка: ${product.brand || "няма посочена"}\nИме на продукта: ${product.name}\nEAN/артикулен номер: ${product.sku || "няма посочен"}` },
-      ],
-    });
-    const raw = llmResponseText(response.choices?.[0]?.message?.content);
-    const payload = normalizeAiPayload(parseAiJsonObject(raw));
-    await saveAdminAiContent({ productId, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString() });
-    return { success: true, status: "generated" as const, raw };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Неизвестна грешка при AI генерирането.";
+  const productInput = `Марка: ${product.brand || "няма посочена"}\nИме на продукта: ${product.name}\nEAN/артикулен номер: ${product.sku || "няма посочен"}`;
+  let lastError = "AI резултатът не премина програмната проверка.";
+  for (let attempt = 0; attempt <= 2; attempt += 1) {
+    try {
+      const correction = attempt === 0 ? "" : `\n\nПредишният отговор не премина програмната проверка: ${lastError}\nВърни отново само коригиран валиден JSON обект, като спазиш всички ограничения за дължини и типове.`;
+      const messages: Message[] = [
+        { role: "system", content: settings.systemPrompt + "\n\nЗадължително използвай web_search поне веднъж, за да провериш точния продукт, преди да върнеш JSON." },
+        { role: "user", content: productInput + correction },
+      ];
+      let response;
+      for (let toolRound = 0; toolRound < 4; toolRound += 1) {
+        response = await invokeLLM({ model: DEFAULT_AI_MODEL, maxTokens: 5000, reasoning: { effort: "low" }, messages, tools: [WEB_SEARCH_TOOL], toolChoice: "auto" });
+        const message = response.choices?.[0]?.message;
+        if (!message?.tool_calls?.length) break;
+        messages.push({ role: "assistant", content: message.content || "" });
+        for (const toolCall of message.tool_calls) {
+          if (toolCall.function.name !== "web_search") throw new Error(`Неподдържан AI tool: ${toolCall.function.name}`);
+          let toolInput: unknown;
+          try { toolInput = JSON.parse(toolCall.function.arguments); } catch { throw new Error("AI web_search заявката е невалиден JSON."); }
+          const searchQuery = toolInput && typeof toolInput === "object" && typeof (toolInput as { query?: unknown }).query === "string" ? (toolInput as { query: string }).query : "";
+          if (searchQuery.trim().length < 2) throw new Error("AI web_search заявката няма валидна заявка.");
+          messages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(await runWebSearch(searchQuery)) });
+        }
+      }
+      if (!response) throw new Error("AI не върна резултат.");
+      const raw = llmResponseText(response.choices?.[0]?.message?.content);
+      const parsed = parseAiJsonObject(raw);
+      const validationErrors = validateAiPayload(parsed);
+      if (validationErrors.length > 0) {
+        lastError = validationErrors.join("; ");
+        continue;
+      }
+      const payload = normalizeAiPayload(parsed);
+      await saveAdminAiContent({ productId, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString() });
+      return { success: true, status: "generated" as const, raw, attempts: attempt + 1 };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Невалиден AI резултат.";
+      if (attempt === 2) break;
+    }
+  }
+  {
+    const message = lastError || "Неизвестна грешка при AI генерирането.";
     try {
       await db.insert(catalogueProductAiContent).values({ productId, aiStatus: "error", aiError: message, aiGeneratedAt: new Date() }).onDuplicateKeyUpdate({ set: { aiStatus: "error", aiError: message, aiGeneratedAt: new Date() } });
     } catch {
