@@ -55,6 +55,7 @@ export default function Product() {
   const technicalSpecs = product.technicalSpecs?.length ? product.technicalSpecs : product.features.map((value) => ({ label: t("characteristic"), value }));
   const colorVariants = product.colorVariants?.filter((variant) => variant.slug && variant.label) ?? [];
   const currentColor = colorVariants.find((variant) => variant.isCurrent) ?? colorVariants[0];
+  const manualColorName = product.colorName?.trim() || "";
   const variantDisplayLabel = (variant: typeof colorVariants[number]) => variant.sizeLabel ? `${variant.label} · ${variant.sizeLabel}` : variant.label;
   const outOfStockLabel = language === "en" ? "Out of stock" : "Изчерпан";
   const colorSwatch = (label: string, manualRgb?: string | null) => {
@@ -104,6 +105,10 @@ export default function Product() {
                   </button>)}
                 </div>}
               </div>
+            </div>}
+            {manualColorName && colorVariants.length <= 1 && <div className="product-color-variants product-single-color" aria-label={language === "en" ? "Product color" : "Цвят на продукта"}>
+              <label>{language === "en" ? "Color" : "Цвят"}</label>
+              <div className="product-single-color-value"><i className="product-color-swatch" style={{ backgroundColor: colorSwatch(manualColorName, product.colorRgb) }} /> <span>{manualColorName}</span></div>
             </div>}
             <div className="operational-spec-strip"><span><b>{t("availableInfo")}</b>{availabilityLabel}</span><span><b>{t("category")}</b>{category?.label}</span><span><b>{t("delivery")}</b>{t("deliveryAfterConfirmation")}</span></div>
             <div className="detail-price-box">{product.price ? <div><p>{priceLabel}</p><strong>{product.price}</strong>{product.oldPrice && <span>{product.oldPrice}</span>}</div> : <div><p>{t("priceAvailability")}</p><strong className="ask-price">{t("enquiry")}</strong><span>{t("teamWillConfirm")}</span></div>}</div>

@@ -132,6 +132,10 @@ function cachedPublicRead<T>(key: string, ttlMs: number, load: () => Promise<T>)
   return value;
 }
 
+function invalidatePublicReadCache() {
+  publicReadCache.clear();
+}
+
 /** Imports the existing public catalogue once, keeping current routes stable while admin management takes over. */
 export function ensureCatalogueSeeded() {
   if (!seeded) seeded = seedCatalogue();
@@ -1061,7 +1065,7 @@ async function replaceProductSubcategoryLinks(db: CatalogueDbLike, productId: nu
 
 export async function createAdminProduct(payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
-  return db.transaction(async (tx) => {
+  const id = await db.transaction(async (tx) => {
     const { path } = await validateProductCategorySelection(tx, payload.categoryId, payload.subcategoryIds);
     await assertAdminProductSlugAvailableWithDb(tx, payload.slug);
     const result = await tx.insert(catalogueProducts).values({
@@ -1072,11 +1076,13 @@ export async function createAdminProduct(payload: ProductPayload, adminUserId: n
     await insertProductAdminActivity(tx, adminUserId, "product.created", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, subcategoryIds: path.map((row) => row.id) });
     return id;
   });
+  invalidatePublicReadCache();
+  return id;
 }
 
 export async function updateAdminProduct(id: number, payload: ProductPayload, adminUserId: number) {
   const db = await requireDb();
-  return db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     const [existing] = await tx.select({ id: catalogueProducts.id, slug: catalogueProducts.slug, categoryId: catalogueProducts.categoryId, isArchived: catalogueProducts.isArchived }).from(catalogueProducts).where(eq(catalogueProducts.id, id)).limit(1).for("update");
     if (!existing) throw new Error("Продуктът не е намерен.");
     if (existing.isArchived) throw new Error("Артикулът е архивиран. Възстановете го първо, преди да го редактирате или публикувате.");
@@ -1089,6 +1095,7 @@ export async function updateAdminProduct(id: number, payload: ProductPayload, ad
     if (payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId) await replaceProductSubcategoryLinks(tx, id, path);
     await insertProductAdminActivity(tx, adminUserId, "product.updated", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, ...(payload.subcategoryIds !== undefined || existing.categoryId !== payload.categoryId ? { subcategoryIds: path.map((row) => row.id) } : {}) });
   });
+  invalidatePublicReadCache();
 }
 
 export async function setAdminProductArchived(id: number, archived: boolean, actorId: number) {

@@ -19,6 +19,23 @@
   position: relative;
 }
 
+.product-single-color-value {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--charcoal);
+  display: flex;
+  font-size: .95rem;
+  font-weight: 700;
+  gap: .65rem;
+  min-height: 3.1rem;
+  padding: .65rem .8rem;
+}
+
+.product-single-color-value span {
+  overflow-wrap: anywhere;
+}
+
 .product-color-picker-trigger {
   align-items: center;
   background: #fff;

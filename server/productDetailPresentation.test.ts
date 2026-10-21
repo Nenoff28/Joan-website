@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const productPage = readFileSync(resolve(process.cwd(), "client/src/pages/Product.tsx"), "utf8");
 const catalogueService = readFileSync(resolve(process.cwd(), "server/catalogueService.ts"), "utf8");
+const colorVariantStylesheet = readFileSync(resolve(process.cwd(), "client/src/pages/productColorVariants.css"), "utf8");
 const stylesheet = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
 const storefront = readFileSync(resolve(process.cwd(), "client/src/components/Storefront.tsx"), "utf8");
 const cardLogoStylesheet = readFileSync(resolve(process.cwd(), "client/src/components/productCardBrandLogo.css"), "utf8");
@@ -39,5 +40,15 @@ describe("product detail presentation", () => {
     expect(storefront).toContain('brandLogo && !failedBrandLogo');
     expect(storefront).toContain('setFailedBrandLogo(true)');
     expect(cardLogoStylesheet).toContain('.product-card .product-card-brand-logo');
+  });
+
+  it("shows a manually assigned color even when the product has no second variant", () => {
+    expect(productPage).toContain('const manualColorName = product.colorName?.trim() || "";');
+    expect(productPage).toContain('manualColorName && colorVariants.length <= 1');
+    expect(productPage).toContain('product-single-color');
+    expect(productPage).toContain('colorSwatch(manualColorName, product.colorRgb)');
+    expect(colorVariantStylesheet).toContain('.product-single-color-value');
+    expect(catalogueService).toContain('function invalidatePublicReadCache()');
+    expect(catalogueService).toContain('invalidatePublicReadCache();');
   });
 });

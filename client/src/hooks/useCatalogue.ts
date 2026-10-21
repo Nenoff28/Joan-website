@@ -31,6 +31,8 @@ export type ManagedProduct = Product & {
   canonicalUrl?: string;
   metaRobots?: string;
   brandLogo?: string;
+  colorName?: string;
+  colorRgb?: string;
   colorVariants?: Array<{ slug: string; label: string; sizeLabel: string | null; colorRgb?: string | null; image: string; isCurrent: boolean; isOutOfStock: boolean }>;
 };
 
