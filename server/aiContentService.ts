@@ -1,8 +1,9 @@
-import { and, asc, count, desc, eq, gt, inArray, isNull, like, lt, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gt, inArray, isNull, like, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiBackups, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
+import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiBackups, catalogueProductAiContent, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
 import { ENV } from "./_core/env";
+import { legacyCategoryRootsByPublicSlug } from "./productCategoryAssignments";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 export type AiContentConfidence = "high" | "low";
@@ -17,6 +18,58 @@ async function database() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Базата данни временно не е достъпна." });
   return db;
+}
+
+type AiCategoryRow = Pick<typeof catalogueCategories.$inferSelect, "id" | "name" | "slug" | "legacyCategoryId" | "legacyParentCategoryId" | "parentId" | "sortOrder" | "isActive" | "isArchived">;
+
+function categoryParentId(row: AiCategoryRow, rows: AiCategoryRow[]) {
+  if (row.parentId != null) return row.parentId;
+  const publicRoot = rows.find(candidate => candidate.legacyCategoryId == null && candidate.slug && (legacyCategoryRootsByPublicSlug[candidate.slug] ?? []).includes(row.legacyCategoryId ?? row.legacyParentCategoryId ?? -1));
+  if (publicRoot) return publicRoot.id;
+  if (row.legacyParentCategoryId == null) return null;
+  const legacyParent = rows.find(candidate => candidate.legacyCategoryId === row.legacyParentCategoryId);
+  if (legacyParent) return legacyParent.id;
+  return null;
+}
+
+async function getCategoryRows(db: Awaited<ReturnType<typeof database>>) {
+  return db.select({ id: catalogueCategories.id, name: catalogueCategories.name, slug: catalogueCategories.slug, legacyCategoryId: catalogueCategories.legacyCategoryId, legacyParentCategoryId: catalogueCategories.legacyParentCategoryId, parentId: catalogueCategories.parentId, sortOrder: catalogueCategories.sortOrder, isActive: catalogueCategories.isActive, isArchived: catalogueCategories.isArchived }).from(catalogueCategories).where(eq(catalogueCategories.isArchived, false));
+}
+
+function descendantCategoryIds(selectedId: number, rows: AiCategoryRow[]) {
+  const ids = new Set<number>([selectedId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const row of rows) {
+      const parentId = categoryParentId(row, rows);
+      if (!ids.has(row.id) && parentId != null && ids.has(parentId)) {
+        ids.add(row.id);
+        changed = true;
+      }
+    }
+  }
+  return Array.from(ids);
+}
+
+function flattenCategoryOptions(rows: AiCategoryRow[]) {
+  const children = new Map<number | null, AiCategoryRow[]>();
+  for (const row of rows.filter(item => (item.isActive || item.legacyCategoryId != null) && !item.isArchived)) {
+    const parentId = categoryParentId(row, rows);
+    const current = children.get(parentId) ?? [];
+    current.push(row);
+    children.set(parentId, current);
+  }
+  const result: Array<{ id: number; name: string }> = [];
+  const visit = (parentId: number | null, depth: number) => {
+    const siblings = (children.get(parentId) ?? []).sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "bg") || left.id - right.id);
+    for (const row of siblings) {
+      result.push({ id: row.id, name: `${depth ? `${"— ".repeat(depth)}` : ""}${row.name}` });
+      visit(row.id, depth + 1);
+    }
+  };
+  visit(null, 0);
+  return result;
 }
 
 function parseSourceUrls(value: string | null) {
@@ -88,10 +141,15 @@ export async function getAdminAiContent(input?: { status?: AiContentStatus; conf
   const db = await database();
   const page = input?.page ?? 1;
   const pageSize = input?.pageSize ?? 50;
+  const categoryRows = input?.categoryId ? await getCategoryRows(db) : [];
+  const categoryIds = input?.categoryId ? descendantCategoryIds(input.categoryId, categoryRows) : [];
   const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
   if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
-  if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
+  if (input?.categoryId) conditions.push(or(
+    inArray(catalogueProducts.categoryId, categoryIds),
+    exists(db.select({ one: sql`1` }).from(catalogueProductCategoryLinks).where(and(eq(catalogueProductCategoryLinks.productId, catalogueProducts.id), inArray(catalogueProductCategoryLinks.categoryId, categoryIds)))),
+  )!);
   if (input?.availability === "in_stock") conditions.push(gt(catalogueProducts.stockQuantity, 0));
   if (input?.availability === "not_in_stock") conditions.push(lte(catalogueProducts.stockQuantity, 0));
   if (input?.visibility === "visible") conditions.push(eq(catalogueProducts.isActive, true));
@@ -464,15 +522,21 @@ export type AiBatchStatus = "queued" | "running" | "paused" | "completed" | "fai
 
 export async function getAdminAiCategories() {
   const db = await database();
-  return db.select({ id: catalogueCategories.id, name: catalogueCategories.name }).from(catalogueCategories).where(eq(catalogueCategories.isArchived, false)).orderBy(asc(catalogueCategories.name));
+  const rows = await getCategoryRows(db);
+  return flattenCategoryOptions(rows);
 }
 
 export async function getAdminAiProductIds(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number; availability?: AiAvailabilityFilter; visibility?: AiVisibilityFilter }) {
   const db = await database();
+  const categoryRows = input?.categoryId ? await getCategoryRows(db) : [];
+  const categoryIds = input?.categoryId ? descendantCategoryIds(input.categoryId, categoryRows) : [];
   const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
   if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
-  if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
+  if (input?.categoryId) conditions.push(or(
+    inArray(catalogueProducts.categoryId, categoryIds),
+    exists(db.select({ one: sql`1` }).from(catalogueProductCategoryLinks).where(and(eq(catalogueProductCategoryLinks.productId, catalogueProducts.id), inArray(catalogueProductCategoryLinks.categoryId, categoryIds)))),
+  )!);
   if (input?.availability === "in_stock") conditions.push(gt(catalogueProducts.stockQuantity, 0));
   if (input?.availability === "not_in_stock") conditions.push(lte(catalogueProducts.stockQuantity, 0));
   if (input?.visibility === "visible") conditions.push(eq(catalogueProducts.isActive, true));

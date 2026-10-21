@@ -49,6 +49,9 @@ describe("AI product content generation", () => {
     expect(service).toContain('AiVisibilityFilter');
     expect(service).toContain('stockQuantity');
     expect(service).toContain('updated-desc');
+    expect(service).toContain('descendantCategoryIds');
+    expect(service).toContain('catalogueProductCategoryLinks');
+    expect(service).toContain('flattenCategoryOptions');
     expect(service).toContain("validateAiPayload");
     expect(service).toContain("for (let attempt = 0; attempt <= 2");
     expect(service).toContain("parseAiJsonObject(raw)");
