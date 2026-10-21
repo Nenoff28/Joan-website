@@ -1208,3 +1208,15 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-confirm-limit strong { font-weight: 800; }
 .admin-ai-confirm-hint { background: #fff7e6; border-left: 3px solid #d49b29; color: #76520b; font-size: .7rem; margin: -.25rem 0 0; padding: .5rem .65rem; }
 @media (max-width: 700px) { .admin-ai-settings-grid { grid-template-columns: 1fr; } .admin-ai-number-field input { max-width: none; } }
+
+.admin-ai-limit-confirmation { align-items: center; background: #fff7e6; border: 1px solid #e8c978; color: #76520b; display: flex; font-size: .72rem; gap: .7rem; justify-content: space-between; line-height: 1.35; padding: .55rem .6rem; }
+.admin-ai-limit-confirmation.is-confirmed { background: #f1f7f2; border-color: #c7dfcc; color: var(--green); }
+.admin-ai-limit-confirmation.is-rejected { background: #fff4f3; border-color: #edb7b2; color: #a52b24; }
+.admin-ai-decision-buttons { display: flex; flex: 0 0 auto; gap: .35rem; }
+.admin-ai-decision-buttons button { align-items: center; border: 1px solid currentColor; border-radius: 50%; display: inline-flex; font-family: Arial, sans-serif; font-size: 1.05rem; font-weight: 800; height: 29px; justify-content: center; line-height: 1; transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out); width: 29px; }
+.admin-ai-decision-buttons button:hover, .admin-ai-decision-buttons button[aria-pressed="true"] { color: #fff; transform: scale(1.06); }
+.admin-ai-decision-yes { color: var(--green); }
+.admin-ai-decision-yes:hover, .admin-ai-decision-yes[aria-pressed="true"] { background: var(--green); }
+.admin-ai-decision-no { color: #a52b24; }
+.admin-ai-decision-no:hover, .admin-ai-decision-no[aria-pressed="true"] { background: #a52b24; }
+@media (max-width: 700px) { .admin-ai-limit-confirmation { align-items: flex-start; flex-direction: column; } }
