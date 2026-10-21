@@ -58,6 +58,16 @@ function formatDate(value: Date | string | null) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("bg-BG");
 }
 
+function formatEta(seconds: number | null | undefined) {
+  if (seconds == null || seconds < 1) return "Изчислява се…";
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes < 1) return `около ${Math.max(1, remainingSeconds)} сек.`;
+  if (minutes < 60) return `около ${minutes} мин.`;
+  const hours = Math.floor(minutes / 60);
+  return `около ${hours} ч. ${minutes % 60} мин.`;
+}
+
 function statusClass(status: AiStatus) {
   return `admin-ai-status admin-ai-status-${status}`;
 }
@@ -76,8 +86,6 @@ export default function AdminAIContent() {
   const [sort, setSort] = useState<"confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc">("confidence-low");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [model, setModel] = useState("gemini-3.8-flash");
-  const [dailyGenerationLimit, setDailyGenerationLimit] = useState(20);
-  const [dailyLimitDecision, setDailyLimitDecision] = useState<"confirmed" | "rejected" | null>(null);
   const [connectionResults, setConnectionResults] = useState<{ basic?: { ok: boolean; status: number; message: string }; search?: { ok: boolean; status: number; message: string } }>({});
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
@@ -104,7 +112,7 @@ export default function AdminAIContent() {
   const checkGeminiMutation = trpc.admin.checkGeminiConnection.useMutation({
     onSuccess: (result, variables) => setConnectionResults(current => ({ ...current, [variables.withSearch ? "search" : "basic"]: result })),
   });
-  const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async () => { setSelectedIds(new Set()); toast.success("Продуктите са добавени във фоновата опашка."); await queueQuery.refetch(); }, onError: error => toast.error(error.message) });
+  const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async (_, variables) => { setSelectedIds(new Set()); toast.success(variables.autoPublish ? "Продуктите са добавени за генериране и автоматично публикуване." : "Продуктите са добавени във фоновата опашка за преглед."); await queueQuery.refetch(); }, onError: error => toast.error(error.message) });
   const queueStatusMutation = trpc.admin.setAiQueueStatus.useMutation({ onSuccess: async () => { await queueQuery.refetch(); } });
   const saveMutation = trpc.admin.saveAiContent.useMutation({
     onSuccess: async () => {
@@ -133,8 +141,7 @@ export default function AdminAIContent() {
   useEffect(() => {
     if (settingsQuery.data?.systemPrompt && !systemPrompt) setSystemPrompt(settingsQuery.data.systemPrompt);
     if (settingsQuery.data?.model) setModel(settingsQuery.data.model);
-    if (settingsQuery.data?.dailyGenerationLimit !== undefined) setDailyGenerationLimit(settingsQuery.data.dailyGenerationLimit);
-  }, [settingsQuery.data?.systemPrompt, settingsQuery.data?.model, settingsQuery.data?.dailyGenerationLimit, systemPrompt]);
+  }, [settingsQuery.data?.systemPrompt, settingsQuery.data?.model, systemPrompt]);
 
   useEffect(() => {
     if (!selected && items[0]) setSelectedId(items[0].productId);
@@ -177,11 +184,7 @@ export default function AdminAIContent() {
 
   const saveSettings = (event: React.FormEvent) => {
     event.preventDefault();
-    if (dailyLimitDecision !== "confirmed") {
-      toast.error("Потвърдете дневния лимит с бутона ✓ преди запис.");
-      return;
-    }
-    saveSettingsMutation.mutate({ systemPrompt, model, dailyGenerationLimit });
+    saveSettingsMutation.mutate({ systemPrompt, model, dailyGenerationLimit: 0 });
   };
 
   const selectAllMatching = async () => {
@@ -220,14 +223,13 @@ export default function AdminAIContent() {
             <h2>Системен prompt</h2>
             <p>Този текст се подава като system инструкция при всяко AI генериране. Продуктът се изпраща отделно като марка, име и EAN/артикулен номер.</p>
           </div>
-          <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20 || dailyLimitDecision !== "confirmed"}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази настройките"}</button>
+          <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази настройките"}</button>
         </div>
         <textarea value={systemPrompt} onChange={event => setSystemPrompt(event.target.value)} rows={12} aria-label="AI системен prompt" placeholder="Въведете системния prompt за AI съдържанието…" />
         <div className="admin-ai-settings-grid">
           <label className="admin-ai-setting-card"><span className="admin-ai-setting-label">Модел</span><input value={model} onChange={event => setModel(event.target.value)} placeholder="gemini-3.8-flash" aria-label="AI модел" /><small>Моделът се подава към Gemini server-side. Не се задава thinking параметър.</small></label>
-          <div className="admin-ai-setting-card admin-ai-limit-card"><label htmlFor="daily-ai-limit" className="admin-ai-setting-label">Дневен лимит за генерирания</label><div className="admin-ai-number-field"><input id="daily-ai-limit" type="number" min={0} max={100000} value={dailyGenerationLimit} onChange={event => { setDailyGenerationLimit(Math.max(0, Number(event.target.value) || 0)); setDailyLimitDecision(null); }} aria-describedby="daily-ai-limit-help" /><span>продукта / ден</span></div><small id="daily-ai-limit-help">0 блокира генерирането. Лимитът се прилага за UTC ден.</small><div className={`admin-ai-limit-confirmation ${dailyLimitDecision === "confirmed" ? "is-confirmed" : dailyLimitDecision === "rejected" ? "is-rejected" : ""}`}><span>Потвърждавате ли този лимит от <strong>{dailyGenerationLimit}</strong> продукта на ден?</span><span className="admin-ai-decision-buttons"><button type="button" className="admin-ai-decision-yes" onClick={() => setDailyLimitDecision("confirmed")} aria-label="Потвърди дневния лимит" aria-pressed={dailyLimitDecision === "confirmed"}>✓</button><button type="button" className="admin-ai-decision-no" onClick={() => setDailyLimitDecision("rejected")} aria-label="Откажи дневния лимит" aria-pressed={dailyLimitDecision === "rejected"}>×</button></span></div><button type="submit" className="admin-ai-limit-save" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20 || dailyLimitDecision !== "confirmed"}><Save size={14} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази лимита"}</button></div>
+          <div className="admin-ai-setting-card admin-ai-unlimited-card"><span className="admin-ai-setting-label">Генериране</span><strong>Без дневен лимит</strong><small>Временно няма ограничение на броя AI генерирания. Всеки продукт може да се изпрати за обикновен преглед или директно публикуване.</small></div>
         </div>
-        {dailyLimitDecision !== "confirmed" && <p className="admin-ai-confirm-hint">Изберете ✓, за да потвърдите лимита и да активирате бутона за запис. × отказва потвърждението.</p>}
         <div className="admin-ai-connection-checks">
           <strong>Връзка с Gemini</strong>
           <button type="button" onClick={() => checkGeminiMutation.mutate({ model, withSearch: false })} disabled={checkGeminiMutation.isPending}>Провери без търсене</button>
@@ -298,7 +300,8 @@ export default function AdminAIContent() {
           <span><CheckSquare size={15} /> Избрани: <strong>{selectedIds.size}</strong></span>
           <button type="button" onClick={selectAllMatching} disabled={matchingIdsQuery.isFetching}>{matchingIdsQuery.isFetching ? "Зареждане…" : `Маркирай всички от филтъра (${matchingIdsQuery.data?.length ?? "…"})`}</button>
           <button type="button" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size}>Изчисти избора</button>
-          <button type="button" className="admin-primary" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds) })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай за избраните"}</button>
+          <button type="button" className="admin-primary" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds), autoPublish: false })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай за избраните"}</button>
+          <button type="button" className="admin-primary admin-ai-generate-publish" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds), autoPublish: true })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай и публикувай"}</button>
           <button type="button" className="admin-primary admin-ai-approve-all" onClick={() => reviewBatchMutation.mutate({ productIds: Array.from(selectedIds), action: "approve" })} disabled={!selectedIds.size || reviewBatchMutation.isPending}>{reviewBatchMutation.isPending ? "Одобряване…" : `Одобри избраните (${selectedIds.size})`}</button>
           <button type="button" className="admin-primary" onClick={() => publishMutation.mutate({})} disabled={publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : "Публикувай одобрените"}</button>
           <button type="button" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай избраните одобрени (${selectedApprovedIds.length})`}</button>
@@ -311,8 +314,9 @@ export default function AdminAIContent() {
         {reviewBatchMutation.error && <div className="admin-form-error" role="alert">Bulk одобряването не бе завършено: {reviewBatchMutation.error.message}</div>}
         {reviewBatchMutation.data && <div className="admin-ai-saved" role="status">Одобрени: {reviewBatchMutation.data.reviewed}. Пропуснати: {reviewBatchMutation.data.skipped.length}.</div>}
         {queue && <div className="admin-ai-queue" role="status">
-          <div className="admin-ai-queue-head"><div className="admin-ai-queue-title"><div><span className="admin-ai-queue-kicker">AI ОБРАБОТКА</span><strong>Фонова опашка <b>#{queue.batchId}</b></strong></div><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "На пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div>{(queue.status === "running" || queue.status === "queued" || queue.status === "paused") && <button type="button" className="admin-ai-queue-action" onClick={() => queueStatusMutation.mutate({ batchId: queue.batchId, status: queue.status === "paused" ? "queued" : "paused" })} disabled={queueStatusMutation.isPending}>{queue.status === "paused" ? <><Play size={14} /> Продължи</> : <><Pause size={14} /> Пауза</>}</button>}</div>
-          <div className="admin-ai-queue-body"><div className="admin-ai-queue-stat"><strong>{queue.progress.succeeded}</strong><span>Готови</span></div><div className="admin-ai-queue-stat"><strong>{queue.progress.running}</strong><span>В процес</span></div><div className="admin-ai-queue-stat"><strong>{queue.progress.queued}</strong><span>Чакат</span></div><div className="admin-ai-queue-stat is-error"><strong>{queue.progress.failed}</strong><span>Грешки</span></div><div className="admin-ai-queue-limit"><div><span>Дневен лимит</span><strong>{queue.dailyUsed} / {queue.dailyLimit}</strong></div><div className="admin-ai-queue-progress"><span style={{ width: `${queue.dailyLimit > 0 ? Math.min(100, (queue.dailyUsed / queue.dailyLimit) * 100) : 100}%` }} /></div><small>{queue.dailyLimit > 0 && queue.dailyUsed >= queue.dailyLimit ? "Лимитът е достигнат — опашката ще продължи утре." : `Общо продукти в тази опашка: ${queue.total}`}</small></div></div>
+          <div className="admin-ai-queue-head"><div className="admin-ai-queue-title"><div><span className="admin-ai-queue-kicker">AI ОБРАБОТКА</span><strong>{queue.autoPublish ? "Генериране и публикуване" : "Генериране за преглед"}</strong><small>{queue.total} продукта · стартирано {formatDate(queue.startedAt)}</small></div><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "На пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div>{(queue.status === "running" || queue.status === "queued" || queue.status === "paused") && <button type="button" className="admin-ai-queue-action" onClick={() => queueStatusMutation.mutate({ batchId: queue.batchId, status: queue.status === "paused" ? "queued" : "paused" })} disabled={queueStatusMutation.isPending}>{queue.status === "paused" ? <><Play size={14} /> Продължи</> : <><Pause size={14} /> Пауза</>}</button>}</div>
+          <div className="admin-ai-queue-body"><div className="admin-ai-queue-stat"><strong>{queue.progress.succeeded}</strong><span>Готови</span></div><div className="admin-ai-queue-stat"><strong>{queue.progress.running}</strong><span>В процес</span></div><div className="admin-ai-queue-stat"><strong>{queue.progress.queued}</strong><span>Чакат</span></div><div className="admin-ai-queue-stat is-error"><strong>{queue.progress.failed}</strong><span>Грешки</span></div><div className="admin-ai-queue-limit"><div><span>Оставащо време</span><strong>{queue.status === "completed" || queue.status === "failed" ? "Завършено" : formatEta(queue.etaSeconds)}</strong></div><div className="admin-ai-queue-progress"><span style={{ width: `${queue.total ? Math.min(100, (queue.processed / queue.total) * 100) : 0}%` }} /></div><small>Прогрес: {queue.processed} от {queue.total} продукта · дневният лимит е изключен</small></div></div>
+          {(queue.queues?.length ?? 0) > 1 && <div className="admin-ai-queue-history"><div className="admin-ai-queue-history-head"><strong>Последни опашки</strong><span>Предишните обработки остават видими за справка.</span></div><div className="admin-ai-queue-history-list">{queue.queues.slice(1).map(previous => <button type="button" key={previous.batchId} className="admin-ai-queue-history-row" onClick={() => queueQuery.refetch()}><span><strong>{previous.autoPublish ? "Генериране и публикуване" : "Генериране за преглед"}</strong><small>{formatDate(previous.createdAt)} · {previous.total} продукта</small></span><span><b>{previous.processed}/{previous.total}</b><em className={`admin-ai-status admin-ai-status-${previous.status}`}>{previous.status === "completed" ? "Завършена" : previous.status === "failed" ? "С грешки" : previous.status === "paused" ? "На пауза" : "Чакаща"}</em></span></button>)}</div></div>}
         </div>}
         {contentQuery.isLoading ? <div className="admin-empty-state"><Loader2 className="animate-spin" /> Зареждане…</div> : contentQuery.error ? <div className="admin-form-error" role="alert">Нямате достъп или AI съдържанието не може да се зареди.</div> : (
           <div className="admin-ai-layout">

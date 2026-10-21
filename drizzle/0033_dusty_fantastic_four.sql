@@ -1,0 +1,1 @@
+ALTER TABLE `ai_generation_batches` ADD `autoPublish` boolean DEFAULT false NOT NULL;

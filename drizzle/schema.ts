@@ -248,6 +248,7 @@ export const aiGenerationBatches = mysqlTable("ai_generation_batches", {
   id: int("id").autoincrement().primaryKey(),
   status: mysqlEnum("status", ["queued", "running", "paused", "completed", "failed"]).default("queued").notNull(),
   totalJobs: int("totalJobs").default(0).notNull(),
+  autoPublish: boolean("autoPublish").default(false).notNull(),
   createdBy: int("createdBy").references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   startedAt: timestamp("startedAt"),

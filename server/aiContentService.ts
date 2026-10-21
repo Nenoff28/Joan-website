@@ -467,7 +467,12 @@ function normalizeAiPayload(payload: Record<string, unknown>) {
 }
 
 async function reserveDailyGeneration(db: Awaited<ReturnType<typeof database>>, limit: number) {
-  if (limit <= 0) return false;
+  // Quota is disabled for the current rollout. The counter remains available
+  // for reporting and can be reactivated later without changing the worker.
+  void db;
+  void limit;
+  return true;
+  /*
   const usageDate = new Date().toISOString().slice(0, 10);
   const updated = await db.update(aiGenerationDailyUsage).set({ generatedCount: sql`${aiGenerationDailyUsage.generatedCount} + 1` }).where(and(eq(aiGenerationDailyUsage.usageDate, usageDate), lt(aiGenerationDailyUsage.generatedCount, limit)));
   const affectedRows = Number((updated as unknown as Array<{ affectedRows?: number }>)[0]?.affectedRows ?? 0);
@@ -479,6 +484,7 @@ async function reserveDailyGeneration(db: Awaited<ReturnType<typeof database>>, 
     const retry = await db.update(aiGenerationDailyUsage).set({ generatedCount: sql`${aiGenerationDailyUsage.generatedCount} + 1` }).where(and(eq(aiGenerationDailyUsage.usageDate, usageDate), lt(aiGenerationDailyUsage.generatedCount, limit)));
     return Number((retry as unknown as Array<{ affectedRows?: number }>)[0]?.affectedRows ?? 0) > 0;
   }
+  */
 }
 
 export async function generateAdminAiContent(productId: number, options?: { skipQuota?: boolean }) {
@@ -581,14 +587,14 @@ export async function getAdminAiProductIds(input?: { status?: AiContentStatus; c
   return rows.map(row => row.id);
 }
 
-export async function enqueueAiGeneration(input: { productIds: number[]; createdBy?: number | null }) {
+export async function enqueueAiGeneration(input: { productIds: number[]; createdBy?: number | null; autoPublish?: boolean }) {
   const db = await database();
   const ids = Array.from(new Set(input.productIds)).slice(0, 10_000);
   if (!ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Изберете поне един продукт." });
   const products = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).where(and(inArray(catalogueProducts.id, ids), eq(catalogueProducts.isArchived, false)));
   const validIds = products.map(product => product.id);
   if (!validIds.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Избраните продукти не са налични за обработка." });
-  const created = await db.insert(aiGenerationBatches).values({ totalJobs: validIds.length, createdBy: input.createdBy ?? null });
+  const created = await db.insert(aiGenerationBatches).values({ totalJobs: validIds.length, autoPublish: input.autoPublish ?? false, createdBy: input.createdBy ?? null });
   const batchId = Number((created as unknown as Array<{ insertId: number }>)[0]?.insertId);
   if (!batchId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Опашката не можа да бъде създадена." });
   await db.insert(aiGenerationJobs).values(validIds.map(productId => ({ batchId, productId, nextAttemptAt: new Date() })));
@@ -597,17 +603,24 @@ export async function enqueueAiGeneration(input: { productIds: number[]; created
 
 export async function getAdminAiQueueStatus(batchId?: number) {
   const db = await database();
-  const [batch] = await db.select().from(aiGenerationBatches).where(batchId ? eq(aiGenerationBatches.id, batchId) : undefined).orderBy(desc(aiGenerationBatches.id)).limit(1);
-  if (!batch) return null;
-  const grouped = await db.select({ status: aiGenerationJobs.status, total: count() }).from(aiGenerationJobs).where(eq(aiGenerationJobs.batchId, batch.id)).groupBy(aiGenerationJobs.status);
-  const progress = { queued: 0, running: 0, succeeded: 0, failed: 0 };
-  for (const row of grouped) progress[row.status as keyof typeof progress] = Number(row.total ?? 0);
   const usageDate = new Date().toISOString().slice(0, 10);
-  const [usage, settings] = await Promise.all([
+  const [usage] = await Promise.all([
     db.select().from(aiGenerationDailyUsage).where(eq(aiGenerationDailyUsage.usageDate, usageDate)).limit(1),
-    db.select({ dailyGenerationLimit: aiContentSettings.dailyGenerationLimit }).from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1),
   ]);
-  return { batchId: batch.id, status: batch.status as AiBatchStatus, total: batch.totalJobs, progress, createdAt: batch.createdAt, startedAt: batch.startedAt, finishedAt: batch.finishedAt, dailyUsed: usage[0]?.generatedCount ?? 0, dailyLimit: settings[0]?.dailyGenerationLimit ?? 0 };
+  const batches = await db.select().from(aiGenerationBatches).where(batchId ? eq(aiGenerationBatches.id, batchId) : undefined).orderBy(desc(aiGenerationBatches.id)).limit(batchId ? 1 : 8);
+  if (!batches.length) return null;
+  const queueRows = await Promise.all(batches.map(async batch => {
+    const grouped = await db.select({ status: aiGenerationJobs.status, total: count() }).from(aiGenerationJobs).where(eq(aiGenerationJobs.batchId, batch.id)).groupBy(aiGenerationJobs.status);
+    const progress = { queued: 0, running: 0, succeeded: 0, failed: 0 };
+    for (const row of grouped) progress[row.status as keyof typeof progress] = Number(row.total ?? 0);
+    const processed = progress.succeeded + progress.failed;
+    const remaining = Math.max(0, batch.totalJobs - processed);
+    const elapsedSeconds = batch.startedAt ? Math.max(0, (Date.now() - new Date(batch.startedAt).getTime()) / 1000) : 0;
+    const etaSeconds = processed > 0 && remaining > 0 ? Math.ceil((remaining * elapsedSeconds) / processed) : null;
+    return { batchId: batch.id, autoPublish: batch.autoPublish, status: batch.status as AiBatchStatus, total: batch.totalJobs, progress, processed, etaSeconds, createdAt: batch.createdAt, startedAt: batch.startedAt, finishedAt: batch.finishedAt };
+  }));
+  const current = queueRows[0];
+  return { ...current, queues: queueRows, dailyUsed: usage[0]?.generatedCount ?? 0, dailyLimit: null };
 }
 
 export async function setAdminAiQueueStatus(batchId: number, status: "paused" | "queued") {
@@ -637,7 +650,7 @@ async function processAiQueueOnce() {
   queueWorkerBusy = true;
   try {
     const db = await database();
-    const batches = await db.select({ id: aiGenerationBatches.id }).from(aiGenerationBatches).where(inArray(aiGenerationBatches.status, ["queued", "running"])).orderBy(asc(aiGenerationBatches.id)).limit(10);
+    const batches = await db.select({ id: aiGenerationBatches.id, autoPublish: aiGenerationBatches.autoPublish }).from(aiGenerationBatches).where(inArray(aiGenerationBatches.status, ["queued", "running"])).orderBy(asc(aiGenerationBatches.id)).limit(10);
     for (const batch of batches) {
       await db.update(aiGenerationBatches).set({ status: "running", startedAt: sql`COALESCE(${aiGenerationBatches.startedAt}, NOW())` }).where(and(eq(aiGenerationBatches.id, batch.id), eq(aiGenerationBatches.status, "queued")));
       const jobs = await db.select({ id: aiGenerationJobs.id, productId: aiGenerationJobs.productId, attempts: aiGenerationJobs.attempts, maxAttempts: aiGenerationJobs.maxAttempts }).from(aiGenerationJobs).where(and(eq(aiGenerationJobs.batchId, batch.id), eq(aiGenerationJobs.status, "queued"), or(isNull(aiGenerationJobs.nextAttemptAt), lte(aiGenerationJobs.nextAttemptAt, new Date()))!)).orderBy(asc(aiGenerationJobs.id)).limit(5);
@@ -646,7 +659,13 @@ async function processAiQueueOnce() {
         await db.update(aiGenerationJobs).set({ status: "running", startedAt: new Date(), attempts: job.attempts + 1 }).where(and(eq(aiGenerationJobs.id, job.id), eq(aiGenerationJobs.status, "queued")));
         try {
           const result = await generateAdminAiContent(job.productId);
-          if (result.status === "generated") await db.update(aiGenerationJobs).set({ status: "succeeded", completedAt: new Date(), lastError: null }).where(eq(aiGenerationJobs.id, job.id));
+          if (result.status === "generated") {
+            if (batch.autoPublish) {
+              await db.update(catalogueProductAiContent).set({ aiStatus: "reviewed", aiError: null }).where(eq(catalogueProductAiContent.productId, job.productId));
+              await publishApprovedAiContent([job.productId]);
+            }
+            await db.update(aiGenerationJobs).set({ status: "succeeded", completedAt: new Date(), lastError: null }).where(eq(aiGenerationJobs.id, job.id));
+          }
           else {
             const error = result.error || "AI генерирането неуспешно.";
             if (error.includes("Дневният лимит")) {

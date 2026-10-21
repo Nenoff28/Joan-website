@@ -1248,3 +1248,26 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-limit-save:disabled { cursor: not-allowed; opacity: .45; }
 @media (max-width: 900px) { .admin-ai-queue-body { grid-template-columns: repeat(4, 1fr); } .admin-ai-queue-limit { border-top: 1px solid var(--line); grid-column: 1 / -1; } }
 @media (max-width: 560px) { .admin-ai-queue-head { align-items: flex-start; flex-direction: column; } .admin-ai-queue-body { grid-template-columns: repeat(2, 1fr); } .admin-ai-queue-stat:nth-child(2) { border-right: 0; } .admin-ai-queue-limit { grid-column: 1 / -1; } }
+
+/* AI queue workflow refresh */
+.admin-ai-unlimited-card { background: linear-gradient(135deg, #f0f7f2, #fff); border-color: #c9dfcf; display: grid; gap: .45rem; }
+.admin-ai-unlimited-card strong { color: var(--green); font-family: "Manrope", sans-serif; font-size: 1.05rem; }
+.admin-ai-unlimited-card small { color: var(--slate); line-height: 1.45; }
+.admin-ai-generate-publish { background: #247448 !important; border-color: #247448 !important; color: #fff !important; }
+.admin-ai-generate-publish:hover:not(:disabled) { background: #1c5c39 !important; border-color: #1c5c39 !important; }
+.admin-ai-queue-title > div { gap: .18rem; }
+.admin-ai-queue-title small { color: var(--slate); font-size: .68rem; }
+.admin-ai-queue-history { border-top: 1px solid var(--line); padding: .75rem 1rem 1rem; }
+.admin-ai-queue-history-head { align-items: baseline; display: flex; flex-wrap: wrap; gap: .6rem; justify-content: space-between; margin-bottom: .55rem; }
+.admin-ai-queue-history-head strong { font-size: .78rem; }
+.admin-ai-queue-history-head span { color: var(--slate); font-size: .68rem; }
+.admin-ai-queue-history-list { display: grid; gap: .35rem; max-height: 220px; overflow: auto; }
+.admin-ai-queue-history-row { align-items: center; background: #f8faf8; border: 1px solid var(--line); color: var(--ink); display: flex; gap: 1rem; justify-content: space-between; padding: .55rem .65rem; text-align: left; width: 100%; }
+.admin-ai-queue-history-row:hover { border-color: var(--red); }
+.admin-ai-queue-history-row > span { display: grid; gap: .15rem; min-width: 0; }
+.admin-ai-queue-history-row > span:last-child { align-items: end; flex: 0 0 auto; }
+.admin-ai-queue-history-row strong { font-size: .72rem; }
+.admin-ai-queue-history-row small { color: var(--slate); font-size: .65rem; }
+.admin-ai-queue-history-row b { font-size: .7rem; text-align: right; }
+.admin-ai-queue-history-row em { font-style: normal; font-size: .59rem; }
+@media (max-width: 700px) { .admin-ai-queue-history-row { align-items: flex-start; flex-direction: column; gap: .4rem; }.admin-ai-queue-history-row > span:last-child { align-items: flex-start; flex-direction: row; gap: .45rem; }.admin-ai-queue-history-row b { text-align: left; } }
