@@ -51,6 +51,7 @@ export default function AdminAIContent() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [systemPrompt, setSystemPrompt] = useState("");
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
     aiDescription: "",
@@ -65,14 +66,25 @@ export default function AdminAIContent() {
   });
   const input = useMemo(() => ({ status: status || undefined, query: query.trim() || undefined, page, pageSize: 50 }), [status, query, page]);
   const contentQuery = trpc.admin.aiContent.useQuery(input);
+  const settingsQuery = trpc.admin.aiSettings.useQuery();
   const utils = trpc.useUtils();
+  const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
+    onSuccess: async () => { await utils.admin.aiSettings.invalidate(); },
+  });
   const saveMutation = trpc.admin.saveAiContent.useMutation({
     onSuccess: async () => {
       await utils.admin.aiContent.invalidate();
     },
   });
+  const generateMutation = trpc.admin.generateAiContent.useMutation({
+    onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
+  });
   const items = (contentQuery.data?.items ?? []) as AiItem[];
   const selected = items.find(item => item.productId === selectedId) ?? null;
+
+  useEffect(() => {
+    if (settingsQuery.data?.systemPrompt && !systemPrompt) setSystemPrompt(settingsQuery.data.systemPrompt);
+  }, [settingsQuery.data?.systemPrompt, systemPrompt]);
 
   useEffect(() => {
     if (!selected && items[0]) setSelectedId(items[0].productId);
@@ -113,6 +125,11 @@ export default function AdminAIContent() {
     });
   };
 
+  const saveSettings = (event: React.FormEvent) => {
+    event.preventDefault();
+    saveSettingsMutation.mutate({ systemPrompt });
+  };
+
   return (
     <section className="admin-workspace">
       <div className="admin-page-heading">
@@ -122,6 +139,19 @@ export default function AdminAIContent() {
           <p className="admin-panel-caption">Отделен работен слой за AI предложения. Публикуваните данни на продукта не се променят автоматично.</p>
         </div>
       </div>
+
+      <form className="admin-panel admin-ai-settings" onSubmit={saveSettings}>
+        <div className="admin-panel-head">
+          <div>
+            <h2>Системен prompt</h2>
+            <p>Този текст се подава като system инструкция при всяко AI генериране. Продуктът се изпраща отделно като марка, име и EAN/артикулен номер.</p>
+          </div>
+          <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази prompt-а"}</button>
+        </div>
+        <textarea value={systemPrompt} onChange={event => setSystemPrompt(event.target.value)} rows={12} aria-label="AI системен prompt" placeholder="Въведете системния prompt за AI съдържанието…" />
+        {saveSettingsMutation.error && <div className="admin-form-error" role="alert">{saveSettingsMutation.error.message}</div>}
+        {settingsQuery.error && <div className="admin-form-error" role="alert">Системният prompt не може да се зареди.</div>}
+      </form>
 
       <div className="admin-ai-status-grid" aria-label="Обобщение на AI статусите">
         {(Object.keys(statusLabels) as AiStatus[]).map(key => (
@@ -160,7 +190,11 @@ export default function AdminAIContent() {
             </div>
 
             {selected && <form className="admin-ai-editor" onSubmit={save}>
-              <div className="admin-ai-editor-head"><div><small>Избран продукт</small><h3>{selected.name}</h3><p>{selected.categoryName} · SKU {selected.sku || "—"}</p></div><img src={selected.imageUrl} alt="" /></div>
+              <div className="admin-ai-editor-head"><div><small>Избран продукт</small><h3>{selected.name}</h3><p>{selected.categoryName} · SKU/EAN {selected.sku || "—"}</p></div><img src={selected.imageUrl} alt="" /></div>
+              <div className="admin-ai-generate-row"><button type="button" className="admin-primary" onClick={() => generateMutation.mutate({ productId: selected.productId })} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}><Sparkles size={15} /> {generateMutation.isPending ? "Генериране…" : "Генерирай от prompt-а"}</button><span>Резултатът се записва в AI слоя и не променя продукта.</span></div>
+              {generateMutation.error && <div className="admin-form-error" role="alert">{generateMutation.error.message}</div>}
+              {generateMutation.data?.status === "error" && <div className="admin-form-error" role="alert">Генерирането завърши с грешка. Проверете AI статуса и полето „AI грешка“.</div>}
+              {generateMutation.data?.status === "generated" && <div className="admin-ai-saved" role="status"><CheckCircle2 size={15} /> AI съдържанието е генерирано и е отделено от продукта.</div>}
               <label>AI статус<select value={form.aiStatus} onChange={event => setForm(current => ({ ...current, aiStatus: event.target.value as AiStatus }))}>{(Object.keys(statusLabels) as AiStatus[]).map(key => <option key={key} value={key}>{statusLabels[key]}</option>)}</select></label>
               <label>AI описание<textarea value={form.aiDescription} onChange={event => setForm(current => ({ ...current, aiDescription: event.target.value }))} rows={4} /></label>
               <label>AI характеристики<textarea value={form.aiFeatures} onChange={event => setForm(current => ({ ...current, aiFeatures: event.target.value }))} rows={4} placeholder="Една характеристика на ред" /></label>

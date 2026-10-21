@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { administratorOnlyProcedure, permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
-import { getAdminAiContent, saveAdminAiContent } from "./aiContentService";
+import { generateAdminAiContent, getAdminAiContent, getAdminAiSettings, saveAdminAiContent, saveAdminAiSettings } from "./aiContentService";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
 import { categoryPayloadSchema } from "../shared/categoryValidation";
@@ -167,6 +167,9 @@ export const appRouter = router({
   }),
   admin: router({
     aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), query: z.string().trim().max(160).optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
+    aiSettings: administratorOnlyProcedure().query(() => getAdminAiSettings()),
+    saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt)),
+    generateAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => generateAdminAiContent(input.productId)),
     saveAiContent: administratorOnlyProcedure().input(z.object({
       productId: z.number().int().positive(),
       aiStatus: aiContentStatusSchema,

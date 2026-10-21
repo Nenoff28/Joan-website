@@ -216,6 +216,13 @@ export const catalogueProductAiContent = mysqlTable("catalogue_product_ai_conten
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("product_ai_status_idx").on(table.aiStatus)]);
 
+/** Administrator-editable system prompt used for AI product-content generation. */
+export const aiContentSettings = mysqlTable("ai_content_settings", {
+  id: int("id").primaryKey(),
+  systemPrompt: text("systemPrompt").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /** English customer-facing content is stored separately so imported Bulgarian source data remains immutable. */
 export const catalogueProductEnglish = mysqlTable("catalogue_product_english", {
   id: int("id").autoincrement().primaryKey(),
