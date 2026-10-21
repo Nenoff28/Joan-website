@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, CheckSquare, Clock3, FileWarning, Loader2, Pause, Play, Save, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 type AiStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 type AiConfidence = "high" | "low";
@@ -69,6 +70,7 @@ export default function AdminAIContent() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [categoryId, setCategoryId] = useState<number | "">("");
+  const [categorySearch, setCategorySearch] = useState("");
   const [availability, setAvailability] = useState<"all" | "in_stock" | "not_in_stock">("all");
   const [visibility, setVisibility] = useState<"all" | "visible" | "hidden">("all");
   const [sort, setSort] = useState<"confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc">("confidence-low");
@@ -112,10 +114,10 @@ export default function AdminAIContent() {
     onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
   });
   const reviewMutation = trpc.admin.reviewAiContent.useMutation({
-    onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
+    onSuccess: async () => { toast.success("Продуктът е одобрен успешно."); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
   });
   const reviewBatchMutation = trpc.admin.reviewAiContentBatch.useMutation({
-    onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onSuccess: async (result) => { setSelectedIds(new Set()); toast.success(`Одобрени продукти: ${result.reviewed}.`); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
   });
   const publishMutation = trpc.admin.publishApprovedAiContent.useMutation({
     onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); },
@@ -191,6 +193,10 @@ export default function AdminAIContent() {
   const reviewCandidates = selectedIds.size ? items.filter(item => selectedIds.has(item.productId) && item.aiStatus === "generated") : items.filter(item => item.aiStatus === "generated");
   const nextReviewable = currentIndex >= 0 ? reviewCandidates.find(item => items.indexOf(item) > currentIndex) ?? reviewCandidates.find(item => items.indexOf(item) < currentIndex) ?? null : null;
   const filtersBusy = contentQuery.isFetching || categoriesQuery.isFetching || matchingIdsQuery.isFetching;
+  const visibleCategories = useMemo(() => {
+    const normalized = categorySearch.trim().toLocaleLowerCase("bg-BG");
+    return ((categoriesQuery.data ?? []) as AiCategoryOption[]).filter(category => !normalized || category.name.toLocaleLowerCase("bg-BG").includes(normalized));
+  }, [categoriesQuery.data, categorySearch]);
 
   return (
     <section className="admin-workspace">
@@ -253,9 +259,10 @@ export default function AdminAIContent() {
               <option value="low">Само ниска увереност</option>
               <option value="high">Само висока увереност</option>
             </select>
+            <label className="admin-ai-category-search"><Search size={14} /><input value={categorySearch} onChange={event => setCategorySearch(event.target.value)} placeholder="Търсене на категория или подкатегория" aria-label="Търсене в категориите" /></label>
             <select value={categoryId} onChange={event => { setCategoryId(event.target.value ? Number(event.target.value) : ""); setPage(1); }} aria-label="Филтър по категория">
               <option value="">Всички категории</option>
-              {(categoriesQuery.data ?? []).map((category: AiCategoryOption) => <option key={category.id} value={category.id}>{category.name} ({category.count})</option>)}
+              {visibleCategories.map(category => <option key={category.id} value={category.id}>{category.name} ({category.count})</option>)}
             </select>
             <select value={availability} onChange={event => { setAvailability(event.target.value as typeof availability); setPage(1); }} aria-label="Филтър по наличност">
               <option value="all">Всички наличности</option>

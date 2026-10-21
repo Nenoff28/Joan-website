@@ -1183,3 +1183,11 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-approve-all, .admin-ai-approve-next { background: #247448 !important; border-color: #247448 !important; color: #fff !important; }
 .admin-ai-approve-all:hover:not(:disabled), .admin-ai-approve-next:hover:not(:disabled) { background: #1c5c39 !important; border-color: #1c5c39 !important; }
 .admin-ai-approve-next:disabled { background: #b7c9bc !important; border-color: #b7c9bc !important; }
+
+.admin-ai-category-search { align-items: center; background: #fff; border: 1px solid var(--line); display: flex; gap: .4rem; min-height: 38px; padding: 0 .6rem; }
+.admin-ai-category-search:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.08); }
+.admin-ai-category-search svg { color: var(--slate); flex: 0 0 auto; }
+.admin-ai-category-search input { background: transparent; border: 0; color: var(--ink); font-size: .72rem; min-width: 0; outline: 0; width: 100%; }
+.admin-ai-category-search input::placeholder { color: var(--slate); }
+@media (max-width: 1050px) { .admin-ai-filter-panel .admin-ai-category-search { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .admin-ai-filter-panel .admin-ai-category-search { grid-column: auto; } }
