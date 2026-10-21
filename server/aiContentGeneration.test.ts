@@ -34,6 +34,7 @@ describe("AI product content generation", () => {
     const schema = fs.readFileSync(path.resolve(import.meta.dirname, "../drizzle/schema.ts"), "utf8");
     const service = fs.readFileSync(path.resolve(import.meta.dirname, "./aiContentService.ts"), "utf8");
     const router = fs.readFileSync(path.resolve(import.meta.dirname, "./routers.ts"), "utf8");
+    const page = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/pages/AdminAIContent.tsx"), "utf8");
     expect(schema).toContain('mysqlTable("catalogue_product_ai_content"');
     expect(schema).toContain('mysqlTable("catalogue_product_ai_backups"');
     expect(schema).toContain('unique().references(() => catalogueProducts.id)');
@@ -68,5 +69,11 @@ describe("AI product content generation", () => {
     expect(router).toContain("publishApprovedAiContent");
     expect(router).toContain("restoreAiBackups");
     expect(router).toContain("reviewAiContentBatch");
+    expect(page).toContain("Запази лимита");
+    expect(page).toContain("Потвърждавате ли този лимит");
+    expect(page).toContain("dailyLimitDecision");
+    expect(page).toContain("await utils.admin.aiQueue.invalidate()");
+    expect(page).toContain("Дневен лимит");
+    expect(page).toContain("admin-ai-queue-progress");
   });
 });
