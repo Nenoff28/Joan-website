@@ -58,6 +58,9 @@ describe("admin product entry workflow", () => {
   it("supports replacing, promoting and reordering individual gallery images", () => {
     expect(adminSource).toContain("replaceGalleryImage");
     expect(adminSource).toContain("reorderGalleryImage");
+    expect(adminSource).toContain("handleImageDrop");
+    expect(adminSource).toContain("draggable={!Boolean(uploadProgress) && !saving}");
+    expect(adminSource).toContain("dataTransfer.dropEffect = \"move\"");
     expect(adminSource).toContain("Смени");
     expect(adminSource).toContain("Основна");
     expect(adminSource).toContain("Премести снимка");

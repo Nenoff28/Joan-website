@@ -40,7 +40,7 @@ import {
   getDocument,
 } from "pdfjs-dist/legacy/build/pdf.mjs";
 import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs?url";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -738,6 +738,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const uploadImage = trpc.admin.uploadProductImage.useMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [draggedGalleryIndex, setDraggedGalleryIndex] = useState<number | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const uploadingRef = useRef(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
@@ -938,6 +939,21 @@ function AdminProducts({ permissions }: AdminPageProps) {
     nextGallery.splice(targetIndex, 0, moved);
     setForm(current => ({ ...current, galleryText: nextGallery.join("\n"), imageUrl: nextGallery[0] ?? "" }));
   }
+  function handleGalleryDragStart(event: DragEvent<HTMLElement>, index: number) {
+    setDraggedGalleryIndex(index);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  }
+  function handleGalleryDrop(event: DragEvent<HTMLElement>, targetIndex: number) {
+    event.preventDefault();
+    if (event.dataTransfer.files.length) {
+      setDraggedGalleryIndex(null);
+      return;
+    }
+    const sourceIndex = draggedGalleryIndex ?? Number(event.dataTransfer.getData("text/plain"));
+    if (Number.isInteger(sourceIndex)) reorderGalleryImage(sourceIndex, targetIndex);
+    setDraggedGalleryIndex(null);
+  }
   async function replaceGalleryImage(event: ChangeEvent<HTMLInputElement>, index: number) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -1069,9 +1085,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
     if (form.id) updateProduct.mutate({ id: form.id, product: parsed.data });
     else createProduct.mutate(parsed.data);
   }
-  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
+  async function uploadImageFiles(files: File[]) {
     if (!files.length || !canWriteProducts || uploadingRef.current) return;
     if (files.length > 10) {
       toast.error("Можете да качите най-много 10 снимки наведнъж.");
@@ -1099,6 +1113,16 @@ function AdminProducts({ permissions }: AdminPageProps) {
       uploadingRef.current = false;
       setUploadProgress(null);
     }
+  }
+  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    await uploadImageFiles(files);
+  }
+  async function handleImageDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    event.currentTarget.classList.remove("is-drag-over");
+    await uploadImageFiles(Array.from(event.dataTransfer.files ?? []));
   }
   return (
     <section className="admin-workspace">
@@ -1450,20 +1474,33 @@ function AdminProducts({ permissions }: AdminPageProps) {
               <div><p className="admin-kicker">МЕДИЯ</p><h3 id="product-images-title">Снимки на артикула</h3></div>
               <small>{galleryUrls.length}/10 снимки · първата е основна</small>
             </div>
-            <div className="admin-upload-row admin-upload-row-large">
+            <div
+              className="admin-upload-row admin-upload-row-large"
+              onDragOver={event => { event.preventDefault(); event.currentTarget.classList.add("is-drag-over"); }}
+              onDragLeave={event => event.currentTarget.classList.remove("is-drag-over")}
+              onDrop={handleImageDrop}
+            >
               <input ref={fileInputRef} type="file" className="admin-product-file-input" multiple accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} disabled={!canWriteProducts || Boolean(uploadProgress) || saving || galleryUrls.length >= 10} aria-label="Избор на продуктови снимки" />
               <button type="button" className="admin-upload admin-upload-large admin-product-upload-button" onClick={() => fileInputRef.current?.click()} disabled={!canWriteProducts || Boolean(uploadProgress) || saving || galleryUrls.length >= 10}>
                 <ImagePlus size={20} />
                 <span>{uploadProgress ? `Качване ${uploadProgress.current}/${uploadProgress.total}…` : "Избери до 10 снимки"}<small>JPG, PNG или WEBP · до 10 MB всяка</small></span>
               </button>
-              <p>Качете до 10 снимки. За всяка снимка можете да я замените, да я направите основна или да промените реда ѝ.</p>
+              <p>Качете до 10 снимки или ги провлачете тук. Провлачете картите, за да промените реда; първата е основна.</p>
             </div>
             {uploadProgress && <p className="admin-upload-progress" role="status">Качване на снимка {uploadProgress.current} от {uploadProgress.total}. Изчакайте преди запазване.</p>}
             {uploadError && <p className="admin-form-error" role="alert">{uploadError}</p>}
             {galleryUrls.length ? (
               <div className="admin-gallery-preview">
                 {galleryUrls.map((url, index) => (
-                  <figure key={`${url}-${index}`} className={index === 0 ? "is-primary" : ""}>
+                  <figure
+                    key={`${url}-${index}`}
+                    className={`${index === 0 ? "is-primary" : ""}${draggedGalleryIndex === index ? " is-dragging" : ""}`}
+                    draggable={!Boolean(uploadProgress) && !saving}
+                    onDragStart={event => handleGalleryDragStart(event, index)}
+                    onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}
+                    onDrop={event => handleGalleryDrop(event, index)}
+                    onDragEnd={() => setDraggedGalleryIndex(null)}
+                  >
                     <img src={url} alt={form.imageAlt || `Снимка ${index + 1}`} />
                     <input
                       ref={element => { replaceInputRefs.current[index] = element; }}

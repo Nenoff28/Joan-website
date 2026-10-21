@@ -1,6 +1,15 @@
 export type TechnicalSpecification = { label: string; value: string };
 
 const modelLabels = new Set(["модел", "model", "вътрешен код", "internal code"]);
+const featurePairPattern = /^\s*([^:]{2,72}?)\s*(?::|[–—-])\s+(.+?)\s*$/;
+
+function parseFeaturePair(feature: string): TechnicalSpecification | null {
+  const match = feature.match(featurePairPattern);
+  if (!match) return null;
+  const label = match[1].replace(/\s+/g, " ").trim();
+  const value = match[2].replace(/\s+/g, " ").trim();
+  return label && value ? { label, value } : null;
+}
 
 /**
  * Keeps the catalogue's internal code consistent wherever it is presented.
@@ -34,8 +43,8 @@ export function alignInternalCodeFeatures(features: string[], sku: string | null
   let hasCanonicalModel = false;
   const aligned: string[] = [];
   for (const feature of features) {
-    const match = feature.match(/^\s*([^:]{2,72}):\s*(.+?)\s*$/);
-    if (!match || !modelLabels.has(match[1].trim().toLocaleLowerCase("bg-BG"))) {
+    const pair = parseFeaturePair(feature);
+    if (!pair || !modelLabels.has(pair.label.toLocaleLowerCase("bg-BG"))) {
       aligned.push(feature);
       continue;
     }
@@ -116,8 +125,8 @@ function addUnique(target: TechnicalSpecification[], candidates: TechnicalSpecif
 
 function featurePairs(features: string[]) {
   return features.flatMap((feature) => {
-    const match = feature.match(/^\s*([^:]{2,72}):\s*(.+?)\s*$/);
-    return match ? [{ label: match[1].replace(/\s+/g, " ").trim(), value: match[2].replace(/\s+/g, " ").trim() }] : [];
+    const pair = parseFeaturePair(feature);
+    return pair ? [pair] : [];
   });
 }
 

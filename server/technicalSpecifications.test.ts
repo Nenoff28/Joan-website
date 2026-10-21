@@ -52,6 +52,15 @@ describe("splitProductDescription", () => {
     expect(alignInternalCodeTechnicalSpecs([{ label: "Модел", value: "12829" }], "12829")).toEqual([{ label: "Модел", value: "12829" }]);
   });
 
+  it("publishes admin technical rows serialized with an em dash", () => {
+    const result = splitProductDescription("Описание на продукта", ["Височина — 190 см", "Материал — Неръждаема стомана"]);
+    expect(result.description).toBe("Описание на продукта");
+    expect(result.technicalSpecs).toEqual([
+      { label: "Височина", value: "190 см" },
+      { label: "Материал", value: "Неръждаема стомана" },
+    ]);
+  });
+
   it("replaces a legacy model feature with the canonical internal code", () => {
     expect(alignInternalCodeFeatures(["Модел: 33037", "Размер: M"], "12829")).toEqual(["Модел: 12829", "Размер: M"]);
   });
