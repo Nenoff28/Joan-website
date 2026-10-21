@@ -44,7 +44,11 @@ describe("AI product content generation", () => {
     expect(service).toContain('withSearch = true');
     expect(service).toContain('aiInputTokens');
     expect(service).toContain('aiOutputTokens');
-    expect(service).toContain('aiSearchCount');
+    expect(service).toContain("aiSearchCount");
+    expect(service).toContain('AiAvailabilityFilter');
+    expect(service).toContain('AiVisibilityFilter');
+    expect(service).toContain('stockQuantity');
+    expect(service).toContain('updated-desc');
     expect(service).toContain("validateAiPayload");
     expect(service).toContain("for (let attempt = 0; attempt <= 2");
     expect(service).toContain("parseAiJsonObject(raw)");

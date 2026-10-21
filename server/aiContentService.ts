@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, isNull, like, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, like, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiBackups, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -6,6 +6,9 @@ import { ENV } from "./_core/env";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 export type AiContentConfidence = "high" | "low";
+export type AiAvailabilityFilter = "all" | "in_stock" | "not_in_stock";
+export type AiVisibilityFilter = "all" | "visible" | "hidden";
+export type AiContentSort = "confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc";
 
 const DEFAULT_AI_MODEL = "gemini-3.8-flash";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -60,6 +63,8 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
     oldKeywords: row.product.legacySeoKeywordBg,
     isActive: row.product.isActive,
     isArchived: row.product.isArchived,
+    availability: row.product.availability,
+    stockQuantity: row.product.stockQuantity,
     aiStatus: row.ai?.aiStatus ?? "pending",
     aiProvider: row.ai?.aiProvider ?? null,
     aiModel: row.ai?.aiModel ?? null,
@@ -79,7 +84,7 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
   };
 }
 
-export async function getAdminAiContent(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number; page?: number; pageSize?: number }) {
+export async function getAdminAiContent(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number; availability?: AiAvailabilityFilter; visibility?: AiVisibilityFilter; sort?: AiContentSort; page?: number; pageSize?: number }) {
   const db = await database();
   const page = input?.page ?? 1;
   const pageSize = input?.pageSize ?? 50;
@@ -87,8 +92,25 @@ export async function getAdminAiContent(input?: { status?: AiContentStatus; conf
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
   if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
   if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
+  if (input?.availability === "in_stock") conditions.push(gt(catalogueProducts.stockQuantity, 0));
+  if (input?.availability === "not_in_stock") conditions.push(lte(catalogueProducts.stockQuantity, 0));
+  if (input?.visibility === "visible") conditions.push(eq(catalogueProducts.isActive, true));
+  if (input?.visibility === "hidden") conditions.push(eq(catalogueProducts.isActive, false));
   const query = input?.query?.trim();
   if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
+  const ordering: SQL[] = input?.sort === "name-asc"
+    ? [asc(catalogueProducts.name), asc(catalogueProducts.id)]
+    : input?.sort === "name-desc"
+      ? [desc(catalogueProducts.name), asc(catalogueProducts.id)]
+      : input?.sort === "stock-desc"
+        ? [desc(catalogueProducts.stockQuantity), asc(catalogueProducts.name), asc(catalogueProducts.id)]
+        : input?.sort === "stock-asc"
+          ? [asc(catalogueProducts.stockQuantity), asc(catalogueProducts.name), asc(catalogueProducts.id)]
+          : input?.sort === "updated-desc"
+            ? [desc(catalogueProductAiContent.updatedAt), asc(catalogueProducts.name), asc(catalogueProducts.id)]
+            : input?.sort === "updated-asc"
+              ? [asc(catalogueProductAiContent.updatedAt), asc(catalogueProducts.name), asc(catalogueProducts.id)]
+              : [desc(sql`CASE WHEN ${catalogueProductAiContent.aiConfidence} = 'low' THEN 1 ELSE 0 END`), asc(catalogueProducts.name), asc(catalogueProducts.id)];
 
   const [rows, totals, statusCounts] = await Promise.all([
     db.select({ product: catalogueProducts, category: catalogueCategories, ai: catalogueProductAiContent, backup: catalogueProductAiBackups })
@@ -97,7 +119,7 @@ export async function getAdminAiContent(input?: { status?: AiContentStatus; conf
       .leftJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id))
       .leftJoin(catalogueProductAiBackups, eq(catalogueProductAiBackups.productId, catalogueProducts.id))
       .where(and(...conditions))
-      .orderBy(desc(sql`CASE WHEN ${catalogueProductAiContent.aiConfidence} = 'low' THEN 1 ELSE 0 END`), asc(catalogueProducts.name), asc(catalogueProducts.id))
+      .orderBy(...ordering)
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ total: count() })
@@ -445,12 +467,16 @@ export async function getAdminAiCategories() {
   return db.select({ id: catalogueCategories.id, name: catalogueCategories.name }).from(catalogueCategories).where(eq(catalogueCategories.isArchived, false)).orderBy(asc(catalogueCategories.name));
 }
 
-export async function getAdminAiProductIds(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number }) {
+export async function getAdminAiProductIds(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number; availability?: AiAvailabilityFilter; visibility?: AiVisibilityFilter }) {
   const db = await database();
   const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
   if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
   if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
+  if (input?.availability === "in_stock") conditions.push(gt(catalogueProducts.stockQuantity, 0));
+  if (input?.availability === "not_in_stock") conditions.push(lte(catalogueProducts.stockQuantity, 0));
+  if (input?.visibility === "visible") conditions.push(eq(catalogueProducts.isActive, true));
+  if (input?.visibility === "hidden") conditions.push(eq(catalogueProducts.isActive, false));
   const query = input?.query?.trim();
   if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
   const rows = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id)).where(and(...conditions)).orderBy(asc(catalogueProducts.name), asc(catalogueProducts.id));

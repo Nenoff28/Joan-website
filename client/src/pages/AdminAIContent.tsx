@@ -19,6 +19,8 @@ type AiItem = {
   oldKeywords: string | null;
   isActive: boolean;
   isArchived: boolean;
+  availability: "in_stock" | "on_request" | "out_of_stock";
+  stockQuantity: number;
   aiStatus: AiStatus;
   aiProvider: string | null;
   aiModel: string | null;
@@ -65,6 +67,9 @@ export default function AdminAIContent() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [categoryId, setCategoryId] = useState<number | "">("");
+  const [availability, setAvailability] = useState<"all" | "in_stock" | "not_in_stock">("all");
+  const [visibility, setVisibility] = useState<"all" | "visible" | "hidden">("all");
+  const [sort, setSort] = useState<"confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc">("confidence-low");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [model, setModel] = useState("gemini-3.8-flash");
   const [dailyGenerationLimit, setDailyGenerationLimit] = useState(20);
@@ -81,11 +86,11 @@ export default function AdminAIContent() {
     aiError: "",
     aiGeneratedAt: "",
   });
-  const input = useMemo(() => ({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, page, pageSize: 50 }), [status, confidence, query, categoryId, page]);
+  const input = useMemo(() => ({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, availability, visibility, sort, page, pageSize: 50 }), [status, confidence, query, categoryId, availability, visibility, sort, page]);
   const contentQuery = trpc.admin.aiContent.useQuery(input);
   const settingsQuery = trpc.admin.aiSettings.useQuery();
   const categoriesQuery = trpc.admin.aiCategories.useQuery();
-  const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined });
+  const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, availability, visibility });
   const queueQuery = trpc.admin.aiQueue.useQuery(undefined, { refetchInterval: 5000 });
   const utils = trpc.useUtils();
   const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
@@ -224,10 +229,13 @@ export default function AdminAIContent() {
             <h2>Продукти и статус</h2>
             <p>Всички съществуващи продукти започват като „Чакащ“.</p>
           </div>
+        </div>
+        <div className="admin-ai-filter-panel">
+          <div className="admin-ai-filter-heading"><strong>Филтриране и сортиране</strong><span>Комбинирайте филтрите, после маркирайте всички съвпаднали продукти.</span></div>
           <div className="admin-ai-filters">
             <label className="admin-search"><Search size={15} /><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder="Име, марка или SKU" aria-label="Търсене в AI съдържанието" /></label>
             <select value={status} onChange={event => { setStatus(event.target.value as AiStatus | ""); setPage(1); }} aria-label="Филтър по AI статус">
-              <option value="">Всички статуси</option>
+              <option value="">Всички AI статуси</option>
               {(Object.keys(statusLabels) as AiStatus[]).map(key => <option key={key} value={key}>{statusLabels[key]}</option>)}
             </select>
             <select value={confidence} onChange={event => { setConfidence(event.target.value as AiConfidence | ""); setPage(1); }} aria-label="Филтър по увереност">
@@ -238,6 +246,25 @@ export default function AdminAIContent() {
             <select value={categoryId} onChange={event => { setCategoryId(event.target.value ? Number(event.target.value) : ""); setPage(1); }} aria-label="Филтър по категория">
               <option value="">Всички категории</option>
               {(categoriesQuery.data ?? []).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
+            <select value={availability} onChange={event => { setAvailability(event.target.value as typeof availability); setPage(1); }} aria-label="Филтър по наличност">
+              <option value="all">Всички наличности</option>
+              <option value="in_stock">Само налични продукти</option>
+              <option value="not_in_stock">Без наличност</option>
+            </select>
+            <select value={visibility} onChange={event => { setVisibility(event.target.value as typeof visibility); setPage(1); }} aria-label="Филтър по видимост в сайта">
+              <option value="all">Показани и скрити</option>
+              <option value="visible">Показани в сайта</option>
+              <option value="hidden">Скрити от сайта</option>
+            </select>
+            <select value={sort} onChange={event => { setSort(event.target.value as typeof sort); setPage(1); }} aria-label="Сортиране на AI съдържанието">
+              <option value="confidence-low">Ниска увереност първо</option>
+              <option value="name-asc">Име: А → Я</option>
+              <option value="name-desc">Име: Я → А</option>
+              <option value="stock-desc">Наличност: най-много първо</option>
+              <option value="stock-asc">Наличност: най-малко първо</option>
+              <option value="updated-desc">Последно променени първо</option>
+              <option value="updated-asc">Най-стари промени първо</option>
             </select>
           </div>
         </div>
@@ -266,7 +293,7 @@ export default function AdminAIContent() {
                 <div role="button" tabIndex={0} key={item.productId} className={`admin-ai-product ${selectedId === item.productId ? "is-selected" : ""}`} onClick={() => setSelectedId(item.productId)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedId(item.productId); } }}>
                   <input type="checkbox" checked={selectedIds.has(item.productId)} onChange={() => toggleSelected(item.productId)} onClick={event => event.stopPropagation()} aria-label={`Избери ${item.name}`} />
                   <img src={item.imageUrl} alt="" />
-                  <span><strong>{item.name}</strong><small>{item.brand || "Без марка"} · SKU {item.sku || "—"}</small><small className="admin-ai-usage"><span>{item.aiProvider || "—"} / {item.aiModel || "—"}</span><span>in <strong>{item.aiInputTokens ?? 0}</strong></span><span>out <strong>{item.aiOutputTokens ?? 0}</strong></span><span>търсения <strong>{item.aiSearchCount}</strong></span></small></span>
+                  <span><strong>{item.name}</strong><small>{item.brand || "Без марка"} · SKU {item.sku || "—"}</small><small className="admin-ai-product-meta"><span className={item.stockQuantity > 0 ? "is-in-stock" : "is-out-of-stock"}>{item.stockQuantity > 0 ? `Налично: ${item.stockQuantity}` : "Няма наличност"}</span><span className={item.isActive ? "is-visible" : "is-hidden"}>{item.isActive ? "Показан в сайта" : "Скрит от сайта"}</span></small><small className="admin-ai-usage"><span>{item.aiProvider || "—"} / {item.aiModel || "—"}</span><span>in <strong>{item.aiInputTokens ?? 0}</strong></span><span>out <strong>{item.aiOutputTokens ?? 0}</strong></span><span>търсения <strong>{item.aiSearchCount}</strong></span></small></span>
                   <em className={statusClass(item.aiStatus)}>{statusLabels[item.aiStatus]}</em>
                   {item.canRestore && <small className="admin-ai-restore-ready">Има backup</small>}
                   <button type="button" className="admin-ai-row-generate" onClick={event => { event.stopPropagation(); generateMutation.mutate({ productId: item.productId }); }} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}>Генерирай</button>

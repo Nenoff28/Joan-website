@@ -1164,3 +1164,16 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-usage strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 .admin-ai-usage span { white-space: nowrap; }
 @media (max-width: 700px) { .admin-ai-connection-checks button, .admin-ai-check-ok, .admin-ai-connection-checks .admin-form-error { width: 100%; } }
+
+.admin-ai-filter-panel { background: #f5f6f2; border: 1px solid var(--line); display: grid; gap: .65rem; margin: .85rem 1rem 0; padding: .75rem; }
+.admin-ai-filter-heading { align-items: baseline; display: flex; flex-wrap: wrap; gap: .65rem; justify-content: space-between; }
+.admin-ai-filter-heading strong { color: var(--ink); font-size: .72rem; }
+.admin-ai-filter-heading span { color: var(--slate); font-size: .66rem; }
+.admin-ai-filter-panel .admin-ai-filters { display: grid; gap: .55rem; grid-template-columns: minmax(210px, 1.5fr) repeat(3, minmax(145px, 1fr)); }
+.admin-ai-filter-panel .admin-ai-filters select, .admin-ai-filter-panel .admin-search { min-height: 38px; width: 100%; }
+.admin-ai-product-meta { display: flex; flex-wrap: wrap; gap: .35rem; }
+.admin-ai-product-meta span { border-radius: 999px; font-size: .56rem; padding: .12rem .35rem; white-space: nowrap; }
+.admin-ai-product-meta .is-in-stock, .admin-ai-product-meta .is-visible { background: #e7f1e8; color: var(--green); }
+.admin-ai-product-meta .is-out-of-stock, .admin-ai-product-meta .is-hidden { background: #f4e8e7; color: #9f2b27; }
+@media (max-width: 1050px) { .admin-ai-filter-panel .admin-ai-filters { grid-template-columns: repeat(3, minmax(150px, 1fr)); }.admin-ai-filter-panel .admin-search { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .admin-ai-filter-panel { margin: .65rem .55rem 0; }.admin-ai-filter-panel .admin-ai-filters { grid-template-columns: 1fr; }.admin-ai-filter-panel .admin-search { grid-column: auto; } }

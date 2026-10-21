@@ -77,6 +77,9 @@ const catalogueSortSchema = z.enum(["relevance", "price-asc", "price-desc", "nam
 const catalogueLanguageSchema = z.enum(["bg", "en"]);
 const aiContentStatusSchema = z.enum(["pending", "generated", "reviewed", "published", "error"]);
 const aiContentConfidenceSchema = z.enum(["high", "low"]);
+const aiAvailabilityFilterSchema = z.enum(["all", "in_stock", "not_in_stock"]);
+const aiVisibilityFilterSchema = z.enum(["all", "visible", "hidden"]);
+const aiContentSortSchema = z.enum(["confidence-low", "name-asc", "name-desc", "stock-desc", "stock-asc", "updated-desc", "updated-asc"]);
 const publicCatalogueLanguageInput = z.object({ language: catalogueLanguageSchema }).optional();
 const publicCataloguePageSchema = z.object({
   language: catalogueLanguageSchema.optional(),
@@ -166,13 +169,13 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),
   }),
   admin: router({
-    aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
+    aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional(), availability: aiAvailabilityFilterSchema.optional(), visibility: aiVisibilityFilterSchema.optional(), sort: aiContentSortSchema.optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
     aiSettings: administratorOnlyProcedure().query(() => getAdminAiSettings()),
     saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000), model: z.string().trim().min(2).max(160), dailyGenerationLimit: z.number().int().min(0).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt, input.model, input.dailyGenerationLimit)),
     checkGeminiConnection: administratorOnlyProcedure().input(z.object({ withSearch: z.boolean(), model: z.string().trim().min(2).max(160).optional() })).mutation(({ input }) => checkGeminiConnection(input.withSearch, input.model)),
     generateAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => generateAdminAiContent(input.productId)),
     aiCategories: administratorOnlyProcedure().query(() => getAdminAiCategories()),
-    aiProductIds: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional() }).optional()).query(({ input }) => getAdminAiProductIds(input)),
+    aiProductIds: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional(), availability: aiAvailabilityFilterSchema.optional(), visibility: aiVisibilityFilterSchema.optional() }).optional()).query(({ input }) => getAdminAiProductIds(input)),
     aiQueue: administratorOnlyProcedure().input(z.object({ batchId: z.number().int().positive().optional() }).optional()).query(({ input }) => getAdminAiQueueStatus(input?.batchId)),
     enqueueAiGeneration: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10_000) })).mutation(({ input, ctx }) => enqueueAiGeneration({ productIds: input.productIds, createdBy: ctx.user?.id ?? null })),
     setAiQueueStatus: administratorOnlyProcedure().input(z.object({ batchId: z.number().int().positive(), status: z.enum(["paused", "queued"]) })).mutation(({ input }) => setAdminAiQueueStatus(input.batchId, input.status)),
