@@ -1132,3 +1132,19 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 @media (max-width: 1000px) { .admin-ai-layout { grid-template-columns: 1fr; }.admin-ai-list { max-height: 420px; } }
 @media (max-width: 700px) { .admin-ai-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.admin-ai-status-grid .admin-ai-status-card:last-child { grid-column: span 2; }.admin-ai-filters { align-items: stretch; flex-direction: column; width: 100%; }.admin-ai-filters select { width: 100%; }.admin-ai-editor-grid { grid-template-columns: 1fr; }.admin-ai-layout { padding: .55rem; } }
 @media (max-width: 700px) { .admin-ai-settings .admin-panel-head { align-items: stretch; flex-direction: column; }.admin-ai-settings .admin-primary { width: 100%; }.admin-ai-generate-row { align-items: stretch; flex-direction: column; }.admin-ai-generate-row .admin-primary { width: 100%; } }
+
+/* AI background generation queue */
+.admin-ai-limit-field { display:grid; gap:.35rem; max-width:280px; margin-top:.75rem; font-size:.9rem; font-weight:600; }
+.admin-ai-limit-field input { width:100%; }
+.admin-ai-limit-field small { color:var(--muted-foreground); font-weight:400; }
+.admin-ai-bulk-toolbar, .admin-ai-queue { display:flex; align-items:center; gap:.65rem; flex-wrap:wrap; padding:.75rem 1rem; border-top:1px solid var(--border); background:color-mix(in srgb, var(--mineral) 35%, transparent); }
+.admin-ai-bulk-toolbar button, .admin-ai-queue button { min-height:2.25rem; padding:.45rem .7rem; border:1px solid var(--border); border-radius:.5rem; background:var(--background); color:var(--foreground); cursor:pointer; }
+.admin-ai-bulk-toolbar .admin-primary { color:white; background:#c51f2b; border-color:#c51f2b; }
+.admin-ai-queue { justify-content:space-between; background:color-mix(in srgb, #c51f2b 6%, var(--background)); }
+.admin-ai-queue > div:first-child { display:flex; align-items:center; gap:.6rem; }
+.admin-ai-queue-metrics { display:flex; gap:1rem; flex-wrap:wrap; color:var(--slate); font-size:.88rem; }
+.admin-ai-queue-metrics b { color:var(--foreground); }
+.admin-ai-product { grid-template-columns:auto 46px minmax(0, 1fr) auto auto; }
+.admin-ai-product > input[type="checkbox"] { width:1rem; height:1rem; accent-color:#c51f2b; }
+.admin-ai-row-generate { border:1px solid var(--red); color:var(--red); font-size:.68rem; font-weight:700; padding:.35rem .5rem; white-space:nowrap; }
+@media (max-width: 760px) { .admin-ai-bulk-toolbar, .admin-ai-queue { align-items:stretch; } .admin-ai-bulk-toolbar button, .admin-ai-queue button { flex:1 1 45%; } .admin-ai-queue-metrics { width:100%; } }

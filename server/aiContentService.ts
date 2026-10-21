@@ -1,6 +1,6 @@
-import { and, asc, count, eq, like, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, like, lt, lte, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { aiContentSettings, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
+import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
 import { invokeLLM, type Message, type Tool } from "./_core/llm";
 
@@ -129,16 +129,17 @@ export async function getAdminAiSettings() {
   const db = await database();
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
-  return { systemPrompt: settings.systemPrompt, updatedAt: settings.updatedAt };
+  return { systemPrompt: settings.systemPrompt, dailyGenerationLimit: settings.dailyGenerationLimit, updatedAt: settings.updatedAt };
 }
 
-export async function saveAdminAiSettings(systemPrompt: string) {
+export async function saveAdminAiSettings(systemPrompt: string, dailyGenerationLimit: number) {
   const prompt = systemPrompt.trim();
   if (prompt.length < 20) throw new TRPCError({ code: "BAD_REQUEST", message: "Системният prompt трябва да съдържа поне 20 знака." });
   if (prompt.length > 100_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Системният prompt е прекалено дълъг." });
+  if (!Number.isInteger(dailyGenerationLimit) || dailyGenerationLimit < 0 || dailyGenerationLimit > 100_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Дневният лимит трябва да е цяло число между 0 и 100 000." });
   const db = await database();
-  await db.insert(aiContentSettings).values({ id: 1, systemPrompt: prompt }).onDuplicateKeyUpdate({ set: { systemPrompt: prompt } });
-  return { success: true, systemPrompt: prompt } as const;
+  await db.insert(aiContentSettings).values({ id: 1, systemPrompt: prompt, dailyGenerationLimit }).onDuplicateKeyUpdate({ set: { systemPrompt: prompt, dailyGenerationLimit } });
+  return { success: true, systemPrompt: prompt, dailyGenerationLimit } as const;
 }
 
 function llmResponseText(content: unknown) {
@@ -229,12 +230,32 @@ function normalizeAiPayload(payload: Record<string, unknown>) {
   };
 }
 
-export async function generateAdminAiContent(productId: number) {
+async function reserveDailyGeneration(db: Awaited<ReturnType<typeof database>>, limit: number) {
+  if (limit <= 0) return false;
+  const usageDate = new Date().toISOString().slice(0, 10);
+  const updated = await db.update(aiGenerationDailyUsage).set({ generatedCount: sql`${aiGenerationDailyUsage.generatedCount} + 1` }).where(and(eq(aiGenerationDailyUsage.usageDate, usageDate), lt(aiGenerationDailyUsage.generatedCount, limit)));
+  const affectedRows = Number((updated as unknown as Array<{ affectedRows?: number }>)[0]?.affectedRows ?? 0);
+  if (affectedRows > 0) return true;
+  try {
+    await db.insert(aiGenerationDailyUsage).values({ usageDate, generatedCount: 1 });
+    return true;
+  } catch {
+    const retry = await db.update(aiGenerationDailyUsage).set({ generatedCount: sql`${aiGenerationDailyUsage.generatedCount} + 1` }).where(and(eq(aiGenerationDailyUsage.usageDate, usageDate), lt(aiGenerationDailyUsage.generatedCount, limit)));
+    return Number((retry as unknown as Array<{ affectedRows?: number }>)[0]?.affectedRows ?? 0) > 0;
+  }
+}
+
+export async function generateAdminAiContent(productId: number, options?: { skipQuota?: boolean }) {
   const db = await database();
   const [product] = await db.select({ id: catalogueProducts.id, name: catalogueProducts.name, brand: catalogueProducts.brand, sku: catalogueProducts.sku }).from(catalogueProducts).where(eq(catalogueProducts.id, productId)).limit(1);
   if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Продуктът не е намерен." });
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
+  if (!options?.skipQuota && !(await reserveDailyGeneration(db, settings.dailyGenerationLimit))) {
+    const message = "Дневният лимит за AI генерирания е достигнат.";
+    await db.insert(catalogueProductAiContent).values({ productId, aiStatus: "error", aiError: message, aiGeneratedAt: new Date() }).onDuplicateKeyUpdate({ set: { aiStatus: "error", aiError: message, aiGeneratedAt: new Date() } });
+    return { success: false, status: "error" as const, error: message };
+  }
 
   const productInput = `Марка: ${product.brand || "няма посочена"}\nИме на продукта: ${product.name}\nEAN/артикулен номер: ${product.sku || "няма посочен"}`;
   let lastError = "AI резултатът не премина програмната проверка.";
@@ -285,4 +306,116 @@ export async function generateAdminAiContent(productId: number) {
     }
     return { success: false, status: "error" as const, error: message };
   }
+}
+
+export type AiBatchStatus = "queued" | "running" | "paused" | "completed" | "failed";
+
+export async function getAdminAiCategories() {
+  const db = await database();
+  return db.select({ id: catalogueCategories.id, name: catalogueCategories.name }).from(catalogueCategories).where(eq(catalogueCategories.isArchived, false)).orderBy(asc(catalogueCategories.name));
+}
+
+export async function getAdminAiProductIds(input?: { status?: AiContentStatus; query?: string; categoryId?: number }) {
+  const db = await database();
+  const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
+  if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
+  if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
+  const query = input?.query?.trim();
+  if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
+  const rows = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id)).where(and(...conditions)).orderBy(asc(catalogueProducts.name), asc(catalogueProducts.id));
+  return rows.map(row => row.id);
+}
+
+export async function enqueueAiGeneration(input: { productIds: number[]; createdBy?: number | null }) {
+  const db = await database();
+  const ids = Array.from(new Set(input.productIds)).slice(0, 10_000);
+  if (!ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Изберете поне един продукт." });
+  const products = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).where(and(inArray(catalogueProducts.id, ids), eq(catalogueProducts.isArchived, false)));
+  const validIds = products.map(product => product.id);
+  if (!validIds.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Избраните продукти не са налични за обработка." });
+  const created = await db.insert(aiGenerationBatches).values({ totalJobs: validIds.length, createdBy: input.createdBy ?? null });
+  const batchId = Number((created as unknown as Array<{ insertId: number }>)[0]?.insertId);
+  if (!batchId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Опашката не можа да бъде създадена." });
+  await db.insert(aiGenerationJobs).values(validIds.map(productId => ({ batchId, productId, nextAttemptAt: new Date() })));
+  return { batchId, total: validIds.length } as const;
+}
+
+export async function getAdminAiQueueStatus(batchId?: number) {
+  const db = await database();
+  const [batch] = await db.select().from(aiGenerationBatches).where(batchId ? eq(aiGenerationBatches.id, batchId) : undefined).orderBy(desc(aiGenerationBatches.id)).limit(1);
+  if (!batch) return null;
+  const grouped = await db.select({ status: aiGenerationJobs.status, total: count() }).from(aiGenerationJobs).where(eq(aiGenerationJobs.batchId, batch.id)).groupBy(aiGenerationJobs.status);
+  const progress = { queued: 0, running: 0, succeeded: 0, failed: 0 };
+  for (const row of grouped) progress[row.status as keyof typeof progress] = Number(row.total ?? 0);
+  const usageDate = new Date().toISOString().slice(0, 10);
+  const [usage, settings] = await Promise.all([
+    db.select().from(aiGenerationDailyUsage).where(eq(aiGenerationDailyUsage.usageDate, usageDate)).limit(1),
+    db.select({ dailyGenerationLimit: aiContentSettings.dailyGenerationLimit }).from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1),
+  ]);
+  return { batchId: batch.id, status: batch.status as AiBatchStatus, total: batch.totalJobs, progress, createdAt: batch.createdAt, startedAt: batch.startedAt, finishedAt: batch.finishedAt, dailyUsed: usage[0]?.generatedCount ?? 0, dailyLimit: settings[0]?.dailyGenerationLimit ?? 0 };
+}
+
+export async function setAdminAiQueueStatus(batchId: number, status: "paused" | "queued") {
+  const db = await database();
+  const [batch] = await db.select({ id: aiGenerationBatches.id, status: aiGenerationBatches.status }).from(aiGenerationBatches).where(eq(aiGenerationBatches.id, batchId)).limit(1);
+  if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "AI опашката не е намерена." });
+  if (status === "paused" && !["queued", "running"].includes(batch.status)) throw new TRPCError({ code: "BAD_REQUEST", message: "Тази опашка вече е приключила." });
+  if (status === "queued" && batch.status !== "paused") throw new TRPCError({ code: "BAD_REQUEST", message: "Само паузирана опашка може да бъде продължена." });
+  await db.update(aiGenerationBatches).set({ status, startedAt: status === "queued" ? new Date() : undefined }).where(eq(aiGenerationBatches.id, batchId));
+  return getAdminAiQueueStatus(batchId);
+}
+
+let queueWorkerStarted = false;
+let queueWorkerBusy = false;
+
+async function finalizeBatch(db: Awaited<ReturnType<typeof database>>, batchId: number) {
+  const grouped = await db.select({ status: aiGenerationJobs.status, total: count() }).from(aiGenerationJobs).where(eq(aiGenerationJobs.batchId, batchId)).groupBy(aiGenerationJobs.status);
+  const counts = new Map(grouped.map(row => [row.status, Number(row.total ?? 0)]));
+  if ((counts.get("queued") ?? 0) === 0 && (counts.get("running") ?? 0) === 0) {
+    const status = (counts.get("failed") ?? 0) > 0 ? "failed" as const : "completed" as const;
+    await db.update(aiGenerationBatches).set({ status, finishedAt: new Date() }).where(and(eq(aiGenerationBatches.id, batchId), inArray(aiGenerationBatches.status, ["queued", "running"])));
+  }
+}
+
+async function processAiQueueOnce() {
+  if (queueWorkerBusy) return;
+  queueWorkerBusy = true;
+  try {
+    const db = await database();
+    const batches = await db.select({ id: aiGenerationBatches.id }).from(aiGenerationBatches).where(inArray(aiGenerationBatches.status, ["queued", "running"])).orderBy(asc(aiGenerationBatches.id)).limit(10);
+    for (const batch of batches) {
+      await db.update(aiGenerationBatches).set({ status: "running", startedAt: sql`COALESCE(${aiGenerationBatches.startedAt}, NOW())` }).where(and(eq(aiGenerationBatches.id, batch.id), eq(aiGenerationBatches.status, "queued")));
+      const jobs = await db.select({ id: aiGenerationJobs.id, productId: aiGenerationJobs.productId, attempts: aiGenerationJobs.attempts, maxAttempts: aiGenerationJobs.maxAttempts }).from(aiGenerationJobs).where(and(eq(aiGenerationJobs.batchId, batch.id), eq(aiGenerationJobs.status, "queued"), or(isNull(aiGenerationJobs.nextAttemptAt), lte(aiGenerationJobs.nextAttemptAt, new Date()))!)).orderBy(asc(aiGenerationJobs.id)).limit(5);
+      if (!jobs.length) { await finalizeBatch(db, batch.id); continue; }
+      await Promise.all(jobs.map(async job => {
+        await db.update(aiGenerationJobs).set({ status: "running", startedAt: new Date(), attempts: job.attempts + 1 }).where(and(eq(aiGenerationJobs.id, job.id), eq(aiGenerationJobs.status, "queued")));
+        try {
+          const result = await generateAdminAiContent(job.productId);
+          if (result.status === "generated") await db.update(aiGenerationJobs).set({ status: "succeeded", completedAt: new Date(), lastError: null }).where(eq(aiGenerationJobs.id, job.id));
+          else {
+            const error = result.error || "AI генерирането неуспешно.";
+            if (error.includes("Дневният лимит")) {
+              const tomorrow = new Date(); tomorrow.setUTCHours(24, 0, 0, 0);
+              await db.update(aiGenerationJobs).set({ status: "queued", nextAttemptAt: tomorrow, lastError: error }).where(eq(aiGenerationJobs.id, job.id));
+            } else if (job.attempts + 1 < job.maxAttempts) {
+              await db.update(aiGenerationJobs).set({ status: "queued", nextAttemptAt: new Date(Date.now() + Math.min(60 * 60_000, 2 ** job.attempts * 30_000)), lastError: error }).where(eq(aiGenerationJobs.id, job.id));
+            } else await db.update(aiGenerationJobs).set({ status: "failed", completedAt: new Date(), lastError: error }).where(eq(aiGenerationJobs.id, job.id));
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Неизвестна грешка в AI worker-а.";
+          if (job.attempts < job.maxAttempts) await db.update(aiGenerationJobs).set({ status: "queued", nextAttemptAt: new Date(Date.now() + Math.min(60 * 60_000, 2 ** job.attempts * 30_000)), lastError: message }).where(eq(aiGenerationJobs.id, job.id));
+          else await db.update(aiGenerationJobs).set({ status: "failed", completedAt: new Date(), lastError: message }).where(eq(aiGenerationJobs.id, job.id));
+        }
+      }));
+      await finalizeBatch(db, batch.id);
+    }
+  } catch (error) { console.error("[AI queue]", error); }
+  finally { queueWorkerBusy = false; }
+}
+
+export function startAiGenerationWorker() {
+  if (queueWorkerStarted) return;
+  queueWorkerStarted = true;
+  void processAiQueueOnce();
+  setInterval(() => void processAiQueueOnce(), 5_000).unref();
 }

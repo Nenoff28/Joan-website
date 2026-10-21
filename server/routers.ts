@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { administratorOnlyProcedure, permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
-import { generateAdminAiContent, getAdminAiContent, getAdminAiSettings, saveAdminAiContent, saveAdminAiSettings } from "./aiContentService";
+import { enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
 import { categoryPayloadSchema } from "../shared/categoryValidation";
@@ -168,8 +168,13 @@ export const appRouter = router({
   admin: router({
     aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), query: z.string().trim().max(160).optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
     aiSettings: administratorOnlyProcedure().query(() => getAdminAiSettings()),
-    saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt)),
+    saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000), dailyGenerationLimit: z.number().int().min(0).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt, input.dailyGenerationLimit)),
     generateAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => generateAdminAiContent(input.productId)),
+    aiCategories: administratorOnlyProcedure().query(() => getAdminAiCategories()),
+    aiProductIds: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional() }).optional()).query(({ input }) => getAdminAiProductIds(input)),
+    aiQueue: administratorOnlyProcedure().input(z.object({ batchId: z.number().int().positive().optional() }).optional()).query(({ input }) => getAdminAiQueueStatus(input?.batchId)),
+    enqueueAiGeneration: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10_000) })).mutation(({ input, ctx }) => enqueueAiGeneration({ productIds: input.productIds, createdBy: ctx.user?.id ?? null })),
+    setAiQueueStatus: administratorOnlyProcedure().input(z.object({ batchId: z.number().int().positive(), status: z.enum(["paused", "queued"]) })).mutation(({ input }) => setAdminAiQueueStatus(input.batchId, input.status)),
     saveAiContent: administratorOnlyProcedure().input(z.object({
       productId: z.number().int().positive(),
       aiStatus: aiContentStatusSchema,

@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { CheckCircle2, Clock3, FileWarning, Loader2, Save, Search, Sparkles } from "lucide-react";
+import { CheckCircle2, CheckSquare, Clock3, FileWarning, Loader2, Pause, Play, Save, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type AiStatus = "pending" | "generated" | "reviewed" | "published" | "error";
@@ -51,7 +51,10 @@ export default function AdminAIContent() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [categoryId, setCategoryId] = useState<number | "">("");
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [dailyGenerationLimit, setDailyGenerationLimit] = useState(100);
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
     aiDescription: "",
@@ -67,10 +70,15 @@ export default function AdminAIContent() {
   const input = useMemo(() => ({ status: status || undefined, query: query.trim() || undefined, page, pageSize: 50 }), [status, query, page]);
   const contentQuery = trpc.admin.aiContent.useQuery(input);
   const settingsQuery = trpc.admin.aiSettings.useQuery();
+  const categoriesQuery = trpc.admin.aiCategories.useQuery();
+  const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined });
+  const queueQuery = trpc.admin.aiQueue.useQuery(undefined, { refetchInterval: 5000 });
   const utils = trpc.useUtils();
   const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
     onSuccess: async () => { await utils.admin.aiSettings.invalidate(); },
   });
+  const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async () => { setSelectedIds(new Set()); await queueQuery.refetch(); } });
+  const queueStatusMutation = trpc.admin.setAiQueueStatus.useMutation({ onSuccess: async () => { await queueQuery.refetch(); } });
   const saveMutation = trpc.admin.saveAiContent.useMutation({
     onSuccess: async () => {
       await utils.admin.aiContent.invalidate();
@@ -84,7 +92,8 @@ export default function AdminAIContent() {
 
   useEffect(() => {
     if (settingsQuery.data?.systemPrompt && !systemPrompt) setSystemPrompt(settingsQuery.data.systemPrompt);
-  }, [settingsQuery.data?.systemPrompt, systemPrompt]);
+    if (settingsQuery.data?.dailyGenerationLimit !== undefined) setDailyGenerationLimit(settingsQuery.data.dailyGenerationLimit);
+  }, [settingsQuery.data?.systemPrompt, settingsQuery.data?.dailyGenerationLimit, systemPrompt]);
 
   useEffect(() => {
     if (!selected && items[0]) setSelectedId(items[0].productId);
@@ -127,8 +136,15 @@ export default function AdminAIContent() {
 
   const saveSettings = (event: React.FormEvent) => {
     event.preventDefault();
-    saveSettingsMutation.mutate({ systemPrompt });
+    saveSettingsMutation.mutate({ systemPrompt, dailyGenerationLimit });
   };
+
+  const selectAllMatching = async () => {
+    const result = await matchingIdsQuery.refetch();
+    setSelectedIds(new Set(result.data ?? []));
+  };
+  const toggleSelected = (productId: number) => setSelectedIds(current => { const next = new Set(current); if (next.has(productId)) next.delete(productId); else next.add(productId); return next; });
+  const queue = queueQuery.data;
 
   return (
     <section className="admin-workspace">
@@ -149,6 +165,7 @@ export default function AdminAIContent() {
           <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази prompt-а"}</button>
         </div>
         <textarea value={systemPrompt} onChange={event => setSystemPrompt(event.target.value)} rows={12} aria-label="AI системен prompt" placeholder="Въведете системния prompt за AI съдържанието…" />
+        <label className="admin-ai-limit-field">Дневен лимит за генерирания<input type="number" min={0} max={100000} value={dailyGenerationLimit} onChange={event => setDailyGenerationLimit(Math.max(0, Number(event.target.value) || 0))} /><small>0 блокира генерирането; лимитът се прилага за UTC ден.</small></label>
         {saveSettingsMutation.error && <div className="admin-form-error" role="alert">{saveSettingsMutation.error.message}</div>}
         {settingsQuery.error && <div className="admin-form-error" role="alert">Системният prompt не може да се зареди.</div>}
       </form>
@@ -173,17 +190,34 @@ export default function AdminAIContent() {
               <option value="">Всички статуси</option>
               {(Object.keys(statusLabels) as AiStatus[]).map(key => <option key={key} value={key}>{statusLabels[key]}</option>)}
             </select>
+            <select value={categoryId} onChange={event => { setCategoryId(event.target.value ? Number(event.target.value) : ""); setPage(1); }} aria-label="Филтър по категория">
+              <option value="">Всички категории</option>
+              {(categoriesQuery.data ?? []).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
           </div>
         </div>
+        <div className="admin-ai-bulk-toolbar">
+          <span><CheckSquare size={15} /> Избрани: <strong>{selectedIds.size}</strong></span>
+          <button type="button" onClick={selectAllMatching} disabled={matchingIdsQuery.isFetching}>{matchingIdsQuery.isFetching ? "Зареждане…" : `Маркирай всички от филтъра (${matchingIdsQuery.data?.length ?? "…"})`}</button>
+          <button type="button" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size}>Изчисти избора</button>
+          <button type="button" className="admin-primary" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds) })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай за избраните"}</button>
+        </div>
+        {queue && <div className="admin-ai-queue" role="status">
+          <div><strong>Фонова опашка #{queue.batchId}</strong><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "Пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div>
+          <div className="admin-ai-queue-metrics"><span>Общо <b>{queue.total}</b></span><span>Готови <b>{queue.progress.succeeded}</b></span><span>Грешки <b>{queue.progress.failed}</b></span><span>В процес <b>{queue.progress.running}</b></span><span>Днес <b>{queue.dailyUsed}/{queue.dailyLimit}</b></span></div>
+          {(queue.status === "running" || queue.status === "queued" || queue.status === "paused") && <button type="button" onClick={() => queueStatusMutation.mutate({ batchId: queue.batchId, status: queue.status === "paused" ? "queued" : "paused" })} disabled={queueStatusMutation.isPending}>{queue.status === "paused" ? <><Play size={14} /> Продължи</> : <><Pause size={14} /> Пауза</>}</button>}
+        </div>}
         {contentQuery.isLoading ? <div className="admin-empty-state"><Loader2 className="animate-spin" /> Зареждане…</div> : contentQuery.error ? <div className="admin-form-error" role="alert">Нямате достъп или AI съдържанието не може да се зареди.</div> : (
           <div className="admin-ai-layout">
             <div className="admin-ai-list" aria-label="Списък с продукти">
               {items.map(item => (
-                <button type="button" key={item.productId} className={`admin-ai-product ${selectedId === item.productId ? "is-selected" : ""}`} onClick={() => setSelectedId(item.productId)}>
+                <div role="button" tabIndex={0} key={item.productId} className={`admin-ai-product ${selectedId === item.productId ? "is-selected" : ""}`} onClick={() => setSelectedId(item.productId)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedId(item.productId); } }}>
+                  <input type="checkbox" checked={selectedIds.has(item.productId)} onChange={() => toggleSelected(item.productId)} onClick={event => event.stopPropagation()} aria-label={`Избери ${item.name}`} />
                   <img src={item.imageUrl} alt="" />
                   <span><strong>{item.name}</strong><small>{item.brand || "Без марка"} · SKU {item.sku || "—"}</small></span>
                   <em className={statusClass(item.aiStatus)}>{statusLabels[item.aiStatus]}</em>
-                </button>
+                  <button type="button" className="admin-ai-row-generate" onClick={event => { event.stopPropagation(); generateMutation.mutate({ productId: item.productId }); }} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}>Генерирай</button>
+                </div>
               ))}
               {!items.length && <div className="admin-empty-state"><Clock3 /> Няма продукти за този филтър.</div>}
               {contentQuery.data && contentQuery.data.total > contentQuery.data.pageSize && <div className="admin-pagination"><button type="button" disabled={page <= 1} onClick={() => setPage(value => value - 1)}>Назад</button><span>Страница {page} от {Math.ceil(contentQuery.data.total / contentQuery.data.pageSize)}</span><button type="button" disabled={page >= Math.ceil(contentQuery.data.total / contentQuery.data.pageSize)} onClick={() => setPage(value => value + 1)}>Напред</button></div>}

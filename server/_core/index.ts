@@ -12,6 +12,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import type { Server } from "http";
+import { startAiGenerationWorker } from "../aiContentService";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -61,6 +62,7 @@ export async function createProductionApp(): Promise<Express> {
 }
 
 export async function startServer() {
+  startAiGenerationWorker();
   const server = createServer();
   const app = await createApp(server);
   server.on("request", app);

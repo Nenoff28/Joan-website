@@ -220,6 +220,42 @@ export const catalogueProductAiContent = mysqlTable("catalogue_product_ai_conten
 export const aiContentSettings = mysqlTable("ai_content_settings", {
   id: int("id").primaryKey(),
   systemPrompt: text("systemPrompt").notNull(),
+  dailyGenerationLimit: int("dailyGenerationLimit").default(100).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** Persistent background batches allow AI generation to continue after the admin browser closes. */
+export const aiGenerationBatches = mysqlTable("ai_generation_batches", {
+  id: int("id").autoincrement().primaryKey(),
+  status: mysqlEnum("status", ["queued", "running", "paused", "completed", "failed"]).default("queued").notNull(),
+  totalJobs: int("totalJobs").default(0).notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  startedAt: timestamp("startedAt"),
+  finishedAt: timestamp("finishedAt"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("ai_generation_batches_status_idx").on(table.status)]);
+
+/** One durable job per product and batch; workers claim at most five jobs concurrently. */
+export const aiGenerationJobs = mysqlTable("ai_generation_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batchId").notNull().references(() => aiGenerationBatches.id),
+  productId: int("productId").notNull().references(() => catalogueProducts.id),
+  status: mysqlEnum("status", ["queued", "running", "succeeded", "failed"]).default("queued").notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  maxAttempts: int("maxAttempts").default(3).notNull(),
+  lastError: text("lastError"),
+  nextAttemptAt: timestamp("nextAttemptAt"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("ai_generation_jobs_batch_idx").on(table.batchId, table.status), index("ai_generation_jobs_retry_idx").on(table.status, table.nextAttemptAt)]);
+
+/** UTC day counters enforce the administrator-configured generation limit atomically per worker process. */
+export const aiGenerationDailyUsage = mysqlTable("ai_generation_daily_usage", {
+  usageDate: varchar("usageDate", { length: 10 }).primaryKey(),
+  generatedCount: int("generatedCount").default(0).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
