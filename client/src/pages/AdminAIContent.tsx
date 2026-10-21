@@ -227,7 +227,8 @@ export default function AdminAIContent() {
           <button type="button" onClick={selectAllMatching} disabled={matchingIdsQuery.isFetching}>{matchingIdsQuery.isFetching ? "Зареждане…" : `Маркирай всички от филтъра (${matchingIdsQuery.data?.length ?? "…"})`}</button>
           <button type="button" onClick={() => setSelectedIds(new Set())} disabled={!selectedIds.size}>Изчисти избора</button>
           <button type="button" className="admin-primary" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds) })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай за избраните"}</button>
-          <button type="button" className="admin-primary" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай одобрените (${selectedApprovedIds.length})`}</button>
+          <button type="button" className="admin-primary" onClick={() => publishMutation.mutate({})} disabled={publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : "Публикувай одобрените"}</button>
+          <button type="button" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай избраните одобрени (${selectedApprovedIds.length})`}</button>
           <button type="button" onClick={() => restoreMutation.mutate({ productIds: selectedRestorableIds })} disabled={!selectedRestorableIds.length || restoreMutation.isPending}>{restoreMutation.isPending ? "Възстановяване…" : `Върни старото (${selectedRestorableIds.length})`}</button>
         </div>
         {publishMutation.error && <div className="admin-form-error" role="alert">Публикуването не бе завършено: {publishMutation.error.message}</div>}

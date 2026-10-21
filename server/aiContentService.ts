@@ -165,19 +165,20 @@ function aiFeaturesToJson(value: string | null) {
   return JSON.stringify((value ?? "").split(/\r?\n/).map(item => item.trim()).filter(Boolean));
 }
 
-export async function publishApprovedAiContent(productIds: number[]) {
+export async function publishApprovedAiContent(productIds?: number[]) {
   const db = await database();
-  const ids = Array.from(new Set(productIds)).slice(0, 10_000);
-  if (!ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Изберете поне един продукт." });
+  const ids = productIds?.length ? Array.from(new Set(productIds)).slice(0, 10_000) : null;
   let published = 0;
   const skipped: number[] = [];
   await db.transaction(async tx => {
     const rows = await tx.select({ product: catalogueProducts, ai: catalogueProductAiContent })
       .from(catalogueProducts)
       .innerJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id))
-      .where(and(inArray(catalogueProducts.id, ids), eq(catalogueProductAiContent.aiStatus, "reviewed")));
-    const found = new Set(rows.map(row => row.product.id));
-    for (const id of ids) if (!found.has(id)) skipped.push(id);
+      .where(ids ? and(inArray(catalogueProducts.id, ids), eq(catalogueProductAiContent.aiStatus, "reviewed")) : eq(catalogueProductAiContent.aiStatus, "reviewed"));
+    if (ids) {
+      const found = new Set(rows.map(row => row.product.id));
+      for (const id of ids) if (!found.has(id)) skipped.push(id);
+    }
     for (const row of rows) {
       const [existingBackup] = await tx.select().from(catalogueProductAiBackups).where(eq(catalogueProductAiBackups.productId, row.product.id)).limit(1);
       if (!existingBackup || existingBackup.restoredAt) {

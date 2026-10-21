@@ -189,7 +189,7 @@ export const appRouter = router({
       aiGeneratedAt: z.string().datetime().nullable().optional(),
     })).mutation(({ input }) => saveAdminAiContent(input)),
     reviewAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive(), action: z.enum(["approve", "reject"]) })).mutation(({ input }) => reviewAdminAiContent(input.productId, input.action)),
-    publishApprovedAiContent: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000) })).mutation(({ input }) => publishApprovedAiContent(input.productIds)),
+    publishApprovedAiContent: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000).optional() })).mutation(({ input }) => publishApprovedAiContent(input.productIds)),
     restoreAiBackups: administratorOnlyProcedure().input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(10000) })).mutation(({ input }) => restoreAiBackups(input.productIds)),
     summary: permissionProcedure("dashboard.read").query(async ({ ctx }) => { const summary = await getAdminSummary(); return { ...summary, recentOrders: ctx.staff.permissions.includes("orders.read") ? summary.recentOrders : [] }; }),
     operations: anyPermissionProcedure(["dashboard.read", "products.read", "inventory.read", "promotions.read", "orders.read", "activity.read"]).query(({ ctx }) => getAdminOperations(ctx.staff.permissions)),
