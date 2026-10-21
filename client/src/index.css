@@ -1010,6 +1010,12 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-publication-archived { background: #fff0ef; border-color: #e6bbb8; color: #a4292e; }
 .admin-product-actions { justify-content: flex-end; min-width: 184px; }
 .admin-product-actions .admin-text-action, .admin-product-actions .admin-product-remove { white-space: nowrap; }
+.admin-product-editor-panel { position: relative; }
+.admin-product-editor-head-actions { align-items: center; display: flex; gap: .65rem; justify-content: flex-end; }
+.admin-product-editor-close { align-items: center; border: 1px solid #cfd5d0; border-radius: 50%; color: var(--slate); display: inline-flex; height: 38px; justify-content: center; width: 38px; }
+.admin-product-editor-close:hover:not(:disabled) { background: var(--red-wash); border-color: var(--red); color: var(--red); }
+.admin-product-editor-close:disabled { cursor: not-allowed; opacity: .45; }
+@media (max-width: 640px) { .admin-product-editor-head-actions { align-items: stretch; flex-direction: column-reverse; width: 100%; }.admin-product-editor-close { align-self: flex-end; }.admin-product-editor-head-actions .admin-product-actions { justify-content: flex-start; } }
 @media (max-width: 700px) { .admin-table { min-width: 970px; } }
 
 /* Readability pass: slightly larger secondary product copy with wrapping-safe layouts. */

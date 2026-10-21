@@ -748,6 +748,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const [uploadError, setUploadError] = useState("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [savedProduct, setSavedProduct] = useState<SavedProduct | null>(null);
+  const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [categorySelectionChanged, setCategorySelectionChanged] = useState(false);
   const onSaved = async (message: string) => {
     setSearch("");
@@ -783,7 +784,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
   const [form, setForm] = useState<ProductForm>(() => emptyProductForm(0));
   const archiveProduct = trpc.admin.setProductArchived.useMutation({
     onSuccess: async (_result, input) => {
-      if (form.id === input.id) startNewProduct();
+      if (form.id === input.id) closeProductEditor();
       setArchiveTarget(null);
       setArchiveError("");
       await utils.admin.summary.invalidate();
@@ -995,13 +996,22 @@ function AdminProducts({ permissions }: AdminPageProps) {
     setFormErrors(current => { const next = { ...current }; delete next.subcategoryIds; return next; });
   }
   function startNewProduct() {
+    setProductEditorOpen(true);
     setForm(emptyProductForm(categoryOptions[0]?.id ?? 0));
     setCategorySelectionChanged(false);
     setSavedProduct(null);
     setFormErrors({});
     setUploadError("");
   }
+  function closeProductEditor() {
+    setProductEditorOpen(false);
+    setSavedProduct(null);
+    setFormErrors({});
+    setUploadError("");
+    setUploadProgress(null);
+  }
   function edit(product: AdminProduct) {
+    setProductEditorOpen(true);
     setCategorySelectionChanged(false);
     setSavedProduct(null);
     setFormErrors({});
@@ -1148,7 +1158,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
           )
         }
       />
-      <section className="admin-edit-panel">
+      {productEditorOpen && <section className="admin-edit-panel admin-product-editor-panel">
         <div className="admin-panel-head">
           <div>
             <p className="admin-kicker">
@@ -1156,6 +1166,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
             </p>
             <h2>{form.id ? form.name || "Артикул" : "Нов артикул"}</h2>
           </div>
+          <div className="admin-product-editor-head-actions">
           {form.id && (
             <div className="admin-product-actions">
             {canWriteProducts && <button type="button" className="admin-product-remove" disabled={Boolean(uploadProgress) || saving} onClick={() => requestArchive({ id: form.id!, name: editingProduct?.name ?? form.name, sku: editingProduct?.sku ?? form.sku }, true)}><Trash2 size={15} /> Премахни артикула</button>}
@@ -1163,12 +1174,14 @@ function AdminProducts({ permissions }: AdminPageProps) {
               type="button"
               className="admin-text-action"
               disabled={Boolean(uploadProgress) || saving}
-              onClick={startNewProduct}
+              onClick={closeProductEditor}
             >
               <X size={15} /> Откажи редакцията
             </button>
             </div>
           )}
+          <button type="button" className="admin-product-editor-close" onClick={closeProductEditor} disabled={Boolean(uploadProgress) || saving} aria-label="Затвори прозореца за продукт" title="Затвори"><X size={21} /></button>
+          </div>
         </div>
         <form className="admin-form" onSubmit={submit} noValidate>
           {savedProduct && <div className="admin-product-saved" role="status">
@@ -1566,7 +1579,7 @@ function AdminProducts({ permissions }: AdminPageProps) {
           </div>
           </fieldset>
         </form>
-      </section>
+      </section>}
       <section className="admin-panel">
         <div className="admin-panel-head">
           <div>

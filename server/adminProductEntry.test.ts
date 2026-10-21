@@ -121,4 +121,14 @@ describe("admin product entry workflow", () => {
     expect(adminSource).toContain('(publicationFilter === "hidden" && !product.isActive && !product.isArchived)');
     expect(adminSource).toContain('setBulkVisibilityTarget(true)');
   });
+
+  it("keeps the product list open by default and gives the editor an explicit close action", () => {
+    expect(adminSource).toContain("const [productEditorOpen, setProductEditorOpen] = useState(false);");
+    expect(adminSource).toContain("{productEditorOpen && <section className=\"admin-edit-panel admin-product-editor-panel\">");
+    expect(adminSource).toContain("setProductEditorOpen(true);");
+    expect(adminSource).toContain("className=\"admin-product-editor-close\"");
+    expect(adminSource).toContain('aria-label="Затвори прозореца за продукт"');
+    expect(adminSource).toContain("onClick={closeProductEditor}");
+    expect(stylesheet).toContain(".admin-product-editor-close");
+  });
 });
