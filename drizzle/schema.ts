@@ -202,6 +202,8 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
 export const catalogueProductAiContent = mysqlTable("catalogue_product_ai_content", {
   id: int("id").autoincrement().primaryKey(),
   productId: int("productId").notNull().unique().references(() => catalogueProducts.id),
+  aiProvider: varchar("aiProvider", { length: 32 }),
+  aiModel: varchar("aiModel", { length: 160 }),
   aiStatus: mysqlEnum("aiStatus", ["pending", "generated", "reviewed", "published", "error"]).default("pending").notNull(),
   aiDescription: text("aiDescription"),
   aiFeatures: text("aiFeatures"),
@@ -212,6 +214,9 @@ export const catalogueProductAiContent = mysqlTable("catalogue_product_ai_conten
   aiConfidence: mysqlEnum("aiConfidence", ["high", "low"]),
   aiError: text("aiError"),
   aiGeneratedAt: timestamp("aiGeneratedAt"),
+  aiInputTokens: int("aiInputTokens"),
+  aiOutputTokens: int("aiOutputTokens"),
+  aiSearchCount: int("aiSearchCount").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("product_ai_status_idx").on(table.aiStatus)]);
@@ -233,7 +238,8 @@ export const catalogueProductAiBackups = mysqlTable("catalogue_product_ai_backup
 export const aiContentSettings = mysqlTable("ai_content_settings", {
   id: int("id").primaryKey(),
   systemPrompt: text("systemPrompt").notNull(),
-  dailyGenerationLimit: int("dailyGenerationLimit").default(100).notNull(),
+  model: varchar("model", { length: 160 }).default("gemini-3.8-flash").notNull(),
+  dailyGenerationLimit: int("dailyGenerationLimit").default(20).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

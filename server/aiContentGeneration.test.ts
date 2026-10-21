@@ -38,8 +38,13 @@ describe("AI product content generation", () => {
     expect(schema).toContain('mysqlTable("catalogue_product_ai_backups"');
     expect(schema).toContain('unique().references(() => catalogueProducts.id)');
     expect(schema).toContain('mysqlTable("ai_content_settings"');
-    expect(service).toContain('model: DEFAULT_AI_MODEL');
-    expect(service).toContain('name: "web_search"');
+    expect(service).toContain('DEFAULT_AI_MODEL');
+    expect(service).toContain('google_search: {}');
+    expect(service).toContain('"x-goog-api-key": ENV.geminiApiKey');
+    expect(service).toContain('withSearch = true');
+    expect(service).toContain('aiInputTokens');
+    expect(service).toContain('aiOutputTokens');
+    expect(service).toContain('aiSearchCount');
     expect(service).toContain("validateAiPayload");
     expect(service).toContain("for (let attempt = 0; attempt <= 2");
     expect(service).toContain("parseAiJsonObject(raw)");
@@ -50,6 +55,7 @@ describe("AI product content generation", () => {
     expect(service).toContain("aiFeaturesToJson");
     expect(router).toContain("generateAiContent");
     expect(router).toContain("saveAiSettings");
+    expect(router).toContain("checkGeminiConnection");
     expect(router).toContain("publishApprovedAiContent");
     expect(router).toContain("restoreAiBackups");
   });

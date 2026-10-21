@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { administratorOnlyProcedure, permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
-import { enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, publishApprovedAiContent, restoreAiBackups, reviewAdminAiContent, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
+import { checkGeminiConnection, enqueueAiGeneration, generateAdminAiContent, getAdminAiCategories, getAdminAiContent, getAdminAiProductIds, getAdminAiQueueStatus, getAdminAiSettings, publishApprovedAiContent, restoreAiBackups, reviewAdminAiContent, saveAdminAiContent, saveAdminAiSettings, setAdminAiQueueStatus } from "./aiContentService";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
 import { categoryPayloadSchema } from "../shared/categoryValidation";
@@ -166,9 +166,10 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),
   }),
   admin: router({
-    aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
+    aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
     aiSettings: administratorOnlyProcedure().query(() => getAdminAiSettings()),
-    saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000), dailyGenerationLimit: z.number().int().min(0).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt, input.dailyGenerationLimit)),
+    saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000), model: z.string().trim().min(2).max(160), dailyGenerationLimit: z.number().int().min(0).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt, input.model, input.dailyGenerationLimit)),
+    checkGeminiConnection: administratorOnlyProcedure().input(z.object({ withSearch: z.boolean(), model: z.string().trim().min(2).max(160).optional() })).mutation(({ input }) => checkGeminiConnection(input.withSearch, input.model)),
     generateAiContent: administratorOnlyProcedure().input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => generateAdminAiContent(input.productId)),
     aiCategories: administratorOnlyProcedure().query(() => getAdminAiCategories()),
     aiProductIds: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional() }).optional()).query(({ input }) => getAdminAiProductIds(input)),

@@ -2,20 +2,13 @@ import { and, asc, count, desc, eq, inArray, isNull, like, lt, lte, or, sql } fr
 import { TRPCError } from "@trpc/server";
 import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiBackups, catalogueProductAiContent, catalogueCategories, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
-import { invokeLLM, type Message, type Tool } from "./_core/llm";
+import { ENV } from "./_core/env";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 export type AiContentConfidence = "high" | "low";
 
-const DEFAULT_AI_MODEL = "gpt-6-luna";
-const WEB_SEARCH_TOOL: Tool = {
-  type: "function",
-  function: {
-    name: "web_search",
-    description: "Търси актуални продуктови данни в публичния интернет и връща заглавие, URL и кратък откъс.",
-    parameters: { type: "object", properties: { query: { type: "string", minLength: 2, maxLength: 240 } }, required: ["query"], additionalProperties: false },
-  },
-};
+const DEFAULT_AI_MODEL = "gemini-3.8-flash";
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 async function database() {
   const db = await getDb();
@@ -68,6 +61,8 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
     isActive: row.product.isActive,
     isArchived: row.product.isArchived,
     aiStatus: row.ai?.aiStatus ?? "pending",
+    aiProvider: row.ai?.aiProvider ?? null,
+    aiModel: row.ai?.aiModel ?? null,
     aiDescription: row.ai?.aiDescription ?? null,
     aiFeatures: row.ai?.aiFeatures ?? null,
     aiSeoTitle: row.ai?.aiSeoTitle ?? null,
@@ -77,17 +72,21 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
     aiConfidence: row.ai?.aiConfidence ?? null,
     aiError: row.ai?.aiError ?? null,
     aiGeneratedAt: row.ai?.aiGeneratedAt ?? null,
+    aiInputTokens: row.ai?.aiInputTokens ?? null,
+    aiOutputTokens: row.ai?.aiOutputTokens ?? null,
+    aiSearchCount: row.ai?.aiSearchCount ?? 0,
     canRestore: Boolean(row.backup && !row.backup.restoredAt),
   };
 }
 
-export async function getAdminAiContent(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; page?: number; pageSize?: number }) {
+export async function getAdminAiContent(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number; page?: number; pageSize?: number }) {
   const db = await database();
   const page = input?.page ?? 1;
   const pageSize = input?.pageSize ?? 50;
   const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
   if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
+  if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
   const query = input?.query?.trim();
   if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
 
@@ -121,6 +120,8 @@ export async function getAdminAiContent(input?: { status?: AiContentStatus; conf
 
 export async function saveAdminAiContent(input: {
   productId: number;
+  aiProvider?: string | null;
+  aiModel?: string | null;
   aiStatus: AiContentStatus;
   aiDescription?: string | null;
   aiFeatures?: string | null;
@@ -131,11 +132,14 @@ export async function saveAdminAiContent(input: {
   aiConfidence?: AiContentConfidence | null;
   aiError?: string | null;
   aiGeneratedAt?: string | null;
+  aiInputTokens?: number | null;
+  aiOutputTokens?: number | null;
+  aiSearchCount?: number | null;
 }) {
   const db = await database();
   const [product] = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).where(eq(catalogueProducts.id, input.productId)).limit(1);
   if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Продуктът не е намерен." });
-  const values = {
+  const values: typeof catalogueProductAiContent.$inferInsert = {
     productId: input.productId,
     aiStatus: input.aiStatus,
     aiDescription: input.aiDescription?.trim() || null,
@@ -143,10 +147,15 @@ export async function saveAdminAiContent(input: {
     aiSeoTitle: input.aiSeoTitle?.trim() || null,
     aiSeoDescription: input.aiSeoDescription?.trim() || null,
     aiKeywords: input.aiKeywords?.trim() || null,
-    aiSourceUrls: JSON.stringify(input.aiSourceUrls ?? []),
     aiConfidence: input.aiConfidence ?? null,
     aiError: input.aiError?.trim() || null,
-    aiGeneratedAt: input.aiGeneratedAt ? new Date(input.aiGeneratedAt) : null,
+    ...(input.aiSourceUrls !== undefined ? { aiSourceUrls: JSON.stringify(input.aiSourceUrls) } : {}),
+    ...(input.aiGeneratedAt !== undefined ? { aiGeneratedAt: input.aiGeneratedAt ? new Date(input.aiGeneratedAt) : null } : {}),
+    ...(input.aiProvider !== undefined ? { aiProvider: input.aiProvider?.trim() || null } : {}),
+    ...(input.aiModel !== undefined ? { aiModel: input.aiModel?.trim() || null } : {}),
+    ...(input.aiInputTokens !== undefined ? { aiInputTokens: input.aiInputTokens ?? null } : {}),
+    ...(input.aiOutputTokens !== undefined ? { aiOutputTokens: input.aiOutputTokens ?? null } : {}),
+    ...(input.aiSearchCount !== undefined ? { aiSearchCount: input.aiSearchCount ?? 0 } : {}),
   };
   await db.insert(catalogueProductAiContent).values(values).onDuplicateKeyUpdate({ set: values });
   return { success: true } as const;
@@ -221,17 +230,19 @@ export async function getAdminAiSettings() {
   const db = await database();
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
-  return { systemPrompt: settings.systemPrompt, dailyGenerationLimit: settings.dailyGenerationLimit, updatedAt: settings.updatedAt };
+  return { systemPrompt: settings.systemPrompt, model: settings.model || DEFAULT_AI_MODEL, dailyGenerationLimit: settings.dailyGenerationLimit, updatedAt: settings.updatedAt };
 }
 
-export async function saveAdminAiSettings(systemPrompt: string, dailyGenerationLimit: number) {
+export async function saveAdminAiSettings(systemPrompt: string, model: string, dailyGenerationLimit: number) {
   const prompt = systemPrompt.trim();
   if (prompt.length < 20) throw new TRPCError({ code: "BAD_REQUEST", message: "Системният prompt трябва да съдържа поне 20 знака." });
   if (prompt.length > 100_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Системният prompt е прекалено дълъг." });
+  const selectedModel = model.trim();
+  if (!/^[a-zA-Z0-9._-]{2,160}$/.test(selectedModel)) throw new TRPCError({ code: "BAD_REQUEST", message: "Моделът съдържа невалидни символи." });
   if (!Number.isInteger(dailyGenerationLimit) || dailyGenerationLimit < 0 || dailyGenerationLimit > 100_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Дневният лимит трябва да е цяло число между 0 и 100 000." });
   const db = await database();
-  await db.insert(aiContentSettings).values({ id: 1, systemPrompt: prompt, dailyGenerationLimit }).onDuplicateKeyUpdate({ set: { systemPrompt: prompt, dailyGenerationLimit } });
-  return { success: true, systemPrompt: prompt, dailyGenerationLimit } as const;
+  await db.insert(aiContentSettings).values({ id: 1, systemPrompt: prompt, model: selectedModel, dailyGenerationLimit }).onDuplicateKeyUpdate({ set: { systemPrompt: prompt, model: selectedModel, dailyGenerationLimit } });
+  return { success: true, systemPrompt: prompt, model: selectedModel, dailyGenerationLimit } as const;
 }
 
 function llmResponseText(content: unknown) {
@@ -244,21 +255,60 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/\s+/g, " ").trim();
 }
 
-async function runWebSearch(query: string) {
-  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query.slice(0, 240))}`;
-  const response = await fetch(url, { headers: { "user-agent": "Joan.bg product research bot/1.0" } });
-  if (!response.ok) throw new Error(`Web search failed with HTTP ${response.status}.`);
-  const html = await response.text();
-  const results: Array<{ title: string; url: string; snippet: string }> = [];
-  const pattern = /<a[^>]+href="([^"]*uddg=[^"]+)"[^>]+class='result-link'[^>]*>([\s\S]*?)<\/a>[\s\S]*?<td class='result-snippet'>\s*([\s\S]*?)<\/td>/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(html)) !== null) {
-    const resultUrl = new URLSearchParams(match[1].split("?")[1] || "").get("uddg");
-    if (!resultUrl || !/^https?:\/\//i.test(resultUrl)) continue;
-    results.push({ title: stripHtml(match[2]), url: resultUrl, snippet: stripHtml(match[3]) });
-    if (results.length >= 6) break;
+type GeminiUsage = { inputTokens: number; outputTokens: number; searchCount: number };
+type GeminiCallResult = { text: string; usage: GeminiUsage; status: number };
+
+function geminiError(status: number, body: string) {
+  const error = new Error(`Gemini HTTP ${status}: ${body.slice(0, 4000)}`) as Error & { status?: number; retryable?: boolean };
+  error.status = status;
+  error.retryable = status !== 401 && status !== 403;
+  return error;
+}
+
+async function callGemini(model: string, systemPrompt: string, userPrompt: string, withSearch = true): Promise<GeminiCallResult> {
+  if (!ENV.geminiApiKey) throw geminiError(503, "GEMINI_API_KEY не е конфигуриран като server secret.");
+  const response = await fetch(`${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": ENV.geminiApiKey },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      ...(withSearch ? { tools: [{ google_search: {} }] } : {}),
+      generationConfig: { responseMimeType: "text/plain" },
+    }),
+  });
+  const rawBody = await response.text();
+  let body: Record<string, unknown> = {};
+  try { body = JSON.parse(rawBody) as Record<string, unknown>; } catch { /* preserve raw error text */ }
+  if (!response.ok) throw geminiError(response.status, typeof body.error === "object" ? JSON.stringify(body.error) : rawBody);
+  const candidates = Array.isArray(body.candidates) ? body.candidates : [];
+  const first = (candidates[0] ?? {}) as Record<string, unknown>;
+  const content = (first.content ?? {}) as Record<string, unknown>;
+  const parts = Array.isArray(content.parts) ? content.parts : [];
+  const text = parts.map(part => part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string" ? (part as { text: string }).text : "").join("\n").trim();
+  const usage = (body.usageMetadata ?? {}) as Record<string, unknown>;
+  const grounding = (first.groundingMetadata ?? body.groundingMetadata ?? {}) as Record<string, unknown>;
+  const searchQueries = Array.isArray(grounding.webSearchQueries) ? grounding.webSearchQueries : [];
+  return {
+    text,
+    status: response.status,
+    usage: {
+      inputTokens: Number(usage.promptTokenCount ?? 0),
+      outputTokens: Number(usage.candidatesTokenCount ?? 0),
+      searchCount: searchQueries.length,
+    },
+  };
+}
+
+export async function checkGeminiConnection(withSearch: boolean, model = DEFAULT_AI_MODEL) {
+  if (!ENV.geminiApiKey) return { ok: false, status: 503, message: "GEMINI_API_KEY не е конфигуриран като server secret.", model, withSearch };
+  try {
+    const result = await callGemini(model, "Отговори само с OK.", withSearch ? "Направи една кратка Google Search проверка за Joan.bg и отговори само с OK." : "Отговори само с OK.", withSearch);
+    return { ok: true, status: result.status, message: result.text.slice(0, 200), model, withSearch, usage: result.usage };
+  } catch (error) {
+    const typed = error as Error & { status?: number };
+    return { ok: false, status: typed.status ?? 500, message: typed.message, model, withSearch };
   }
-  return { query, results };
 }
 
 /** Finds and parses the first balanced JSON object, even when the model adds prose or markdown around it. */
@@ -349,32 +399,18 @@ export async function generateAdminAiContent(productId: number, options?: { skip
     return { success: false, status: "error" as const, error: message };
   }
 
+  const model = settings.model || DEFAULT_AI_MODEL;
   const productInput = `Марка: ${product.brand || "няма посочена"}\nИме на продукта: ${product.name}\nEAN/артикулен номер: ${product.sku || "няма посочен"}`;
   let lastError = "AI резултатът не премина програмната проверка.";
+  const totalUsage: GeminiUsage = { inputTokens: 0, outputTokens: 0, searchCount: 0 };
   for (let attempt = 0; attempt <= 2; attempt += 1) {
     try {
       const correction = attempt === 0 ? "" : `\n\nПредишният отговор не премина програмната проверка: ${lastError}\nВърни отново само коригиран валиден JSON обект, като спазиш всички ограничения за дължини и типове.`;
-      const messages: Message[] = [
-        { role: "system", content: settings.systemPrompt + "\n\nЗадължително използвай web_search поне веднъж, за да провериш точния продукт, преди да върнеш JSON." },
-        { role: "user", content: productInput + correction },
-      ];
-      let response;
-      for (let toolRound = 0; toolRound < 4; toolRound += 1) {
-        response = await invokeLLM({ model: DEFAULT_AI_MODEL, maxTokens: 5000, reasoning: { effort: "low" }, messages, tools: [WEB_SEARCH_TOOL], toolChoice: "auto" });
-        const message = response.choices?.[0]?.message;
-        if (!message?.tool_calls?.length) break;
-        messages.push({ role: "assistant", content: message.content || "" });
-        for (const toolCall of message.tool_calls) {
-          if (toolCall.function.name !== "web_search") throw new Error(`Неподдържан AI tool: ${toolCall.function.name}`);
-          let toolInput: unknown;
-          try { toolInput = JSON.parse(toolCall.function.arguments); } catch { throw new Error("AI web_search заявката е невалиден JSON."); }
-          const searchQuery = toolInput && typeof toolInput === "object" && typeof (toolInput as { query?: unknown }).query === "string" ? (toolInput as { query: string }).query : "";
-          if (searchQuery.trim().length < 2) throw new Error("AI web_search заявката няма валидна заявка.");
-          messages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(await runWebSearch(searchQuery)) });
-        }
-      }
-      if (!response) throw new Error("AI не върна резултат.");
-      const raw = llmResponseText(response.choices?.[0]?.message?.content);
+      const response = await callGemini(model, settings.systemPrompt + "\n\nЗадължително използвай Google Search поне веднъж, за да провериш точния продукт, преди да върнеш JSON.", productInput + correction);
+      totalUsage.inputTokens += response.usage.inputTokens;
+      totalUsage.outputTokens += response.usage.outputTokens;
+      totalUsage.searchCount += response.usage.searchCount;
+      const raw = response.text;
       const parsed = parseAiJsonObject(raw);
       const validationErrors = validateAiPayload(parsed);
       if (validationErrors.length > 0) {
@@ -382,17 +418,19 @@ export async function generateAdminAiContent(productId: number, options?: { skip
         continue;
       }
       const payload = normalizeAiPayload(parsed);
-      await saveAdminAiContent({ productId, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString() });
-      return { success: true, status: "generated" as const, raw, attempts: attempt + 1 };
+      await saveAdminAiContent({ productId, aiProvider: "gemini", aiModel: model, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount });
+      return { success: true, status: "generated" as const, raw, attempts: attempt + 1, usage: totalUsage };
     } catch (error) {
       lastError = error instanceof Error ? error.message : "Невалиден AI резултат.";
+      const typed = error as Error & { status?: number; retryable?: boolean };
+      if (typed.status === 401 || typed.status === 403 || typed.status === 429 || typed.retryable === false) break;
       if (attempt === 2) break;
     }
   }
   {
     const message = lastError || "Неизвестна грешка при AI генерирането.";
     try {
-      await db.insert(catalogueProductAiContent).values({ productId, aiStatus: "error", aiError: message, aiGeneratedAt: new Date() }).onDuplicateKeyUpdate({ set: { aiStatus: "error", aiError: message, aiGeneratedAt: new Date() } });
+      await db.insert(catalogueProductAiContent).values({ productId, aiProvider: "gemini", aiModel: model, aiStatus: "error", aiError: message, aiGeneratedAt: new Date(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount }).onDuplicateKeyUpdate({ set: { aiProvider: "gemini", aiModel: model, aiStatus: "error", aiError: message, aiGeneratedAt: new Date(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount } });
     } catch {
       // Preserve the original generation error for the administrator.
     }

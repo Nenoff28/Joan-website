@@ -20,6 +20,8 @@ type AiItem = {
   isActive: boolean;
   isArchived: boolean;
   aiStatus: AiStatus;
+  aiProvider: string | null;
+  aiModel: string | null;
   aiDescription: string | null;
   aiFeatures: string | null;
   aiSeoTitle: string | null;
@@ -29,6 +31,9 @@ type AiItem = {
   aiConfidence: AiConfidence | null;
   aiError: string | null;
   aiGeneratedAt: Date | string | null;
+  aiInputTokens: number | null;
+  aiOutputTokens: number | null;
+  aiSearchCount: number;
   canRestore: boolean;
 };
 
@@ -61,7 +66,9 @@ export default function AdminAIContent() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [dailyGenerationLimit, setDailyGenerationLimit] = useState(100);
+  const [model, setModel] = useState("gemini-3.8-flash");
+  const [dailyGenerationLimit, setDailyGenerationLimit] = useState(20);
+  const [connectionResults, setConnectionResults] = useState<{ basic?: { ok: boolean; status: number; message: string }; search?: { ok: boolean; status: number; message: string } }>({});
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
     aiDescription: "",
@@ -74,7 +81,7 @@ export default function AdminAIContent() {
     aiError: "",
     aiGeneratedAt: "",
   });
-  const input = useMemo(() => ({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, page, pageSize: 50 }), [status, confidence, query, page]);
+  const input = useMemo(() => ({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, page, pageSize: 50 }), [status, confidence, query, categoryId, page]);
   const contentQuery = trpc.admin.aiContent.useQuery(input);
   const settingsQuery = trpc.admin.aiSettings.useQuery();
   const categoriesQuery = trpc.admin.aiCategories.useQuery();
@@ -83,6 +90,9 @@ export default function AdminAIContent() {
   const utils = trpc.useUtils();
   const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
     onSuccess: async () => { await utils.admin.aiSettings.invalidate(); },
+  });
+  const checkGeminiMutation = trpc.admin.checkGeminiConnection.useMutation({
+    onSuccess: (result, variables) => setConnectionResults(current => ({ ...current, [variables.withSearch ? "search" : "basic"]: result })),
   });
   const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async () => { setSelectedIds(new Set()); await queueQuery.refetch(); } });
   const queueStatusMutation = trpc.admin.setAiQueueStatus.useMutation({ onSuccess: async () => { await queueQuery.refetch(); } });
@@ -108,8 +118,9 @@ export default function AdminAIContent() {
 
   useEffect(() => {
     if (settingsQuery.data?.systemPrompt && !systemPrompt) setSystemPrompt(settingsQuery.data.systemPrompt);
+    if (settingsQuery.data?.model) setModel(settingsQuery.data.model);
     if (settingsQuery.data?.dailyGenerationLimit !== undefined) setDailyGenerationLimit(settingsQuery.data.dailyGenerationLimit);
-  }, [settingsQuery.data?.systemPrompt, settingsQuery.data?.dailyGenerationLimit, systemPrompt]);
+  }, [settingsQuery.data?.systemPrompt, settingsQuery.data?.model, settingsQuery.data?.dailyGenerationLimit, systemPrompt]);
 
   useEffect(() => {
     if (!selected && items[0]) setSelectedId(items[0].productId);
@@ -152,7 +163,7 @@ export default function AdminAIContent() {
 
   const saveSettings = (event: React.FormEvent) => {
     event.preventDefault();
-    saveSettingsMutation.mutate({ systemPrompt, dailyGenerationLimit });
+    saveSettingsMutation.mutate({ systemPrompt, model, dailyGenerationLimit });
   };
 
   const selectAllMatching = async () => {
@@ -186,7 +197,15 @@ export default function AdminAIContent() {
           <button type="submit" className="admin-primary" disabled={saveSettingsMutation.isPending || settingsQuery.isLoading || systemPrompt.trim().length < 20}><Save size={15} /> {saveSettingsMutation.isPending ? "Записване…" : "Запази prompt-а"}</button>
         </div>
         <textarea value={systemPrompt} onChange={event => setSystemPrompt(event.target.value)} rows={12} aria-label="AI системен prompt" placeholder="Въведете системния prompt за AI съдържанието…" />
+        <label className="admin-ai-limit-field">Модел<input value={model} onChange={event => setModel(event.target.value)} placeholder="gemini-3.8-flash" aria-label="AI модел" /><small>Моделът се подава към Gemini server-side. Не се задава thinking параметър.</small></label>
         <label className="admin-ai-limit-field">Дневен лимит за генерирания<input type="number" min={0} max={100000} value={dailyGenerationLimit} onChange={event => setDailyGenerationLimit(Math.max(0, Number(event.target.value) || 0))} /><small>0 блокира генерирането; лимитът се прилага за UTC ден.</small></label>
+        <div className="admin-ai-connection-checks">
+          <strong>Връзка с Gemini</strong>
+          <button type="button" onClick={() => checkGeminiMutation.mutate({ model, withSearch: false })} disabled={checkGeminiMutation.isPending}>Провери без търсене</button>
+          <button type="button" onClick={() => checkGeminiMutation.mutate({ model, withSearch: true })} disabled={checkGeminiMutation.isPending}>Провери с Google Search</button>
+          {connectionResults.basic && <span className={connectionResults.basic.ok ? "admin-ai-check-ok" : "admin-form-error"}>Без търсене — HTTP {connectionResults.basic.status}: {connectionResults.basic.message}</span>}
+          {connectionResults.search && <span className={connectionResults.search.ok ? "admin-ai-check-ok" : "admin-form-error"}>С Google Search — HTTP {connectionResults.search.status}: {connectionResults.search.message}</span>}
+        </div>
         {saveSettingsMutation.error && <div className="admin-form-error" role="alert">{saveSettingsMutation.error.message}</div>}
         {settingsQuery.error && <div className="admin-form-error" role="alert">Системният prompt не може да се зареди.</div>}
       </form>
@@ -247,7 +266,7 @@ export default function AdminAIContent() {
                 <div role="button" tabIndex={0} key={item.productId} className={`admin-ai-product ${selectedId === item.productId ? "is-selected" : ""}`} onClick={() => setSelectedId(item.productId)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedId(item.productId); } }}>
                   <input type="checkbox" checked={selectedIds.has(item.productId)} onChange={() => toggleSelected(item.productId)} onClick={event => event.stopPropagation()} aria-label={`Избери ${item.name}`} />
                   <img src={item.imageUrl} alt="" />
-                  <span><strong>{item.name}</strong><small>{item.brand || "Без марка"} · SKU {item.sku || "—"}</small></span>
+                  <span><strong>{item.name}</strong><small>{item.brand || "Без марка"} · SKU {item.sku || "—"}</small><small className="admin-ai-usage"><span>{item.aiProvider || "—"} / {item.aiModel || "—"}</span><span>in <strong>{item.aiInputTokens ?? 0}</strong></span><span>out <strong>{item.aiOutputTokens ?? 0}</strong></span><span>търсения <strong>{item.aiSearchCount}</strong></span></small></span>
                   <em className={statusClass(item.aiStatus)}>{statusLabels[item.aiStatus]}</em>
                   {item.canRestore && <small className="admin-ai-restore-ready">Има backup</small>}
                   <button type="button" className="admin-ai-row-generate" onClick={event => { event.stopPropagation(); generateMutation.mutate({ productId: item.productId }); }} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}>Генерирай</button>
@@ -258,7 +277,7 @@ export default function AdminAIContent() {
             </div>
 
             {selected && <form className="admin-ai-editor" onSubmit={save}>
-              <div className="admin-ai-editor-head"><div><small>Избран продукт</small><h3>{selected.name}</h3><p>{selected.categoryName} · SKU/EAN {selected.sku || "—"}</p></div><img src={selected.imageUrl} alt="" /></div>
+              <div className="admin-ai-editor-head"><div><small>Избран продукт</small><h3>{selected.name}</h3><p>{selected.categoryName} · SKU/EAN {selected.sku || "—"}</p><p className="admin-ai-usage"><span>Доставчик: <strong>{selected.aiProvider || "—"}</strong></span><span>Модел: <strong>{selected.aiModel || "—"}</strong></span><span>Входни токени: <strong>{selected.aiInputTokens ?? 0}</strong></span><span>Изходни токени: <strong>{selected.aiOutputTokens ?? 0}</strong></span><span>Google търсения: <strong>{selected.aiSearchCount}</strong></span></p></div><img src={selected.imageUrl} alt="" /></div>
               <div className="admin-ai-compare" aria-label="Сравнение на старо и ново съдържание">
                 <article><h4>Старо съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(selected.oldDescription)}</dd><dt>Технически данни</dt><dd>{displayValue(selected.oldFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(selected.oldSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(selected.oldSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(selected.oldKeywords)}</dd></dl></article>
                 <article><h4>Ново AI съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(form.aiDescription)}</dd><dt>Характеристики</dt><dd>{displayValue(newFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(form.aiSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(form.aiSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(form.aiKeywords)}</dd></dl></article>

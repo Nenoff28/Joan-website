@@ -225,6 +225,13 @@
       "when": 1792569739017,
       "tag": "0031_low_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1792571838752,
+      "tag": "0032_graceful_beyonder",
+      "breakpoints": true
     }
   ]
 }
