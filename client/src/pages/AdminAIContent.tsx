@@ -12,6 +12,11 @@ type AiItem = {
   brand: string | null;
   imageUrl: string;
   categoryName: string;
+  oldDescription: string;
+  oldFeatures: string;
+  oldSeoTitle: string | null;
+  oldSeoDescription: string | null;
+  oldKeywords: string | null;
   isActive: boolean;
   isArchived: boolean;
   aiStatus: AiStatus;
@@ -48,6 +53,7 @@ function statusClass(status: AiStatus) {
 
 export default function AdminAIContent() {
   const [status, setStatus] = useState<AiStatus | "">("");
+  const [confidence, setConfidence] = useState<AiConfidence | "">("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -67,11 +73,11 @@ export default function AdminAIContent() {
     aiError: "",
     aiGeneratedAt: "",
   });
-  const input = useMemo(() => ({ status: status || undefined, query: query.trim() || undefined, page, pageSize: 50 }), [status, query, page]);
+  const input = useMemo(() => ({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, page, pageSize: 50 }), [status, confidence, query, page]);
   const contentQuery = trpc.admin.aiContent.useQuery(input);
   const settingsQuery = trpc.admin.aiSettings.useQuery();
   const categoriesQuery = trpc.admin.aiCategories.useQuery();
-  const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined });
+  const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined });
   const queueQuery = trpc.admin.aiQueue.useQuery(undefined, { refetchInterval: 5000 });
   const utils = trpc.useUtils();
   const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
@@ -85,6 +91,9 @@ export default function AdminAIContent() {
     },
   });
   const generateMutation = trpc.admin.generateAiContent.useMutation({
+    onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
+  });
+  const reviewMutation = trpc.admin.reviewAiContent.useMutation({
     onSuccess: async () => { await utils.admin.aiContent.invalidate(); },
   });
   const items = (contentQuery.data?.items ?? []) as AiItem[];
@@ -145,6 +154,9 @@ export default function AdminAIContent() {
   };
   const toggleSelected = (productId: number) => setSelectedIds(current => { const next = new Set(current); if (next.has(productId)) next.delete(productId); else next.add(productId); return next; });
   const queue = queueQuery.data;
+  const displayValue = (value: string | null | undefined) => value?.trim() || "—";
+  const newFeatures = form.aiFeatures.trim() || "—";
+  const newSourceUrls = form.aiSourceUrls.split(/\r?\n|,/).map(value => value.trim()).filter(Boolean);
 
   return (
     <section className="admin-workspace">
@@ -190,6 +202,11 @@ export default function AdminAIContent() {
               <option value="">Всички статуси</option>
               {(Object.keys(statusLabels) as AiStatus[]).map(key => <option key={key} value={key}>{statusLabels[key]}</option>)}
             </select>
+            <select value={confidence} onChange={event => { setConfidence(event.target.value as AiConfidence | ""); setPage(1); }} aria-label="Филтър по увереност">
+              <option value="">Всяка увереност</option>
+              <option value="low">Само ниска увереност</option>
+              <option value="high">Само висока увереност</option>
+            </select>
             <select value={categoryId} onChange={event => { setCategoryId(event.target.value ? Number(event.target.value) : ""); setPage(1); }} aria-label="Филтър по категория">
               <option value="">Всички категории</option>
               {(categoriesQuery.data ?? []).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
@@ -225,6 +242,11 @@ export default function AdminAIContent() {
 
             {selected && <form className="admin-ai-editor" onSubmit={save}>
               <div className="admin-ai-editor-head"><div><small>Избран продукт</small><h3>{selected.name}</h3><p>{selected.categoryName} · SKU/EAN {selected.sku || "—"}</p></div><img src={selected.imageUrl} alt="" /></div>
+              <div className="admin-ai-compare" aria-label="Сравнение на старо и ново съдържание">
+                <article><h4>Старо съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(selected.oldDescription)}</dd><dt>Технически данни</dt><dd>{displayValue(selected.oldFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(selected.oldSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(selected.oldSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(selected.oldKeywords)}</dd></dl></article>
+                <article><h4>Ново AI съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(form.aiDescription)}</dd><dt>Характеристики</dt><dd>{displayValue(newFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(form.aiSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(form.aiSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(form.aiKeywords)}</dd></dl></article>
+              </div>
+              <div className="admin-ai-sources"><strong>Източници</strong>{newSourceUrls.length ? <ul>{newSourceUrls.map(url => <li key={url}><a href={url} target="_blank" rel="noreferrer">{url}</a></li>)}</ul> : <span>Няма добавени източници.</span>}</div>
               <div className="admin-ai-generate-row"><button type="button" className="admin-primary" onClick={() => generateMutation.mutate({ productId: selected.productId })} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}><Sparkles size={15} /> {generateMutation.isPending ? "Генериране…" : "Генерирай от prompt-а"}</button><span>Резултатът се записва в AI слоя и не променя продукта.</span></div>
               {generateMutation.error && <div className="admin-form-error" role="alert">{generateMutation.error.message}</div>}
               {generateMutation.data?.status === "error" && <div className="admin-form-error" role="alert">Генерирането завърши с грешка. Проверете AI статуса и полето „AI грешка“.</div>}
@@ -239,6 +261,7 @@ export default function AdminAIContent() {
               <label>AI грешка<textarea value={form.aiError} onChange={event => setForm(current => ({ ...current, aiError: event.target.value }))} rows={2} placeholder="Попълва се при статус „Грешка“" /></label>
               {saveMutation.error && <div className="admin-form-error" role="alert">{saveMutation.error.message}</div>}
               {saveMutation.isSuccess && <div className="admin-ai-saved" role="status"><CheckCircle2 size={15} /> AI полетата са запазени отделно от продукта.</div>}
+              <div className="admin-ai-review-actions"><button type="button" className="admin-primary" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "approve" })} disabled={reviewMutation.isPending}>Одобри</button><button type="button" className="admin-ai-reject" onClick={() => reviewMutation.mutate({ productId: selected.productId, action: "reject" })} disabled={reviewMutation.isPending}>Отхвърли</button>{reviewMutation.error && <span className="admin-form-error" role="alert">{reviewMutation.error.message}</span>}</div>
               <button type="submit" className="admin-primary" disabled={saveMutation.isPending}><Save size={15} /> {saveMutation.isPending ? "Записване…" : "Запази AI съдържанието"}</button>
             </form>}
           </div>

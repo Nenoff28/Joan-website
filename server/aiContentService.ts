@@ -33,6 +33,25 @@ function parseSourceUrls(value: string | null) {
   }
 }
 
+function formatLegacyFeatures(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(item => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>;
+        const label = typeof record.name === "string" ? record.name : typeof record.label === "string" ? record.label : "";
+        const content = typeof record.value === "string" ? record.value : typeof record.description === "string" ? record.description : "";
+        return label && content ? `${label}: ${content}` : label || content;
+      }
+      return "";
+    }).filter(Boolean).join("\n");
+  } catch {
+    return value;
+  }
+  return value;
+}
+
 function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category: typeof catalogueCategories.$inferSelect; ai: typeof catalogueProductAiContent.$inferSelect | null }) {
   return {
     productId: row.product.id,
@@ -41,6 +60,11 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
     brand: row.product.brand,
     imageUrl: row.product.imageUrl,
     categoryName: row.category.name,
+    oldDescription: row.product.description,
+    oldFeatures: formatLegacyFeatures(row.product.featuresJson),
+    oldSeoTitle: row.product.legacyMetaTitleBg,
+    oldSeoDescription: row.product.legacyMetaDescriptionBg,
+    oldKeywords: row.product.legacySeoKeywordBg,
     isActive: row.product.isActive,
     isArchived: row.product.isArchived,
     aiStatus: row.ai?.aiStatus ?? "pending",
@@ -56,12 +80,13 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
   };
 }
 
-export async function getAdminAiContent(input?: { status?: AiContentStatus; query?: string; page?: number; pageSize?: number }) {
+export async function getAdminAiContent(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; page?: number; pageSize?: number }) {
   const db = await database();
   const page = input?.page ?? 1;
   const pageSize = input?.pageSize ?? 50;
   const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
+  if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
   const query = input?.query?.trim();
   if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
 
@@ -71,7 +96,7 @@ export async function getAdminAiContent(input?: { status?: AiContentStatus; quer
       .innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id))
       .leftJoin(catalogueProductAiContent, eq(catalogueProductAiContent.productId, catalogueProducts.id))
       .where(and(...conditions))
-      .orderBy(asc(catalogueProducts.name), asc(catalogueProducts.id))
+      .orderBy(desc(sql`CASE WHEN ${catalogueProductAiContent.aiConfidence} = 'low' THEN 1 ELSE 0 END`), asc(catalogueProducts.name), asc(catalogueProducts.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ total: count() })
@@ -123,6 +148,15 @@ export async function saveAdminAiContent(input: {
   };
   await db.insert(catalogueProductAiContent).values(values).onDuplicateKeyUpdate({ set: values });
   return { success: true } as const;
+}
+
+export async function reviewAdminAiContent(productId: number, action: "approve" | "reject") {
+  const db = await database();
+  const [product] = await db.select({ id: catalogueProducts.id }).from(catalogueProducts).where(eq(catalogueProducts.id, productId)).limit(1);
+  if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Продуктът не е намерен." });
+  const nextStatus = action === "approve" ? "reviewed" as const : "pending" as const;
+  await db.insert(catalogueProductAiContent).values({ productId, aiStatus: nextStatus, aiError: null }).onDuplicateKeyUpdate({ set: { aiStatus: nextStatus, aiError: null } });
+  return { success: true, aiStatus: nextStatus } as const;
 }
 
 export async function getAdminAiSettings() {
@@ -315,10 +349,11 @@ export async function getAdminAiCategories() {
   return db.select({ id: catalogueCategories.id, name: catalogueCategories.name }).from(catalogueCategories).where(eq(catalogueCategories.isArchived, false)).orderBy(asc(catalogueCategories.name));
 }
 
-export async function getAdminAiProductIds(input?: { status?: AiContentStatus; query?: string; categoryId?: number }) {
+export async function getAdminAiProductIds(input?: { status?: AiContentStatus; confidence?: AiContentConfidence; query?: string; categoryId?: number }) {
   const db = await database();
   const conditions = [eq(catalogueProducts.isArchived, false), eq(catalogueCategories.isArchived, false)];
   if (input?.status) conditions.push(eq(catalogueProductAiContent.aiStatus, input.status));
+  if (input?.confidence) conditions.push(eq(catalogueProductAiContent.aiConfidence, input.confidence));
   if (input?.categoryId) conditions.push(eq(catalogueProducts.categoryId, input.categoryId));
   const query = input?.query?.trim();
   if (query) conditions.push(or(like(catalogueProducts.name, `%${query}%`), like(catalogueProducts.sku, `%${query}%`), like(catalogueProducts.brand, `%${query}%`))!);
