@@ -180,15 +180,15 @@ function Header() {
 
   function submitSearch(event: FormEvent) {
     event.preventDefault();
-    if (searchMatches[0]) {
-      setLocation(`/product/${searchMatches[0].slug}`);
-      setQuery("");
+    const term = query.trim();
+    if (!term) {
+      setLocation("/products");
       setSearchFocused(false);
       return;
     }
-    setLocation("/products");
+    setLocation(`/products?query=${encodeURIComponent(term)}`);
     setSearchFocused(false);
-    toast(t("noMatches"));
+    setQuery("");
   }
 
 

@@ -48,6 +48,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
     const value = Number(new URLSearchParams(search).get("page"));
     return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
   }, [search]);
+  const urlQuery = useMemo(() => new URLSearchParams(search).get("query") ?? "", [search]);
   const promotion = isPromotionFilter(search);
   const { categories } = useCatalogue();
   const category = categories.find((item) => item.slug === params?.slug) ?? categories[0];
@@ -58,7 +59,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [manufacturerQuery, setManufacturerQuery] = useState("");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(urlQuery);
   const [inStock, setInStock] = useState(false);
   const [enquiry, setEnquiry] = useState(false);
   const [minPrice, setMinPrice] = useState("");
@@ -73,6 +74,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
   const clearFilters = () => { resetFilters(); if (promotion) setPromotionFilter(false); };
 
   useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(requestedPage); }, [category?.slug, selectedPathLabel, requestedPage, showAll]);
+  useEffect(() => { setQuery(urlQuery); }, [urlQuery]);
   useEffect(() => { setPage(1); }, [promotion]);
   useEffect(() => {
     if (showAll || !category || selectedPath.length === 0) return;
