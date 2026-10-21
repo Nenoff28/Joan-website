@@ -34,6 +34,7 @@ import {
   MessageSquare,
   PackageSearch,
   PanelLeft,
+  Sparkles,
   Tags,
   UsersRound,
 } from "lucide-react";
@@ -55,6 +56,7 @@ const menuItems = [
   { icon: Archive, label: "Исторически поръчки", path: "/admin/legacy-orders" },
   { icon: History, label: "Активност", path: "/admin/activity" },
   { icon: UsersRound, label: "Потребители и роли", path: "/admin/users-roles" },
+  { icon: Sparkles, label: "AI съдържание", path: "/admin/ai-content", adminOnly: true },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -198,8 +200,9 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const isAdministrator = user?.source === "manus" || user?.role.slug === "admin";
   const visibleMenuItems = menuItems.filter(item =>
-    canVisitAdminSection(user?.permissions ?? [], item.path)
+    (!item.adminOnly || isAdministrator) && canVisitAdminSection(user?.permissions ?? [], item.path)
   );
   const activeMenuItem = visibleMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();

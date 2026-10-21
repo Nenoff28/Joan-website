@@ -129,6 +129,7 @@ export function normalizePermissions(input: readonly string[]): Permission[] {
 }
 export const ADMIN_SECTION_PERMISSIONS: Record<string, Permission> = {
   "/admin": "dashboard.read",
+  "/admin/ai-content": "dashboard.read",
   "/admin/products": "products.read",
   "/admin/inventory": "inventory.read",
   "/admin/promotions": "promotions.read",

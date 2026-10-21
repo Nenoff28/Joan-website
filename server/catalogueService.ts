@@ -2,7 +2,7 @@ import { and, asc, count, countDistinct, desc, eq, gt, gte, inArray, isNotNull, 
 import { TRPCError } from "@trpc/server";
 import { randomUUID } from "node:crypto";
 import { categories as seedCategories, products as seedProducts } from "../client/src/lib/storeData";
-import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, contactEnquiryHistory, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, promotionCampaignProducts, promotionCampaigns, users } from "../drizzle/schema";
+import { adminActivities, catalogueBrochures, catalogueCategories, catalogueCategoryEnglish, catalogueManufacturers, catalogueProductAiContent, catalogueProductCategoryLinks, catalogueProductEnglish, catalogueProducts, contactEnquiries, contactEnquiryHistory, legacyCustomerOrderLines, orderRequestItems, orderRequests, orderStatusHistory, promotionCampaignProducts, promotionCampaigns, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { notifyOwner } from "./_core/notification";
@@ -1072,6 +1072,7 @@ export async function createAdminProduct(payload: ProductPayload, adminUserId: n
       categoryId: payload.categoryId, slug: payload.slug, sku: payload.sku ?? null, brand: payload.brand ?? null, name: payload.name, description: payload.description, imageUrl: payload.imageUrl, galleryJson: JSON.stringify(payload.gallery), imageAlt: payload.imageAlt, priceEur: asDecimal(payload.priceEur), oldPriceEur: asDecimal(payload.oldPriceEur), discountLabel: payload.discountLabel ?? null, colorName: payload.colorName ?? null, colorRgb: payload.colorRgb ?? null, availability: payload.availability, stockQuantity: payload.stockQuantity, featuresJson: JSON.stringify(payload.features), legacySeoKeywordBg: payload.seoKeywords ?? null, legacyMetaTitleBg: payload.seoTitle ?? null, legacyMetaDescriptionBg: payload.seoDescription ?? null, legacyMetaRobots: payload.seoRobots ?? "index,follow", isActive: payload.isActive,
     });
     const id = Number(result[0].insertId);
+    await tx.insert(catalogueProductAiContent).values({ productId: id, aiStatus: "pending" });
     await replaceProductSubcategoryLinks(tx, id, path);
     await insertProductAdminActivity(tx, adminUserId, "product.created", id, { slug: payload.slug, name: payload.name, categoryId: payload.categoryId, subcategoryIds: path.map((row) => row.id) });
     return id;

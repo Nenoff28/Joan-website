@@ -198,6 +198,24 @@ export const catalogueProducts = mysqlTable("catalogue_products", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [index("products_category_active_idx").on(table.categoryId, table.isActive), index("products_active_updated_idx").on(table.isActive, table.updatedAt)]);
 
+/** AI-generated product content is isolated from the published catalogue fields until an administrator approves it. */
+export const catalogueProductAiContent = mysqlTable("catalogue_product_ai_content", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull().unique().references(() => catalogueProducts.id),
+  aiStatus: mysqlEnum("aiStatus", ["pending", "generated", "reviewed", "published", "error"]).default("pending").notNull(),
+  aiDescription: text("aiDescription"),
+  aiFeatures: text("aiFeatures"),
+  aiSeoTitle: varchar("aiSeoTitle", { length: 500 }),
+  aiSeoDescription: text("aiSeoDescription"),
+  aiKeywords: varchar("aiKeywords", { length: 1000 }),
+  aiSourceUrls: text("aiSourceUrls"),
+  aiConfidence: mysqlEnum("aiConfidence", ["high", "low"]),
+  aiError: text("aiError"),
+  aiGeneratedAt: timestamp("aiGeneratedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("product_ai_status_idx").on(table.aiStatus)]);
+
 /** English customer-facing content is stored separately so imported Bulgarian source data remains immutable. */
 export const catalogueProductEnglish = mysqlTable("catalogue_product_english", {
   id: int("id").autoincrement().primaryKey(),

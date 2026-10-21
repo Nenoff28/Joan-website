@@ -1097,3 +1097,30 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
     align-items: flex-start;
   }
 }
+
+.admin-ai-status-grid { display: grid; gap: .65rem; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: .9rem; }
+.admin-ai-status-card { background: #f5f6f2; border: 1px solid var(--line); display: grid; gap: .35rem; padding: .75rem .85rem; text-align: left; transition: border-color 140ms var(--ease-out), transform 140ms var(--ease-out); }
+.admin-ai-status-card:hover, .admin-ai-status-card:focus-visible, .admin-ai-status-card.is-active { border-color: var(--red); transform: translateY(-1px); }
+.admin-ai-status-card span { color: var(--slate); font-family: "Manrope", sans-serif; font-size: .62rem; font-weight: 800; text-transform: uppercase; }
+.admin-ai-status-card strong { color: var(--ink); font-family: "Manrope", sans-serif; font-size: 1.55rem; }
+.admin-ai-panel { min-width: 0; }
+.admin-ai-filters { align-items: end; display: flex; flex-wrap: wrap; gap: .55rem; }
+.admin-ai-filters select { min-height: 38px; }
+.admin-ai-layout { display: grid; gap: 1rem; grid-template-columns: minmax(300px, .9fr) minmax(420px, 1.4fr); padding: .9rem; }
+.admin-ai-list { border: 1px solid var(--line); max-height: 720px; overflow: auto; }
+.admin-ai-product { align-items: center; background: white; border: 0; border-bottom: 1px solid #e6e9e4; display: grid; gap: .6rem; grid-template-columns: 46px minmax(0, 1fr) auto; padding: .65rem; text-align: left; width: 100%; }
+.admin-ai-product:last-child { border-bottom: 0; }
+.admin-ai-product:hover, .admin-ai-product:focus-visible, .admin-ai-product.is-selected { background: #f5f6f2; }
+.admin-ai-product img { background: #f1f3ef; height: 46px; object-fit: contain; width: 46px; }
+.admin-ai-product span { display: grid; gap: .2rem; min-width: 0; }
+.admin-ai-product strong { color: var(--ink); font-size: .72rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-ai-product small { color: var(--slate); font-size: .62rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-ai-status { border: 1px solid currentColor; display: inline-flex; font-family: "Manrope", sans-serif; font-size: .57rem; font-style: normal; font-weight: 800; padding: .25rem .35rem; white-space: nowrap; }
+.admin-ai-status-pending { color: #8a6200; }.admin-ai-status-generated { color: #2563a8; }.admin-ai-status-reviewed { color: #6c43a5; }.admin-ai-status-published { color: var(--green); }.admin-ai-status-error { color: var(--red); }
+.admin-ai-editor { background: #f8f9f6; border: 1px solid var(--line); display: grid; gap: .75rem; padding: 1rem; }
+.admin-ai-editor-head { align-items: center; border-bottom: 1px solid var(--line); display: flex; gap: .75rem; justify-content: space-between; padding-bottom: .75rem; }
+.admin-ai-editor-head > div { min-width: 0; }.admin-ai-editor-head small { color: var(--red); font-family: "Manrope", sans-serif; font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }.admin-ai-editor-head h3 { font-size: 1rem; line-height: 1.3; margin: .2rem 0; }.admin-ai-editor-head p { color: var(--slate); font-size: .65rem; }.admin-ai-editor-head img { background: white; height: 62px; object-fit: contain; width: 62px; }
+.admin-ai-editor label { color: var(--ink); display: grid; font-size: .67rem; font-weight: 800; gap: .3rem; }.admin-ai-editor input, .admin-ai-editor select, .admin-ai-editor textarea { background: white; border: 1px solid var(--line); border-radius: 0; color: var(--ink); font: inherit; font-size: .75rem; font-weight: 500; min-height: 38px; padding: .55rem .6rem; width: 100%; }.admin-ai-editor textarea { line-height: 1.45; resize: vertical; }.admin-ai-editor-grid { display: grid; gap: .65rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-ai-saved { align-items: center; background: #e7f1e8; color: var(--green); display: flex; font-size: .68rem; gap: .35rem; padding: .55rem .65rem; }
+@media (max-width: 1000px) { .admin-ai-layout { grid-template-columns: 1fr; }.admin-ai-list { max-height: 420px; } }
+@media (max-width: 700px) { .admin-ai-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.admin-ai-status-grid .admin-ai-status-card:last-child { grid-column: span 2; }.admin-ai-filters { align-items: stretch; flex-direction: column; width: 100%; }.admin-ai-filters select { width: 100%; }.admin-ai-editor-grid { grid-template-columns: 1fr; }.admin-ai-layout { padding: .55rem; } }

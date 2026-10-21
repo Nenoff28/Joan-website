@@ -4,7 +4,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
-import { permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
+import { administratorOnlyProcedure, permissionProcedure, anyPermissionProcedure } from "./permissionProcedures";
+import { getAdminAiContent, saveAdminAiContent } from "./aiContentService";
 import { accessRouter, staffRouter } from "./accessRouter";
 import { productPayloadSchema } from "../shared/productValidation";
 import { categoryPayloadSchema } from "../shared/categoryValidation";
@@ -74,6 +75,8 @@ const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "ca
 const contactEnquiryStatusSchema = z.enum(["new", "contacted", "closed"]);
 const catalogueSortSchema = z.enum(["relevance", "price-asc", "price-desc", "name-asc", "name-desc"]);
 const catalogueLanguageSchema = z.enum(["bg", "en"]);
+const aiContentStatusSchema = z.enum(["pending", "generated", "reviewed", "published", "error"]);
+const aiContentConfidenceSchema = z.enum(["high", "low"]);
 const publicCatalogueLanguageInput = z.object({ language: catalogueLanguageSchema }).optional();
 const publicCataloguePageSchema = z.object({
   language: catalogueLanguageSchema.optional(),
@@ -163,6 +166,20 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),
   }),
   admin: router({
+    aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), query: z.string().trim().max(160).optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
+    saveAiContent: administratorOnlyProcedure().input(z.object({
+      productId: z.number().int().positive(),
+      aiStatus: aiContentStatusSchema,
+      aiDescription: z.string().max(50_000).nullable().optional(),
+      aiFeatures: z.string().max(50_000).nullable().optional(),
+      aiSeoTitle: z.string().max(500).nullable().optional(),
+      aiSeoDescription: z.string().max(10_000).nullable().optional(),
+      aiKeywords: z.string().max(1_000).nullable().optional(),
+      aiSourceUrls: z.array(z.string().url()).max(50).optional(),
+      aiConfidence: aiContentConfidenceSchema.nullable().optional(),
+      aiError: z.string().max(10_000).nullable().optional(),
+      aiGeneratedAt: z.string().datetime().nullable().optional(),
+    })).mutation(({ input }) => saveAdminAiContent(input)),
     summary: permissionProcedure("dashboard.read").query(async ({ ctx }) => { const summary = await getAdminSummary(); return { ...summary, recentOrders: ctx.staff.permissions.includes("orders.read") ? summary.recentOrders : [] }; }),
     operations: anyPermissionProcedure(["dashboard.read", "products.read", "inventory.read", "promotions.read", "orders.read", "activity.read"]).query(({ ctx }) => getAdminOperations(ctx.staff.permissions)),
     products: anyPermissionProcedure(["products.read", "inventory.read", "promotions.read"]).input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(({ input }) => getAdminProducts(input)),

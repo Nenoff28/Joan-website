@@ -62,3 +62,16 @@ export function anyPermissionProcedure(permissions: readonly Permission[]) {
 export function permissionProcedure(permission: Permission) {
   return anyPermissionProcedure([permission]);
 }
+
+export function administratorOnlyProcedure() {
+  return publicProcedure.use(async ({ ctx, next, type }) => {
+    const staff = await getStaffAccess(ctx);
+    if (!staff?.canAccess || (staff.source !== "manus" && staff.role.slug !== "admin")) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Тази секция е достъпна само за администратор." });
+    }
+    if (type === "mutation" && !isTrustedMutationOrigin(ctx.req)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Невалиден източник на административната заявка." });
+    }
+    return next({ ctx: { ...ctx, user: staff.user, staff } });
+  });
+}
