@@ -112,6 +112,7 @@ describe("admin product entry workflow", () => {
     expect(adminSource).toContain('"publication-desc"');
     expect(adminSource).toContain('"quality-asc"');
     expect(stylesheet).toContain(".admin-sort-header");
+    expect(serviceSource).not.toContain("Непълна галерия");
   });
 
   it("can isolate hidden products for bulk publication", () => {

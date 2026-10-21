@@ -933,7 +933,7 @@ export async function getAdminOperations(permissions?: readonly string[]) {
   const promotions = activeProducts.filter((product) => Boolean(product.discount || product.oldPrice));
   const inventoryQueue = activeProducts.filter((product) => product.availabilityCode !== "out_of_stock" && (product.stockQuantity ?? 0) <= 2).slice(0, 12);
   const qualityQueue = activeProducts.map((product) => {
-    const issues = [!product.sku ? "Липсва код" : null, !product.price ? "Липсва цена" : null, product.gallery.length < 2 ? "Непълна галерия" : null, product.features.length === 0 ? "Липсват характеристики" : null].filter((item): item is string => Boolean(item));
+    const issues = [!product.sku ? "Липсва код" : null, !product.price ? "Липсва цена" : null, product.features.length === 0 ? "Липсват характеристики" : null].filter((item): item is string => Boolean(item));
     return { ...product, issues };
   }).filter((product) => product.issues.length > 0).slice(0, 12);
   const orderCounts: Record<OrderRequestStatus, number> = { new: 0, contacted: 0, confirmed: 0, closed: 0, cancelled: 0 };
