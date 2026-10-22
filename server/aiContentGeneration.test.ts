@@ -65,6 +65,9 @@ describe("AI product content generation", () => {
     expect(service).toContain("mergeSourceFeatures");
     expect(service).toContain("aiFeatures: sourceFeatures.trim()");
     expect(service).toContain("buildAuthoritativeFeatures");
+    expect(service).toContain("extractLegacyDescriptionFeatures");
+    expect(service).toContain("Номинален обем");
+    expect(service).toContain("extractProductModel(product.name)");
     expect(service).toContain('aiStatus: "error"');
     expect(service).toContain("onDuplicateKeyUpdate({ set: { aiStatus: \"error\"");
     expect(service).toContain("publishApprovedAiContent");

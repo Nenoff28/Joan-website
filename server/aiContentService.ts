@@ -436,15 +436,49 @@ function mergeSourceFeatures(generated: string, source: string) {
   return generatedLines.join("\n");
 }
 
-function buildAuthoritativeFeatures(sku: string | null, categoryName: string | null, rawFeatures: string) {
+function extractProductModel(name: string) {
+  const match = name.match(/\b([A-ZА-Я]{1,10}\d[A-ZА-Я0-9]*)(?:\s+([A-ZА-Я]{2,10}))?\b/);
+  return match ? `${match[1]}${match[2] ?? ""}` : null;
+}
+
+function buildAuthoritativeFeatures(model: string | null, sku: string | null, categoryName: string | null, rawFeatures: string) {
   const sourceLines = rawFeatures.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
   const withoutGeneratedIdentity = sourceLines.filter(line => {
     const label = line.split(":", 1)[0]?.trim().toLowerCase();
     return label !== "модел" && label !== "model" && label !== "категория" && label !== "category";
   });
-  const identity = sku?.trim() ? [`Модел: ${sku.trim()}`] : [];
+  const identity = (model?.trim() || sku?.trim()) ? [`Модел: ${(model?.trim() || sku?.trim())}`] : [];
+  if (model?.trim() && sku?.trim() && model.trim() !== sku.trim()) identity.push(`Вътрешен код: ${sku.trim()}`);
   const category = categoryName?.trim() ? [`Категория: ${categoryName.trim()}`] : [];
   return [...identity, ...withoutGeneratedIdentity, ...category].join("\n");
+}
+
+function extractLegacyDescriptionFeatures(value: string) {
+  const output: string[] = [];
+  const add = (label: string, result: string, unit = "") => {
+    const cleanResult = result.replace(/\s+/g, " ").trim();
+    if (cleanResult) output.push(`${label}: ${cleanResult}${unit}`.trim());
+  };
+  for (const rawLine of value.replace(/<br\s*\/?>(?=.)/gi, "\n").split(/\n+/)) {
+    const line = rawLine.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    if (!line) continue;
+    let match: RegExpMatchArray | null;
+    if ((match = line.match(/^Номинална\s+Мощност\s*\[([^\]]+)\]\s*(.+)$/i))) add("Номинална мощност", match[2], ` ${match[1]}`);
+    else if ((match = line.match(/^Номинално\s+налягане\s*\[([^\]]+)\]\s*(.+)$/i))) add("Номинално налягане", match[2], ` ${match[1]}`);
+    else if ((match = line.match(/^Площ на топлообменниците\s*\[([^\]]+)\]\s*(.+)$/i))) add("Площ на топлообменниците", match[2], ` ${match[1]}`);
+    else if ((match = line.match(/^Топлинни загуби[^\[]*\[([^\]]+)\]\s*(.+)$/i))) add("Топлинни загуби при нулев товар", match[2], ` ${match[1]}`);
+    else if ((match = line.match(/^Габаритни размери\s+[^\[]*\[([^\]]+)\]\s*(.+)$/i))) add("Габаритни размери", match[2], ` ${match[1]}`);
+    else if ((match = line.match(/^Тегло\s*\[([^\]]+)\]\s*(.+)$/i))) add("Тегло", match[2], ` ${match[1]}`);
+    else if ((match = line.match(/^Монтаж\s+(.+)$/i))) add("Монтаж", match[1]);
+    else if ((match = line.match(/^Водосъдържател\s+(.+)$/i))) add("Водосъдържател", match[1]);
+    else if ((match = line.match(/^Обемна група\s+(.+)$/i))) add("Номинален обем", match[1], /^\d+(?:[.,]\d+)?$/.test(match[1].trim()) ? " л" : "");
+    else if ((match = line.match(/^Начин на загряване на водата\s+(.+)$/i))) add("Начин на загряване", match[1]);
+    else if ((match = line.match(/^Управление\s+с\s+(.+)$/i))) add("Управление", match[1].replace(/\s+управление$/i, ""));
+    else if ((match = line.match(/^Клас на енергийна ефективност\s+(.+)$/i))) add("Клас на енергийна ефективност", match[1]);
+    else if (/^[^:]+:\s*.+$/.test(line)) output.push(line);
+  }
+  if (output.some(item => /Начин на загряване:.*топлообменник/i.test(item)) && !output.some(item => /^Тип:/i.test(item))) output.splice(1, 0, "Тип: Комбиниран бойлер");
+  return output.join("\n");
 }
 
 function normalizeAiPayload(payload: Record<string, unknown>, sourceDescription = "", sourceFeatures = "") {
@@ -498,8 +532,10 @@ export async function generateAdminAiContent(productId: number, options?: { skip
   }
 
   const model = FREE_AI_MODEL;
-  const sourceDescription = stripHtml(product.description || "");
-  const sourceFeatures = buildAuthoritativeFeatures(product.sku, product.categoryName, formatLegacyFeatures(product.featuresJson || ""));
+  const rawSourceDescription = product.description || "";
+  const sourceDescription = stripHtml(rawSourceDescription);
+  const descriptionFeatures = extractLegacyDescriptionFeatures(rawSourceDescription);
+  const sourceFeatures = buildAuthoritativeFeatures(extractProductModel(product.name), product.sku, product.categoryName, [formatLegacyFeatures(product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
   const productInput = `ДАННИ ОТ КАТАЛОГА (единственият разрешен източник на факти):
 Категория: ${product.categoryName || "няма посочена"}
 Марка: ${product.brand || "няма посочена"}
