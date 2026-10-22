@@ -436,20 +436,14 @@ function mergeSourceFeatures(generated: string, source: string) {
   return generatedLines.join("\n");
 }
 
-function extractProductModel(name: string) {
-  const match = name.match(/\b([A-ZА-Я]{1,10}\d[A-ZА-Я0-9]*)(?:\s+([A-ZА-Я]{2,10}))?\b/);
-  return match ? `${match[1]}${match[2] ?? ""}` : null;
-}
-
-function buildAuthoritativeFeatures(model: string | null, sku: string | null, categoryName: string | null, rawFeatures: string) {
+function buildAuthoritativeFeatures(categoryName: string | null, rawFeatures: string) {
   const sourceLines = rawFeatures.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
   const withoutGeneratedIdentity = sourceLines.filter(line => {
     const label = line.split(":", 1)[0]?.trim().toLowerCase();
-    return label !== "модел" && label !== "model" && label !== "категория" && label !== "category";
+    return label !== "модел" && label !== "model" && label !== "вътрешен код" && label !== "internal code" && label !== "категория" && label !== "category";
   });
-  const identity = (model?.trim() || sku?.trim()) ? [`Модел: ${(model?.trim() || sku?.trim())}`] : [];
   const category = categoryName?.trim() ? [`Категория: ${categoryName.trim()}`] : [];
-  return [...identity, ...withoutGeneratedIdentity, ...category].join("\n");
+  return [...withoutGeneratedIdentity, ...category].join("\n");
 }
 
 function extractLegacyDescriptionFeatures(value: string) {
@@ -534,7 +528,7 @@ export async function generateAdminAiContent(productId: number, options?: { skip
   const rawSourceDescription = product.backupDescription || product.description || "";
   const sourceDescription = stripHtml(rawSourceDescription);
   const descriptionFeatures = extractLegacyDescriptionFeatures(rawSourceDescription);
-  const sourceFeatures = buildAuthoritativeFeatures(extractProductModel(product.name), product.sku, product.categoryName, [formatLegacyFeatures(product.backupFeaturesJson || product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
+  const sourceFeatures = buildAuthoritativeFeatures(product.categoryName, [formatLegacyFeatures(product.backupFeaturesJson || product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
   const productInput = `ДАННИ ОТ КАТАЛОГА (единственият разрешен източник на факти):
 Категория: ${product.categoryName || "няма посочена"}
 Марка: ${product.brand || "няма посочена"}
