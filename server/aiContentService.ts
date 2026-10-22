@@ -4,6 +4,7 @@ import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGener
 import { getDb } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { legacyCategoryRootsByPublicSlug } from "./productCategoryAssignments";
+import { splitProductDescription } from "./technicalSpecifications";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 export type AiContentConfidence = "high" | "low";
@@ -15,7 +16,7 @@ const FREE_AI_PROVIDER = "manus";
 const FREE_AI_MODEL = "gpt-5-mini";
 const OFFLINE_AI_INSTRUCTION = `
 
-ВАЖНО ЗА ТЕКУЩИЯ РЕЖИМ: Работиш напълно без Google Search, Gemini и външни заявки. Не проучвай интернет и не твърди, че си го направил. Използвай всички подадени данни за продукта. Не съкращавай техническата информация: пренеси всяка налична характеристика като отделен елемент във features във формат "Параметър: стойност", а в description обясни подробно продукта и приложението му. Можеш да преформулираш само за по-добра четливост; не измисляй липсващи технически факти, размери, мощности, материали или сертификати. Ако данните са малко, бъди точен, но не добавяй фиктивни параметри. Отговори САМО с един валиден JSON обект без markdown, обяснение или текст преди/след него със следните полета: description (подробен непразен низ), features (масив от низове, може да е празен само ако няма никакви технически данни), seo_title, seo_description, keywords, source_urls (празен масив), confidence (точно "висока" или "ниска").`;
+ВАЖНО ЗА ТЕКУЩИЯ РЕЖИМ: Работиш напълно без Google Search, Gemini и външни заявки. Не проучвай интернет и не твърди, че си го направил. Върни САМО един валиден JSON обект без markdown, обяснение или текст преди/след него. Полето description е отделен кратък, естествен текст от 2–4 изречения за продукта, предназначението и най-важните доказани предимства; не прави списък, не добавяй заглавие „Технически данни“ и не копирай целия списък със спецификации в него. Полето features е отделен масив: пренеси всяка налична каталожна характеристика като отделен елемент във формат „Параметър: стойност“, без да сливаш редове и без модел, вътрешен код или категория. Не измисляй липсващи факти, размери, мощности, материали или сертификати. SEO полетата трябва да са кратки и в лимитите; source_urls е празен масив, confidence е точно „висока“ или „ниска“.`;
 
 async function database() {
   const db = await getDb();
@@ -349,6 +350,13 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/\s+/g, " ").trim();
 }
 
+function cleanGeneratedDescription(value: string) {
+  const withoutHeadings = value.replace(/^\s*(?:1\.?\s*)?(?:описание на продукта|описание)\s*:?\s*/i, "");
+  const technicalStart = withoutHeadings.search(/(?:\n|\r|\s{2,})(?:2\.?\s*)?(?:основни характеристики|технически данни|характеристики)\s*:?/i);
+  const description = technicalStart >= 0 ? withoutHeadings.slice(0, technicalStart) : withoutHeadings;
+  return description.replace(/\s+/g, " ").trim();
+}
+
 type FreeAiUsage = { inputTokens: number; outputTokens: number; searchCount: number };
 
 export async function checkFreeAiConnection() {
@@ -436,14 +444,14 @@ function mergeSourceFeatures(generated: string, source: string) {
   return generatedLines.join("\n");
 }
 
-function buildAuthoritativeFeatures(categoryName: string | null, rawFeatures: string) {
-  const sourceLines = rawFeatures.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+function buildAuthoritativeFeatures(rawFeatures: string) {
+  const parsedSource = splitProductDescription("", rawFeatures.split(/\r?\n/)).technicalSpecs;
+  const sourceLines = parsedSource.map(item => `${item.label}: ${item.value}`);
   const withoutGeneratedIdentity = sourceLines.filter(line => {
     const label = line.split(":", 1)[0]?.trim().toLowerCase();
     return label !== "модел" && label !== "model" && label !== "вътрешен код" && label !== "internal code" && label !== "категория" && label !== "category";
   });
-  const category = categoryName?.trim() ? [`Категория: ${categoryName.trim()}`] : [];
-  return [...withoutGeneratedIdentity, ...category].join("\n");
+  return withoutGeneratedIdentity.join("\n");
 }
 
 function extractLegacyDescriptionFeatures(value: string) {
@@ -479,7 +487,7 @@ function normalizeAiPayload(payload: Record<string, unknown>, sourceDescription 
   const generatedDescription = textField(payload.description);
   const generatedFeatures = Array.isArray(payload.features) ? payload.features.filter((item): item is string => typeof item === "string" && item.trim().length > 0).join("\n") : "";
   return {
-    aiDescription: mergeSourceText(generatedDescription, sourceDescription) || null,
+    aiDescription: cleanGeneratedDescription(generatedDescription) || sourceDescription.trim() || null,
     // Technical data is authoritative catalogue data. Never let the model
     // replace a source value with a guessed capacity, model or power rating.
     aiFeatures: sourceFeatures.trim() || mergeSourceFeatures(generatedFeatures, sourceFeatures) || null,
@@ -528,7 +536,7 @@ export async function generateAdminAiContent(productId: number, options?: { skip
   const rawSourceDescription = product.backupDescription || product.description || "";
   const sourceDescription = stripHtml(rawSourceDescription);
   const descriptionFeatures = extractLegacyDescriptionFeatures(rawSourceDescription);
-  const sourceFeatures = buildAuthoritativeFeatures(product.categoryName, [formatLegacyFeatures(product.backupFeaturesJson || product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
+  const sourceFeatures = buildAuthoritativeFeatures([formatLegacyFeatures(product.backupFeaturesJson || product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
   const productInput = `ДАННИ ОТ КАТАЛОГА (единственият разрешен източник на факти):
 Категория: ${product.categoryName || "няма посочена"}
 Марка: ${product.brand || "няма посочена"}

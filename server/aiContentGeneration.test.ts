@@ -65,6 +65,9 @@ describe("AI product content generation", () => {
     expect(service).toContain("mergeSourceFeatures");
     expect(service).toContain("aiFeatures: sourceFeatures.trim()");
     expect(service).toContain("buildAuthoritativeFeatures");
+    expect(service).toContain("cleanGeneratedDescription");
+    expect(service).toContain("не копирай целия списък със спецификации");
+    expect(service).toContain("return withoutGeneratedIdentity.join");
     expect(service).toContain("extractLegacyDescriptionFeatures");
     expect(service).toContain("Номинален обем");
     expect(service).toContain("backupDescription");
