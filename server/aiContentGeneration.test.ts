@@ -92,5 +92,8 @@ describe("AI product content generation", () => {
     expect(page).toContain("await utils.admin.aiQueue.invalidate()");
     expect(page).toContain("дневният лимит е изключен");
     expect(page).toContain("admin-ai-queue-progress");
+    expect(page).toContain("technicalRows");
+    expect(page).toContain("admin-ai-technical-table");
+    expect(page).toContain("replace(/\\\\n/g");
   });
 });

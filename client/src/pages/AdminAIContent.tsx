@@ -191,6 +191,26 @@ export default function AdminAIContent() {
   const toggleSelected = (productId: number) => setSelectedIds(current => { const next = new Set(current); if (next.has(productId)) next.delete(productId); else next.add(productId); return next; });
   const queue = queueQuery.data;
   const displayValue = (value: string | null | undefined) => value?.trim() || "—";
+  const technicalRows = (value: string | null | undefined) => {
+    const normalized = (value ?? "").replace(/\\n/g, "\n").trim();
+    if (!normalized) return [] as Array<{ label: string; value: string }>;
+    const rows: Array<{ label: string; value: string }> = [];
+    for (const line of normalized.split(/\r?\n+/)) {
+      const matches = Array.from(line.matchAll(/([А-ЯA-Z][^:\n]{1,70}):\s*(.*?)(?=\s+[А-ЯA-ZА-Я][^:\n]{1,70}:\s*|$)/g));
+      if (matches.length) {
+        for (const match of matches) {
+          const label = match[1].replace(/\s+/g, " ").trim();
+          const rowValue = match[2].replace(/\s+/g, " ").trim();
+          if (label && rowValue && !/^(модел|вътрешен код|категория)$/i.test(label)) rows.push({ label, value: rowValue });
+        }
+      } else if (line.trim()) rows.push({ label: "Характеристика", value: line.trim() });
+    }
+    return rows;
+  };
+  const technicalValue = (value: string | null | undefined) => {
+    const rows = technicalRows(value);
+    return rows.length ? <div className="admin-ai-technical-table">{rows.map((row, index) => <div className="admin-ai-technical-row" key={`${row.label}-${row.value}-${index}`}><span>{row.label}</span><strong>{row.value}</strong></div>)}</div> : <span>—</span>;
+  };
   const newFeatures = form.aiFeatures.trim() || "—";
   const newSourceUrls = form.aiSourceUrls.split(/\r?\n|,/).map(value => value.trim()).filter(Boolean);
   const selectedApprovedIds = Array.from(selectedIds);
@@ -329,8 +349,8 @@ export default function AdminAIContent() {
             {selected && <form className="admin-ai-editor" onSubmit={save}>
               <div className="admin-ai-editor-head"><div><small>Избран продукт</small><h3>{selected.name}</h3><p>{selected.categoryName} · SKU/EAN {selected.sku || "—"}</p><p className="admin-ai-usage"><span>Доставчик: <strong>{selected.aiProvider || "—"}</strong></span><span>Модел: <strong>{selected.aiModel || "—"}</strong></span><span>Входни токени: <strong>{selected.aiInputTokens ?? 0}</strong></span><span>Изходни токени: <strong>{selected.aiOutputTokens ?? 0}</strong></span><span>Google търсения: <strong>{selected.aiSearchCount}</strong></span></p></div><img src={selected.imageUrl} alt="" /></div>
               <div className="admin-ai-compare" aria-label="Сравнение на старо и ново съдържание">
-                <article><h4>Старо съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(selected.oldDescription)}</dd><dt>Технически данни</dt><dd>{displayValue(selected.oldFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(selected.oldSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(selected.oldSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(selected.oldKeywords)}</dd></dl></article>
-                <article><h4>Ново AI съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(form.aiDescription)}</dd><dt>Характеристики</dt><dd>{displayValue(newFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(form.aiSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(form.aiSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(form.aiKeywords)}</dd></dl></article>
+                <article><h4>Старо съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(selected.oldDescription)}</dd><dt>Технически данни</dt><dd>{technicalValue(selected.oldFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(selected.oldSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(selected.oldSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(selected.oldKeywords)}</dd></dl></article>
+                <article><h4>Ново AI съдържание</h4><dl><dt>Описание</dt><dd>{displayValue(form.aiDescription)}</dd><dt>Характеристики</dt><dd>{technicalValue(newFeatures)}</dd><dt>SEO заглавие</dt><dd>{displayValue(form.aiSeoTitle)}</dd><dt>SEO описание</dt><dd>{displayValue(form.aiSeoDescription)}</dd><dt>Ключови думи</dt><dd>{displayValue(form.aiKeywords)}</dd></dl></article>
               </div>
               <div className="admin-ai-sources"><strong>Източници</strong>{newSourceUrls.length ? <ul>{newSourceUrls.map(url => <li key={url}><a href={url} target="_blank" rel="noreferrer">{url}</a></li>)}</ul> : <span>Няма добавени източници.</span>}</div>
               <div className="admin-ai-generate-row"><button type="button" className="admin-primary" onClick={() => generateMutation.mutate({ productId: selected.productId })} disabled={generateMutation.isPending || settingsQuery.isLoading || !systemPrompt.trim()}><Sparkles size={15} /> {generateMutation.isPending ? "Генериране…" : "Генерирай от prompt-а"}</button><span>Резултатът се записва в AI слоя и не променя продукта.</span></div>
