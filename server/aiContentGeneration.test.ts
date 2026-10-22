@@ -64,7 +64,8 @@ describe("AI product content generation", () => {
     expect(service).toContain('descendantCategoryIds');
     expect(service).toContain('catalogueProductCategoryLinks');
     expect(service).toContain('flattenCategoryOptions');
-    expect(service).toContain('reviewAdminAiContentBatch');
+    expect(service).toContain("reviewAdminAiContentBatch");
+    expect(service).toContain('action === "approve" ? ["generated", "reviewed"] as const : ["generated", "reviewed", "error"] as const');
     expect(service).toContain('count: counts.get(row.id)');
     expect(service).toContain("validateAiPayload");
     expect(service).toContain("for (let attempt = 0; attempt <= 2");
@@ -111,6 +112,9 @@ describe("AI product content generation", () => {
     expect(page).toContain("selectedQueueQuery");
     expect(page).toContain("toast.success(\"AI съдържанието е запазено.\")");
     expect(page).toContain("Текуща опашка");
+    expect(page).toContain("Одобри въпреки грешката");
+    expect(page).toContain("selectedErrorCount");
+    expect(page).toContain('item.aiStatus === "error"');
     expect(page).toContain("technicalRows");
     expect(page).toContain("admin-ai-technical-table");
     expect(page).toContain("replace(/\\\\n/g");

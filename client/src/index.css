@@ -1189,6 +1189,8 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-approve-all, .admin-ai-approve-next { background: #247448 !important; border-color: #247448 !important; color: #fff !important; }
 .admin-ai-approve-all:hover:not(:disabled), .admin-ai-approve-next:hover:not(:disabled) { background: #1c5c39 !important; border-color: #1c5c39 !important; }
 .admin-ai-approve-next:disabled { background: #b7c9bc !important; border-color: #b7c9bc !important; }
+.admin-ai-error-approval { align-items: flex-start; background: #fff7e6; border: 1px solid #e8c978; color: #76520b; display: flex; font-size: .72rem; gap: .45rem; line-height: 1.4; padding: .6rem .7rem; }
+.admin-ai-error-approval svg { flex: 0 0 auto; margin-top: .05rem; }
 
 .admin-ai-category-search { align-items: center; background: #fff; border: 1px solid var(--line); display: flex; gap: .4rem; min-height: 38px; padding: 0 .6rem; }
 .admin-ai-category-search:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(215,25,32,.08); }
