@@ -268,7 +268,7 @@ export async function reviewAdminAiContentBatch(productIds: number[], action: "a
 }
 
 function aiFeaturesToJson(value: string | null) {
-  return JSON.stringify((value ?? "").split(/\r?\n/).map(item => item.trim()).filter(Boolean));
+  return JSON.stringify((value ?? "").split(/\\n|\r?\n/).map(item => item.trim()).filter(Boolean));
 }
 
 export async function publishApprovedAiContent(productIds?: number[]) {

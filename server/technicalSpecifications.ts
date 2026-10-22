@@ -18,42 +18,16 @@ function parseFeaturePair(feature: string): TechnicalSpecification | null {
  * are never shown as the product's model.
  */
 export function alignInternalCodeTechnicalSpecs(specs: TechnicalSpecification[], sku: string | null | undefined, language: "bg" | "en" = "bg") {
-  const internalCode = sku?.trim();
-  if (!internalCode) return specs;
-  const internalLabel = language === "en" ? "Model" : "Модел";
-  let hasCanonicalModel = false;
-  const aligned: TechnicalSpecification[] = [];
-  for (const specification of specs) {
-    if (!modelLabels.has(specification.label.trim().toLocaleLowerCase("bg-BG"))) {
-      aligned.push(specification);
-      continue;
-    }
-    if (!hasCanonicalModel) {
-      aligned.push({ label: internalLabel, value: internalCode });
-      hasCanonicalModel = true;
-    }
-  }
-  return hasCanonicalModel ? aligned : [{ label: internalLabel, value: internalCode }, ...aligned];
+  return specs.filter(specification => !modelLabels.has(specification.label.trim().toLocaleLowerCase("bg-BG")));
 }
 
 export function alignInternalCodeFeatures(features: string[], sku: string | null | undefined, language: "bg" | "en" = "bg") {
-  const internalCode = sku?.trim();
-  if (!internalCode) return features;
-  const internalLabel = language === "en" ? "Model" : "Модел";
-  let hasCanonicalModel = false;
-  const aligned: string[] = [];
-  for (const feature of features) {
-    const pair = parseFeaturePair(feature);
-    if (!pair || !modelLabels.has(pair.label.toLocaleLowerCase("bg-BG"))) {
-      aligned.push(feature);
-      continue;
-    }
-    if (!hasCanonicalModel) {
-      aligned.push(`${internalLabel}: ${internalCode}`);
-      hasCanonicalModel = true;
-    }
-  }
-  return aligned;
+  return features
+    .flatMap(feature => feature.split(/\\n|\r?\n/).map(line => line.trim()).filter(Boolean))
+    .filter(feature => {
+      const pair = parseFeaturePair(feature);
+      return !pair || !modelLabels.has(pair.label.toLocaleLowerCase("bg-BG"));
+    });
 }
 
 const technicalSectionPattern = /(?:технически\s+данни|техническа\s+информация|допълнителна\s+информация|характеристики|спецификации?)\s*:/i;

@@ -446,7 +446,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
   const sourceDescription = translated?.description ?? product.description;
   const features = alignInternalCodeFeatures(publicProductFeatures(translated?.featuresJson ?? product.featuresJson), product.sku, language);
   const presentation = splitProductDescription(sourceDescription, features);
-  const technicalSpecs = alignInternalCodeTechnicalSpecs(presentation.technicalSpecs, product.sku, language);
+  const technicalSpecs = alignInternalCodeTechnicalSpecs(presentation.technicalSpecs, product.sku, language).filter(specification => !["категория", "category"].includes(specification.label.trim().toLocaleLowerCase("bg-BG")));
   const basePrice = product.priceEur === null ? null : Number(product.priceEur);
   const promotionPrice = activePromotion && basePrice !== null
     ? activePromotion.fixedPriceEur !== null ? activePromotion.fixedPriceEur : Math.max(0, Math.round(basePrice * (1 - (activePromotion.discountPercent ?? 0) / 100) * 100) / 100)

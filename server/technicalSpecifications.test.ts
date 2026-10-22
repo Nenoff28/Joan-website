@@ -38,18 +38,15 @@ describe("splitProductDescription", () => {
     expect(result.technicalSpecs).toEqual([{ label: "Характеристика", value: "Може да се боядисва" }, { label: "Характеристика", value: "Употреба на закрито" }]);
   });
 
-  it("uses the catalogue sku as the only canonical model when legacy data differs", () => {
+  it("removes model rows from the public technical table", () => {
     expect(alignInternalCodeTechnicalSpecs([
       { label: "Модел", value: "33037" },
       { label: "Размер", value: "M" },
-    ], "12829")).toEqual([
-      { label: "Модел", value: "12829" },
-      { label: "Размер", value: "M" },
-    ]);
+    ], "12829")).toEqual([{ label: "Размер", value: "M" }]);
   });
 
-  it("does not duplicate the canonical model when the technical data already matches sku", () => {
-    expect(alignInternalCodeTechnicalSpecs([{ label: "Модел", value: "12829" }], "12829")).toEqual([{ label: "Модел", value: "12829" }]);
+  it("removes internal code rows from the public technical table", () => {
+    expect(alignInternalCodeTechnicalSpecs([{ label: "Вътрешен код", value: "12829" }], "12829")).toEqual([]);
   });
 
   it("publishes admin technical rows serialized with an em dash", () => {
@@ -61,7 +58,7 @@ describe("splitProductDescription", () => {
     ]);
   });
 
-  it("replaces a legacy model feature with the canonical internal code", () => {
-    expect(alignInternalCodeFeatures(["Модел: 33037", "Размер: M"], "12829")).toEqual(["Модел: 12829", "Размер: M"]);
+  it("splits serialized multiline features and removes model rows", () => {
+    expect(alignInternalCodeFeatures(["Монтаж: Вертикален\\nНоминален обем: 80 л\\nМодел: 33037", "Размер: M"], "12829")).toEqual(["Монтаж: Вертикален", "Номинален обем: 80 л", "Размер: M"]);
   });
 });
