@@ -18,6 +18,7 @@ describe("AI product content generation", () => {
 
   it("enforces the product-content quality limits", () => {
     expect(validateAiPayload({ description: "Описание", features: [], seo_title: "Кратко заглавие", seo_description: "Кратко SEO описание", keywords: "боя, лак", confidence: "висока", source_urls: ["https://example.com/product"] })).toEqual([]);
+    expect(validateAiPayload({ description: "Описание", features: [], seo_title: "Кратко заглавие", seo_description: "Кратко SEO описание", keywords: "боя, лак", confidence: "висока", source_urls: [] })).toEqual([]);
     expect(validateAiPayload({ description: "", features: {}, seo_title: "x".repeat(61), seo_description: "x".repeat(201), keywords: "x".repeat(256), confidence: "medium" })).toEqual([
       "description трябва да е непразен текст",
       "seo_title трябва да е до 60 знака",

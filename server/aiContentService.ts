@@ -393,7 +393,7 @@ export function parseAiJsonObject(raw: string): Record<string, unknown> {
 
 function textField(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
 
-export function validateAiPayload(payload: Record<string, unknown>): string[] {
+export function validateAiPayload(payload: Record<string, unknown>, options: { requireSourceUrls?: boolean } = {}): string[] {
   const errors: string[] = [];
   const features = payload.features;
   const sourceUrls = payload.source_urls;
@@ -403,7 +403,7 @@ export function validateAiPayload(payload: Record<string, unknown>): string[] {
   if (typeof payload.keywords !== "string" || payload.keywords.trim().length > 255) errors.push("keywords трябва да е до 255 знака");
   if (!Array.isArray(features) || features.some(item => typeof item !== "string" || !item.trim())) errors.push("features трябва да е масив от низове; празен масив е допустим");
   if (typeof payload.confidence !== "string" || !["висока", "ниска"].includes(payload.confidence.trim().toLowerCase())) errors.push('confidence трябва да е „висока“ или „ниска“');
-  if (!Array.isArray(sourceUrls) || sourceUrls.length === 0 || sourceUrls.some(item => typeof item !== "string" || !/^https?:\/\//i.test(item))) errors.push("source_urls трябва да съдържа поне един валиден URL");
+  if (!Array.isArray(sourceUrls) || (options.requireSourceUrls && sourceUrls.length === 0) || sourceUrls.some(item => typeof item !== "string" || !/^https?:\/\//i.test(item))) errors.push("source_urls трябва да съдържа поне един валиден URL");
   const searchableText = [payload.description, payload.seo_title, payload.seo_description, payload.keywords, ...(Array.isArray(features) ? features : [])].filter((value): value is string => typeof value === "string").join(" ").toLowerCase();
   if (/няма информация|не е налично|не е налична|няма данни|неизвестно/.test(searchableText)) errors.push("съдържанието не трябва да съдържа фрази без информационна стойност");
   return errors;
