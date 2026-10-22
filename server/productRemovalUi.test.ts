@@ -25,6 +25,6 @@ describe('reversible product removal controls',()=>{
   expect(products).toContain('utils.catalogue.page.invalidate()');
   expect(products).toContain('utils.catalogue.product.invalidate()');
   expect(products).toContain('utils.admin.products.invalidate()');
-  expect(products).toContain('if (form.id === input.id) startNewProduct()');
+  expect(products).toContain('if (form.id === input.id) closeProductEditor()');
  });
 });

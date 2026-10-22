@@ -239,6 +239,13 @@
       "when": 1792582556311,
       "tag": "0033_dusty_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1792646213391,
+      "tag": "0034_wide_micromax",
+      "breakpoints": true
     }
   ]
 }

@@ -238,8 +238,8 @@ export const catalogueProductAiBackups = mysqlTable("catalogue_product_ai_backup
 export const aiContentSettings = mysqlTable("ai_content_settings", {
   id: int("id").primaryKey(),
   systemPrompt: text("systemPrompt").notNull(),
-  model: varchar("model", { length: 160 }).default("gemini-3.8-flash").notNull(),
-  dailyGenerationLimit: int("dailyGenerationLimit").default(20).notNull(),
+  model: varchar("model", { length: 160 }).default("gpt-5-mini").notNull(),
+  dailyGenerationLimit: int("dailyGenerationLimit").default(0).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

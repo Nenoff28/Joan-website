@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, exists, gt, inArray, isNull, like, lt, lte, 
 import { TRPCError } from "@trpc/server";
 import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGenerationJobs, catalogueProductAiBackups, catalogueProductAiContent, catalogueCategories, catalogueProductCategoryLinks, catalogueProducts } from "../drizzle/schema";
 import { getDb } from "./db";
-import { ENV } from "./_core/env";
+import { invokeLLM } from "./_core/llm";
 import { legacyCategoryRootsByPublicSlug } from "./productCategoryAssignments";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
@@ -11,8 +11,11 @@ export type AiAvailabilityFilter = "all" | "in_stock" | "not_in_stock";
 export type AiVisibilityFilter = "all" | "visible" | "hidden";
 export type AiContentSort = "confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc";
 
-const DEFAULT_AI_MODEL = "gemini-3.8-flash";
-const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const FREE_AI_PROVIDER = "manus";
+const FREE_AI_MODEL = "gpt-5-mini";
+const OFFLINE_AI_INSTRUCTION = `
+
+ВАЖНО ЗА ТЕКУЩИЯ РЕЖИМ: Работиш напълно без Google Search, Gemini и външни заявки. Не проучвай интернет и не твърди, че си го направил. Използвай само подадените данни за продукта и общи, безопасни формулировки без измислени технически факти. Отговори САМО с един валиден JSON обект без markdown, обяснение или текст преди/след него със следните полета: description (непразен низ), features (масив от низове, може да е празен), seo_title, seo_description, keywords, source_urls (празен масив), confidence (точно "висока" или "ниска").`;
 
 async function database() {
   const db = await getDb();
@@ -324,19 +327,16 @@ export async function getAdminAiSettings() {
   const db = await database();
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
-  return { systemPrompt: settings.systemPrompt, model: settings.model || DEFAULT_AI_MODEL, dailyGenerationLimit: settings.dailyGenerationLimit, updatedAt: settings.updatedAt };
+  return { systemPrompt: settings.systemPrompt, model: FREE_AI_MODEL, dailyGenerationLimit: 0, updatedAt: settings.updatedAt, provider: FREE_AI_PROVIDER, freeMode: true, googleSearch: false };
 }
 
 export async function saveAdminAiSettings(systemPrompt: string, model: string, dailyGenerationLimit: number) {
   const prompt = systemPrompt.trim();
   if (prompt.length < 20) throw new TRPCError({ code: "BAD_REQUEST", message: "Системният prompt трябва да съдържа поне 20 знака." });
   if (prompt.length > 100_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Системният prompt е прекалено дълъг." });
-  const selectedModel = model.trim();
-  if (!/^[a-zA-Z0-9._-]{2,160}$/.test(selectedModel)) throw new TRPCError({ code: "BAD_REQUEST", message: "Моделът съдържа невалидни символи." });
-  if (!Number.isInteger(dailyGenerationLimit) || dailyGenerationLimit < 0 || dailyGenerationLimit > 100_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Дневният лимит трябва да е цяло число между 0 и 100 000." });
   const db = await database();
-  await db.insert(aiContentSettings).values({ id: 1, systemPrompt: prompt, model: selectedModel, dailyGenerationLimit }).onDuplicateKeyUpdate({ set: { systemPrompt: prompt, model: selectedModel, dailyGenerationLimit } });
-  return { success: true, systemPrompt: prompt, model: selectedModel, dailyGenerationLimit } as const;
+  await db.insert(aiContentSettings).values({ id: 1, systemPrompt: prompt, model: FREE_AI_MODEL, dailyGenerationLimit: 0 }).onDuplicateKeyUpdate({ set: { systemPrompt: prompt, model: FREE_AI_MODEL, dailyGenerationLimit: 0 } });
+  return { success: true, systemPrompt: prompt, model: FREE_AI_MODEL, dailyGenerationLimit: 0, provider: FREE_AI_PROVIDER, freeMode: true, googleSearch: false } as const;
 }
 
 function llmResponseText(content: unknown) {
@@ -349,59 +349,15 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/\s+/g, " ").trim();
 }
 
-type GeminiUsage = { inputTokens: number; outputTokens: number; searchCount: number };
-type GeminiCallResult = { text: string; usage: GeminiUsage; status: number };
+type FreeAiUsage = { inputTokens: number; outputTokens: number; searchCount: number };
 
-function geminiError(status: number, body: string) {
-  const error = new Error(`Gemini HTTP ${status}: ${body.slice(0, 4000)}`) as Error & { status?: number; retryable?: boolean };
-  error.status = status;
-  error.retryable = status !== 401 && status !== 403;
-  return error;
-}
-
-async function callGemini(model: string, systemPrompt: string, userPrompt: string, withSearch = true): Promise<GeminiCallResult> {
-  if (!ENV.geminiApiKey) throw geminiError(503, "GEMINI_API_KEY не е конфигуриран като server secret.");
-  const response = await fetch(`${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": ENV.geminiApiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      ...(withSearch ? { tools: [{ google_search: {} }] } : {}),
-      generationConfig: { responseMimeType: "text/plain" },
-    }),
-  });
-  const rawBody = await response.text();
-  let body: Record<string, unknown> = {};
-  try { body = JSON.parse(rawBody) as Record<string, unknown>; } catch { /* preserve raw error text */ }
-  if (!response.ok) throw geminiError(response.status, typeof body.error === "object" ? JSON.stringify(body.error) : rawBody);
-  const candidates = Array.isArray(body.candidates) ? body.candidates : [];
-  const first = (candidates[0] ?? {}) as Record<string, unknown>;
-  const content = (first.content ?? {}) as Record<string, unknown>;
-  const parts = Array.isArray(content.parts) ? content.parts : [];
-  const text = parts.map(part => part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string" ? (part as { text: string }).text : "").join("\n").trim();
-  const usage = (body.usageMetadata ?? {}) as Record<string, unknown>;
-  const grounding = (first.groundingMetadata ?? body.groundingMetadata ?? {}) as Record<string, unknown>;
-  const searchQueries = Array.isArray(grounding.webSearchQueries) ? grounding.webSearchQueries : [];
-  return {
-    text,
-    status: response.status,
-    usage: {
-      inputTokens: Number(usage.promptTokenCount ?? 0),
-      outputTokens: Number(usage.candidatesTokenCount ?? 0),
-      searchCount: searchQueries.length,
-    },
-  };
-}
-
-export async function checkGeminiConnection(withSearch: boolean, model = DEFAULT_AI_MODEL) {
-  if (!ENV.geminiApiKey) return { ok: false, status: 503, message: "GEMINI_API_KEY не е конфигуриран като server secret.", model, withSearch };
+export async function checkFreeAiConnection() {
   try {
-    const result = await callGemini(model, "Отговори само с OK.", withSearch ? "Направи една кратка Google Search проверка за Joan.bg и отговори само с OK." : "Отговори само с OK.", withSearch);
-    return { ok: true, status: result.status, message: result.text.slice(0, 200), model, withSearch, usage: result.usage };
+    const result = await invokeLLM({ model: FREE_AI_MODEL, maxTokens: 128, messages: [{ role: "system", content: "Отговори само с OK." }, { role: "user", content: "Провери, че вграденият безплатен AI режим работи." }] });
+    const text = llmResponseText(result.choices[0]?.message.content).trim();
+    return { ok: true, status: 200, message: text.slice(0, 200) || "OK", model: FREE_AI_MODEL, provider: FREE_AI_PROVIDER, googleSearch: false, usage: { inputTokens: result.usage?.prompt_tokens ?? 0, outputTokens: result.usage?.completion_tokens ?? 0, searchCount: 0 } };
   } catch (error) {
-    const typed = error as Error & { status?: number };
-    return { ok: false, status: typed.status ?? 500, message: typed.message, model, withSearch };
+    return { ok: false, status: 500, message: error instanceof Error ? error.message : "Вграденият AI режим не отговори.", model: FREE_AI_MODEL, provider: FREE_AI_PROVIDER, googleSearch: false };
   }
 }
 
@@ -499,18 +455,17 @@ export async function generateAdminAiContent(productId: number, options?: { skip
     return { success: false, status: "error" as const, error: message };
   }
 
-  const model = settings.model || DEFAULT_AI_MODEL;
+  const model = FREE_AI_MODEL;
   const productInput = `Марка: ${product.brand || "няма посочена"}\nИме на продукта: ${product.name}\nEAN/артикулен номер: ${product.sku || "няма посочен"}`;
   let lastError = "AI резултатът не премина програмната проверка.";
-  const totalUsage: GeminiUsage = { inputTokens: 0, outputTokens: 0, searchCount: 0 };
+  const totalUsage: FreeAiUsage = { inputTokens: 0, outputTokens: 0, searchCount: 0 };
   for (let attempt = 0; attempt <= 2; attempt += 1) {
     try {
       const correction = attempt === 0 ? "" : `\n\nПредишният отговор не премина програмната проверка: ${lastError}\nВърни отново само коригиран валиден JSON обект, като спазиш всички ограничения за дължини и типове.`;
-      const response = await callGemini(model, settings.systemPrompt + "\n\nЗадължително използвай Google Search поне веднъж, за да провериш точния продукт, преди да върнеш JSON.", productInput + correction);
-      totalUsage.inputTokens += response.usage.inputTokens;
-      totalUsage.outputTokens += response.usage.outputTokens;
-      totalUsage.searchCount += response.usage.searchCount;
-      const raw = response.text;
+      const response = await invokeLLM({ model, maxTokens: 4096, messages: [{ role: "system", content: settings.systemPrompt + OFFLINE_AI_INSTRUCTION }, { role: "user", content: productInput + correction }] });
+      totalUsage.inputTokens += response.usage?.prompt_tokens ?? 0;
+      totalUsage.outputTokens += response.usage?.completion_tokens ?? 0;
+      const raw = llmResponseText(response.choices[0]?.message.content).trim();
       const parsed = parseAiJsonObject(raw);
       const validationErrors = validateAiPayload(parsed);
       if (validationErrors.length > 0) {
@@ -518,7 +473,7 @@ export async function generateAdminAiContent(productId: number, options?: { skip
         continue;
       }
       const payload = normalizeAiPayload(parsed);
-      await saveAdminAiContent({ productId, aiProvider: "gemini", aiModel: model, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount });
+      await saveAdminAiContent({ productId, aiProvider: FREE_AI_PROVIDER, aiModel: model, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount });
       return { success: true, status: "generated" as const, raw, attempts: attempt + 1, usage: totalUsage };
     } catch (error) {
       lastError = error instanceof Error ? error.message : "Невалиден AI резултат.";
@@ -530,7 +485,7 @@ export async function generateAdminAiContent(productId: number, options?: { skip
   {
     const message = lastError || "Неизвестна грешка при AI генерирането.";
     try {
-      await db.insert(catalogueProductAiContent).values({ productId, aiProvider: "gemini", aiModel: model, aiStatus: "error", aiError: message, aiGeneratedAt: new Date(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount }).onDuplicateKeyUpdate({ set: { aiProvider: "gemini", aiModel: model, aiStatus: "error", aiError: message, aiGeneratedAt: new Date(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount } });
+      await db.insert(catalogueProductAiContent).values({ productId, aiProvider: FREE_AI_PROVIDER, aiModel: model, aiStatus: "error", aiError: message, aiGeneratedAt: new Date(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount }).onDuplicateKeyUpdate({ set: { aiProvider: FREE_AI_PROVIDER, aiModel: model, aiStatus: "error", aiError: message, aiGeneratedAt: new Date(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount } });
     } catch {
       // Preserve the original generation error for the administrator.
     }

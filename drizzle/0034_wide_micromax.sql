@@ -1,0 +1,2 @@
+ALTER TABLE `ai_content_settings` MODIFY COLUMN `model` varchar(160) NOT NULL DEFAULT 'gpt-5-mini';--> statement-breakpoint
+ALTER TABLE `ai_content_settings` MODIFY COLUMN `dailyGenerationLimit` int NOT NULL DEFAULT 0;

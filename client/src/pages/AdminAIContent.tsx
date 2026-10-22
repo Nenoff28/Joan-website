@@ -85,8 +85,7 @@ export default function AdminAIContent() {
   const [visibility, setVisibility] = useState<"all" | "visible" | "hidden">("all");
   const [sort, setSort] = useState<"confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc">("confidence-low");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [model, setModel] = useState("gemini-3.8-flash");
-  const [connectionResults, setConnectionResults] = useState<{ basic?: { ok: boolean; status: number; message: string }; search?: { ok: boolean; status: number; message: string } }>({});
+  const [model, setModel] = useState("gpt-5-mini");
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
     aiDescription: "",
@@ -109,9 +108,7 @@ export default function AdminAIContent() {
   const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
     onSuccess: async () => { toast.success("AI настройките са запазени успешно."); await utils.admin.aiSettings.invalidate(); await utils.admin.aiQueue.invalidate(); },
   });
-  const checkGeminiMutation = trpc.admin.checkGeminiConnection.useMutation({
-    onSuccess: (result, variables) => setConnectionResults(current => ({ ...current, [variables.withSearch ? "search" : "basic"]: result })),
-  });
+  const checkFreeAiMutation = trpc.admin.checkFreeAiConnection.useMutation({ onSuccess: result => result.ok ? toast.success("Безплатният AI режим работи без Gemini и без Google Search.") : toast.error(result.message) });
   const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async (_, variables) => { setSelectedIds(new Set()); toast.success(variables.autoPublish ? "Продуктите са добавени за генериране и автоматично публикуване." : "Продуктите са добавени във фоновата опашка за преглед."); await queueQuery.refetch(); }, onError: error => toast.error(error.message) });
   const queueStatusMutation = trpc.admin.setAiQueueStatus.useMutation({ onSuccess: async () => { await queueQuery.refetch(); } });
   const saveMutation = trpc.admin.saveAiContent.useMutation({
@@ -227,16 +224,10 @@ export default function AdminAIContent() {
         </div>
         <textarea value={systemPrompt} onChange={event => setSystemPrompt(event.target.value)} rows={12} aria-label="AI системен prompt" placeholder="Въведете системния prompt за AI съдържанието…" />
         <div className="admin-ai-settings-grid">
-          <label className="admin-ai-setting-card"><span className="admin-ai-setting-label">Модел</span><input value={model} onChange={event => setModel(event.target.value)} placeholder="gemini-3.8-flash" aria-label="AI модел" /><small>Моделът се подава към Gemini server-side. Не се задава thinking параметър.</small></label>
-          <div className="admin-ai-setting-card admin-ai-unlimited-card"><span className="admin-ai-setting-label">Генериране</span><strong>Без дневен лимит</strong><small>Временно няма ограничение на броя AI генерирания. Всеки продукт може да се изпрати за обикновен преглед или директно публикуване.</small></div>
+          <label className="admin-ai-setting-card"><span className="admin-ai-setting-label">Вграден модел</span><input value={model} readOnly aria-label="Вграден AI модел" /><small>Използва се вграденият Manus модел. Gemini API и GEMINI_API_KEY не се използват.</small></label>
+          <div className="admin-ai-setting-card admin-ai-unlimited-card"><span className="admin-ai-setting-label">Режим</span><strong>Безплатен режим — без Google Search</strong><small>Няма заявки към Gemini, Google Search или външен API с твоята карта. Генерирането използва само данните, подадени от продукта.</small><button type="button" onClick={() => checkFreeAiMutation.mutate()} disabled={checkFreeAiMutation.isPending}>{checkFreeAiMutation.isPending ? "Проверявам…" : "Провери безплатния режим"}</button></div>
         </div>
-        <div className="admin-ai-connection-checks">
-          <strong>Връзка с Gemini</strong>
-          <button type="button" onClick={() => checkGeminiMutation.mutate({ model, withSearch: false })} disabled={checkGeminiMutation.isPending}>Провери без търсене</button>
-          <button type="button" onClick={() => checkGeminiMutation.mutate({ model, withSearch: true })} disabled={checkGeminiMutation.isPending}>Провери с Google Search</button>
-          {connectionResults.basic && <span className={connectionResults.basic.ok ? "admin-ai-check-ok" : "admin-form-error"}>Без търсене — HTTP {connectionResults.basic.status}: {connectionResults.basic.message}</span>}
-          {connectionResults.search && <span className={connectionResults.search.ok ? "admin-ai-check-ok" : "admin-form-error"}>С Google Search — HTTP {connectionResults.search.status}: {connectionResults.search.message}</span>}
-        </div>
+        <div className="admin-ai-connection-checks"><strong>Безопасност</strong><span className="admin-ai-check-ok">Gemini е изключен · Google Search е изключен · не се използва GEMINI_API_KEY</span></div>
         {saveSettingsMutation.error && <div className="admin-form-error" role="alert">{saveSettingsMutation.error.message}</div>}
         {settingsQuery.error && <div className="admin-form-error" role="alert">Системният prompt не може да се зареди.</div>}
       </form>

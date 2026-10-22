@@ -39,10 +39,11 @@ describe("AI product content generation", () => {
     expect(schema).toContain('mysqlTable("catalogue_product_ai_backups"');
     expect(schema).toContain('unique().references(() => catalogueProducts.id)');
     expect(schema).toContain('mysqlTable("ai_content_settings"');
-    expect(service).toContain('DEFAULT_AI_MODEL');
-    expect(service).toContain('google_search: {}');
-    expect(service).toContain('"x-goog-api-key": ENV.geminiApiKey');
-    expect(service).toContain('withSearch = true');
+    expect(service).toContain('FREE_AI_MODEL');
+    expect(service).toContain('FREE_AI_PROVIDER');
+    expect(service).toContain('checkFreeAiConnection');
+    expect(service).not.toContain('callGemini');
+    expect(service).not.toContain('google_search');
     expect(service).toContain('aiInputTokens');
     expect(service).toContain('aiOutputTokens');
     expect(service).toContain("aiSearchCount");
@@ -65,7 +66,7 @@ describe("AI product content generation", () => {
     expect(service).toContain("aiFeaturesToJson");
     expect(router).toContain("generateAiContent");
     expect(router).toContain("saveAiSettings");
-    expect(router).toContain("checkGeminiConnection");
+    expect(router).toContain("checkFreeAiConnection");
     expect(router).toContain("publishApprovedAiContent");
     expect(router).toContain("restoreAiBackups");
     expect(router).toContain("reviewAiContentBatch");
@@ -75,7 +76,7 @@ describe("AI product content generation", () => {
     expect(service).toContain("dailyLimit: null");
     expect(router).toContain("autoPublish: z.boolean().optional()");
     expect(page).toContain("Генерирай и публикувай");
-    expect(page).toContain("Без дневен лимит");
+    expect(page).toContain("Безплатен режим — без Google Search");
     expect(page).toContain("Оставащо време");
     expect(page).toContain("Последни опашки");
     expect(page).toContain("await utils.admin.aiQueue.invalidate()");
