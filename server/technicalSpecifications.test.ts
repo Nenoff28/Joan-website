@@ -61,4 +61,15 @@ describe("splitProductDescription", () => {
   it("splits serialized multiline features and removes model rows", () => {
     expect(alignInternalCodeFeatures(["Монтаж: Вертикален\\nНоминален обем: 80 л\\nМодел: 33037", "Размер: M"], "12829")).toEqual(["Монтаж: Вертикален", "Номинален обем: 80 л", "Размер: M"]);
   });
+
+  it("splits legacy inline technical pairs for the public product page", () => {
+    const features = alignInternalCodeFeatures(["Номинален обем: 80 л Номинална мощност: 2 kW Водосъдържател: Емайлиран Монтаж: Вертикален Размери: 462 x 835 mm"], "12829");
+    expect(splitProductDescription("", features).technicalSpecs).toEqual([
+      { label: "Номинален обем", value: "80 л" },
+      { label: "Номинална мощност", value: "2 kW" },
+      { label: "Водосъдържател", value: "Емайлиран" },
+      { label: "Монтаж", value: "Вертикален" },
+      { label: "Размери", value: "462 x 835 mm" },
+    ]);
+  });
 });

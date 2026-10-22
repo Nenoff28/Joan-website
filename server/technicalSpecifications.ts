@@ -23,7 +23,7 @@ export function alignInternalCodeTechnicalSpecs(specs: TechnicalSpecification[],
 
 export function alignInternalCodeFeatures(features: string[], sku: string | null | undefined, language: "bg" | "en" = "bg") {
   return features
-    .flatMap(feature => feature.split(/\\n|\r?\n/).map(line => line.trim()).filter(Boolean))
+    .flatMap(feature => normaliseInlinePairs(feature.replace(/\\n/g, "\n")).split(/\r?\n+/).map(line => line.trim()).filter(Boolean))
     .filter(feature => {
       const pair = parseFeaturePair(feature);
       return !pair || !modelLabels.has(pair.label.toLocaleLowerCase("bg-BG"));
@@ -47,7 +47,7 @@ function plainText(value: string) {
 }
 
 function normaliseInlinePairs(value: string) {
-  return value.replace(/([^\n])(?=(?:[А-ЯA-Z][А-Яа-яA-Za-z0-9()/%.,+~\- ]{2,65}):\s*)/g, "$1\n");
+  return value.replace(/(?=\s+[А-ЯA-Z][^:\nА-Я]{1,96}:\s*)/g, "\n");
 }
 
 function collectPairs(value: string) {
@@ -98,10 +98,10 @@ function addUnique(target: TechnicalSpecification[], candidates: TechnicalSpecif
 }
 
 function featurePairs(features: string[]) {
-  return features.flatMap((feature) => {
-    const pair = parseFeaturePair(feature);
+  return features.flatMap((feature) => normaliseInlinePairs(feature.replace(/\\n/g, "\n")).split(/\r?\n+/).flatMap(line => {
+    const pair = parseFeaturePair(line);
     return pair ? [pair] : [];
-  });
+  }));
 }
 
 /**
