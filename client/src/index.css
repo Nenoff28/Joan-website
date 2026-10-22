@@ -1277,3 +1277,23 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-ai-queue-history-row b { font-size: .7rem; text-align: right; }
 .admin-ai-queue-history-row em { font-style: normal; font-size: .59rem; }
 @media (max-width: 700px) { .admin-ai-queue-history-row { align-items: flex-start; flex-direction: column; gap: .4rem; }.admin-ai-queue-history-row > span:last-child { align-items: flex-start; flex-direction: row; gap: .45rem; }.admin-ai-queue-history-row b { text-align: left; } }
+
+/* AI workflow clarity */
+.admin-ai-workflow-guide { align-items: center; background: linear-gradient(110deg, #fff8f6, #f5f8f5); border: 1px solid #ead9d4; display: flex; gap: 1.25rem; justify-content: space-between; margin: 0 0 1rem; padding: .75rem 1rem; }
+.admin-ai-workflow-title { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; min-width: 0; }
+.admin-ai-workflow-title svg { color: var(--red); flex: 0 0 auto; }
+.admin-ai-workflow-title strong { color: var(--ink); font-size: .78rem; }
+.admin-ai-workflow-title span { color: var(--slate); font-size: .68rem; }
+.admin-ai-workflow-steps { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+.admin-ai-workflow-steps span { align-items: center; color: var(--slate); display: inline-flex; font-size: .65rem; gap: .3rem; white-space: nowrap; }
+.admin-ai-workflow-steps b { align-items: center; background: var(--charcoal); border-radius: 50%; color: #fff; display: inline-flex; font-size: .62rem; height: 20px; justify-content: center; width: 20px; }
+.admin-ai-queue-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; justify-content: flex-end; }
+.admin-ai-queue-current { background: var(--red); }
+.admin-ai-queue-history-row.is-selected { background: #fff5f2; border-color: var(--red); box-shadow: inset 3px 0 0 var(--red); }
+.admin-ai-bulk-toolbar { background: #f8faf7; }
+.admin-ai-bulk-toolbar button { transition: background-color 140ms var(--ease-out), border-color 140ms var(--ease-out), transform 140ms var(--ease-out); }
+.admin-ai-bulk-toolbar button:hover:not(:disabled) { border-color: var(--red); transform: translateY(-1px); }
+.admin-ai-bulk-toolbar button:disabled { cursor: not-allowed; opacity: .5; }
+.admin-ai-settings textarea { min-height: 170px; }
+@media (max-width: 820px) { .admin-ai-workflow-guide { align-items: flex-start; flex-direction: column; gap: .65rem; }.admin-ai-workflow-steps { justify-content: flex-start; } }
+@media (max-width: 560px) { .admin-ai-workflow-steps { align-items: flex-start; flex-direction: column; }.admin-ai-queue-actions { justify-content: flex-start; width: 100%; }.admin-ai-queue-actions button { flex: 1 1 auto; } }

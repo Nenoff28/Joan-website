@@ -736,7 +736,12 @@ async function processAiQueueOnce() {
           if (result.status === "generated") {
             if (batch.autoPublish) {
               await db.update(catalogueProductAiContent).set({ aiStatus: "reviewed", aiError: null }).where(eq(catalogueProductAiContent.productId, job.productId));
-              await publishApprovedAiContent([job.productId]);
+              const publishResult = await publishApprovedAiContent([job.productId]);
+              if (publishResult.published !== 1) {
+                const publishError = "Генерирането е успешно, но publish quality gate-ът не позволи публикуване.";
+                await db.update(aiGenerationJobs).set({ status: "failed", completedAt: new Date(), lastError: publishError }).where(eq(aiGenerationJobs.id, job.id));
+                return;
+              }
             }
             await db.update(aiGenerationJobs).set({ status: "succeeded", completedAt: new Date(), lastError: null }).where(eq(aiGenerationJobs.id, job.id));
           }

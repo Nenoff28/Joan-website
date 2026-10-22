@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { CheckCircle2, CheckSquare, Clock3, FileWarning, Loader2, Pause, Play, Save, Search, Sparkles } from "lucide-react";
+import { CheckCircle2, CheckSquare, Clock3, FileWarning, ListChecks, Loader2, Pause, Play, Save, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -86,6 +86,7 @@ export default function AdminAIContent() {
   const [sort, setSort] = useState<"confidence-low" | "name-asc" | "name-desc" | "stock-desc" | "stock-asc" | "updated-desc" | "updated-asc">("confidence-low");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [model, setModel] = useState("gpt-5-mini");
+  const [queueBatchId, setQueueBatchId] = useState<number | undefined>();
   const [form, setForm] = useState({
     aiStatus: "pending" as AiStatus,
     aiDescription: "",
@@ -103,34 +104,39 @@ export default function AdminAIContent() {
   const settingsQuery = trpc.admin.aiSettings.useQuery();
   const categoriesQuery = trpc.admin.aiCategories.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, availability, visibility });
   const matchingIdsQuery = trpc.admin.aiProductIds.useQuery({ status: status || undefined, confidence: confidence || undefined, query: query.trim() || undefined, categoryId: categoryId || undefined, availability, visibility });
-  const queueQuery = trpc.admin.aiQueue.useQuery(undefined, { refetchInterval: 5000 });
+  const queueHistoryQuery = trpc.admin.aiQueue.useQuery(undefined, { refetchInterval: 5000 });
+  const selectedQueueQuery = trpc.admin.aiQueue.useQuery(queueBatchId ? { batchId: queueBatchId } : undefined, { refetchInterval: 5000, enabled: Boolean(queueBatchId) });
   const utils = trpc.useUtils();
   const saveSettingsMutation = trpc.admin.saveAiSettings.useMutation({
     onSuccess: async () => { toast.success("AI настройките са запазени успешно."); await utils.admin.aiSettings.invalidate(); await utils.admin.aiQueue.invalidate(); },
+    onError: error => toast.error(`Настройките не бяха запазени: ${error.message}`),
   });
-  const checkFreeAiMutation = trpc.admin.checkFreeAiConnection.useMutation({ onSuccess: result => result.ok ? toast.success("Безплатният AI режим работи без Gemini и без Google Search.") : toast.error(result.message) });
-  const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async (_, variables) => { setSelectedIds(new Set()); toast.success(variables.autoPublish ? "Продуктите са добавени за генериране и автоматично публикуване." : "Продуктите са добавени във фоновата опашка за преглед."); await queueQuery.refetch(); }, onError: error => toast.error(error.message) });
-  const queueStatusMutation = trpc.admin.setAiQueueStatus.useMutation({ onSuccess: async () => { await queueQuery.refetch(); } });
+  const checkFreeAiMutation = trpc.admin.checkFreeAiConnection.useMutation({ onSuccess: result => result.ok ? toast.success("Безплатният AI режим работи без Gemini и без Google Search.") : toast.error(result.message), onError: error => toast.error(`Проверката не бе изпълнена: ${error.message}`) });
+  const enqueueMutation = trpc.admin.enqueueAiGeneration.useMutation({ onSuccess: async (_, variables) => { setSelectedIds(new Set()); setQueueBatchId(undefined); toast.success(variables.autoPublish ? "Продуктите са добавени за генериране и автоматично публикуване." : "Продуктите са добавени във фоновата опашка за преглед."); await queueHistoryQuery.refetch(); }, onError: error => toast.error(error.message) });
+  const queueStatusMutation = trpc.admin.setAiQueueStatus.useMutation({ onSuccess: async (_, variables) => { toast.success(variables.status === "paused" ? "Опашката е поставена на пауза." : "Опашката продължава обработката."); await Promise.all([queueHistoryQuery.refetch(), selectedQueueQuery.refetch()]); }, onError: error => toast.error(`Статусът на опашката не бе променен: ${error.message}`) });
   const saveMutation = trpc.admin.saveAiContent.useMutation({
-    onSuccess: async () => {
-      await utils.admin.aiContent.invalidate();
-    },
+    onSuccess: async () => { toast.success("AI съдържанието е запазено."); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onError: error => toast.error(`Записът не бе запазен: ${error.message}`),
   });
   const generateMutation = trpc.admin.generateAiContent.useMutation({
-    onSuccess: async result => { if (result.status === "generated") toast.success("AI съдържанието е генерирано успешно."); else if (result.error) toast.error(result.error); await utils.admin.aiContent.invalidate(); },
+    onSuccess: async result => { if (result.status === "generated") toast.success("AI съдържанието е генерирано успешно."); else if (result.error) toast.error(result.error); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
     onError: error => toast.error(error.message),
   });
   const reviewMutation = trpc.admin.reviewAiContent.useMutation({
-    onSuccess: async () => { toast.success("Продуктът е одобрен успешно."); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onSuccess: async (_, variables) => { toast.success(variables.action === "approve" ? "Продуктът е одобрен успешно." : "Продуктът е върнат за нов преглед."); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onError: error => toast.error(`Действието не бе изпълнено: ${error.message}`),
   });
   const reviewBatchMutation = trpc.admin.reviewAiContentBatch.useMutation({
-    onSuccess: async (result) => { setSelectedIds(new Set()); toast.success(`Одобрени продукти: ${result.reviewed}.`); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onSuccess: async (result) => { setSelectedIds(new Set()); toast.success(`Одобрени продукти: ${result.reviewed}. Пропуснати: ${result.skipped.length}.`); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onError: error => toast.error(`Масовото одобряване не бе изпълнено: ${error.message}`),
   });
   const publishMutation = trpc.admin.publishApprovedAiContent.useMutation({
-    onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); },
+    onSuccess: async result => { setSelectedIds(new Set()); toast.success(`Публикувани продукти: ${result.published}. Пропуснати: ${result.skipped.length}.`); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onError: error => toast.error(`Публикуването не бе изпълнено: ${error.message}`),
   });
   const restoreMutation = trpc.admin.restoreAiBackups.useMutation({
-    onSuccess: async () => { setSelectedIds(new Set()); await utils.admin.aiContent.invalidate(); },
+    onSuccess: async result => { setSelectedIds(new Set()); toast.success(`Върнати стари данни: ${result.restored}. Пропуснати: ${result.skipped.length}.`); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onError: error => toast.error(`Възстановяването не бе изпълнено: ${error.message}`),
   });
   const items = (contentQuery.data?.items ?? []) as AiItem[];
   const selected = items.find(item => item.productId === selectedId) ?? null;
@@ -185,11 +191,18 @@ export default function AdminAIContent() {
   };
 
   const selectAllMatching = async () => {
-    const result = await matchingIdsQuery.refetch();
-    setSelectedIds(new Set(result.data ?? []));
+    try {
+      const result = await matchingIdsQuery.refetch();
+      const ids = result.data ?? [];
+      setSelectedIds(new Set(ids));
+      toast.success(`Маркирани са ${ids.length} продукта от текущия филтър.`);
+    } catch (error) {
+      toast.error(`Продуктите не можаха да бъдат маркирани: ${error instanceof Error ? error.message : "неизвестна грешка"}`);
+    }
   };
   const toggleSelected = (productId: number) => setSelectedIds(current => { const next = new Set(current); if (next.has(productId)) next.delete(productId); else next.add(productId); return next; });
-  const queue = queueQuery.data;
+  const queue = selectedQueueQuery.data ?? queueHistoryQuery.data;
+  const queueHistory = queueHistoryQuery.data?.queues ?? [];
   const displayValue = (value: string | null | undefined) => value?.trim() || "—";
   const technicalRows = (value: string | null | undefined) => {
     const normalized = (value ?? "").replace(/\\n/g, "\n").trim();
@@ -232,6 +245,11 @@ export default function AdminAIContent() {
           <h1>AI съдържание</h1>
           <p className="admin-panel-caption">Отделен работен слой за AI предложения. Публикуваните данни на продукта не се променят автоматично.</p>
         </div>
+      </div>
+
+      <div className="admin-ai-workflow-guide" aria-label="Работен процес за AI съдържанието">
+        <div className="admin-ai-workflow-title"><ListChecks size={17} /><strong>Работен процес</strong><span>Изберете режима според това дали искате първо преглед или директно публикуване.</span></div>
+        <div className="admin-ai-workflow-steps"><span><b>1</b> Филтрирайте и маркирайте</span><span><b>2</b> Генерирайте</span><span><b>3</b> Прегледайте или публикувайте</span></div>
       </div>
 
       <form className="admin-panel admin-ai-settings" onSubmit={saveSettings}>
@@ -315,7 +333,7 @@ export default function AdminAIContent() {
           <button type="button" className="admin-primary admin-ai-generate-publish" onClick={() => enqueueMutation.mutate({ productIds: Array.from(selectedIds), autoPublish: true })} disabled={!selectedIds.size || enqueueMutation.isPending}>{enqueueMutation.isPending ? "Добавяне…" : "Генерирай и публикувай"}</button>
           <button type="button" className="admin-primary admin-ai-approve-all" onClick={() => reviewBatchMutation.mutate({ productIds: Array.from(selectedIds), action: "approve" })} disabled={!selectedIds.size || reviewBatchMutation.isPending}>{reviewBatchMutation.isPending ? "Одобряване…" : `Одобри избраните (${selectedIds.size})`}</button>
           <button type="button" className="admin-primary" onClick={() => publishMutation.mutate({})} disabled={publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : "Публикувай одобрените"}</button>
-          <button type="button" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай избраните одобрени (${selectedApprovedIds.length})`}</button>
+          <button type="button" onClick={() => publishMutation.mutate({ productIds: selectedApprovedIds })} disabled={!selectedApprovedIds.length || publishMutation.isPending}>{publishMutation.isPending ? "Публикуване…" : `Публикувай избраните (${selectedApprovedIds.length})`}</button>
           <button type="button" onClick={() => restoreMutation.mutate({ productIds: selectedRestorableIds })} disabled={!selectedRestorableIds.length || restoreMutation.isPending}>{restoreMutation.isPending ? "Възстановяване…" : `Върни старото (${selectedRestorableIds.length})`}</button>
         </div>
         {publishMutation.error && <div className="admin-form-error" role="alert">Публикуването не бе завършено: {publishMutation.error.message}</div>}
@@ -325,9 +343,9 @@ export default function AdminAIContent() {
         {reviewBatchMutation.error && <div className="admin-form-error" role="alert">Bulk одобряването не бе завършено: {reviewBatchMutation.error.message}</div>}
         {reviewBatchMutation.data && <div className="admin-ai-saved" role="status">Одобрени: {reviewBatchMutation.data.reviewed}. Пропуснати: {reviewBatchMutation.data.skipped.length}.</div>}
         {queue && <div className="admin-ai-queue" role="status">
-          <div className="admin-ai-queue-head"><div className="admin-ai-queue-title"><div><span className="admin-ai-queue-kicker">AI ОБРАБОТКА</span><strong>{queue.autoPublish ? "Генериране и публикуване" : "Генериране за преглед"}</strong><small>{queue.total} продукта · стартирано {formatDate(queue.startedAt)}</small></div><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "На пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div>{(queue.status === "running" || queue.status === "queued" || queue.status === "paused") && <button type="button" className="admin-ai-queue-action" onClick={() => queueStatusMutation.mutate({ batchId: queue.batchId, status: queue.status === "paused" ? "queued" : "paused" })} disabled={queueStatusMutation.isPending}>{queue.status === "paused" ? <><Play size={14} /> Продължи</> : <><Pause size={14} /> Пауза</>}</button>}</div>
+          <div className="admin-ai-queue-head"><div className="admin-ai-queue-title"><div><span className="admin-ai-queue-kicker">AI ОБРАБОТКА {queueBatchId ? "· ИСТОРИЯ" : "· ТЕКУЩА"}</span><strong>{queue.autoPublish ? "Генериране и публикуване" : "Генериране за преглед"}</strong><small>{queue.total} продукта · стартирано {formatDate(queue.startedAt)}</small></div><span className={`admin-ai-status admin-ai-status-${queue.status}`}>{queue.status === "paused" ? "На пауза" : queue.status === "running" ? "Работи" : queue.status === "completed" ? "Завършена" : queue.status === "failed" ? "С грешки" : "Чакаща"}</span></div><div className="admin-ai-queue-actions">{queueBatchId && <button type="button" className="admin-ai-queue-action admin-ai-queue-current" onClick={() => setQueueBatchId(undefined)}>Текуща опашка</button>}{(queue.status === "running" || queue.status === "queued" || queue.status === "paused") && !queueBatchId && <button type="button" className="admin-ai-queue-action" onClick={() => queueStatusMutation.mutate({ batchId: queue.batchId, status: queue.status === "paused" ? "queued" : "paused" })} disabled={queueStatusMutation.isPending}>{queue.status === "paused" ? <><Play size={14} /> Продължи</> : <><Pause size={14} /> Пауза</>}</button>}</div></div>
           <div className="admin-ai-queue-body"><div className="admin-ai-queue-stat"><strong>{queue.progress.succeeded}</strong><span>Готови</span></div><div className="admin-ai-queue-stat"><strong>{queue.progress.running}</strong><span>В процес</span></div><div className="admin-ai-queue-stat"><strong>{queue.progress.queued}</strong><span>Чакат</span></div><div className="admin-ai-queue-stat is-error"><strong>{queue.progress.failed}</strong><span>Грешки</span></div><div className="admin-ai-queue-limit"><div><span>Оставащо време</span><strong>{queue.status === "completed" || queue.status === "failed" ? "Завършено" : formatEta(queue.etaSeconds)}</strong></div><div className="admin-ai-queue-progress"><span style={{ width: `${queue.total ? Math.min(100, (queue.processed / queue.total) * 100) : 0}%` }} /></div><small>Прогрес: {queue.processed} от {queue.total} продукта · дневният лимит е изключен</small></div></div>
-          {(queue.queues?.length ?? 0) > 1 && <div className="admin-ai-queue-history"><div className="admin-ai-queue-history-head"><strong>Последни опашки</strong><span>Предишните обработки остават видими за справка.</span></div><div className="admin-ai-queue-history-list">{queue.queues.slice(1).map(previous => <button type="button" key={previous.batchId} className="admin-ai-queue-history-row" onClick={() => queueQuery.refetch()}><span><strong>{previous.autoPublish ? "Генериране и публикуване" : "Генериране за преглед"}</strong><small>{formatDate(previous.createdAt)} · {previous.total} продукта</small></span><span><b>{previous.processed}/{previous.total}</b><em className={`admin-ai-status admin-ai-status-${previous.status}`}>{previous.status === "completed" ? "Завършена" : previous.status === "failed" ? "С грешки" : previous.status === "paused" ? "На пауза" : "Чакаща"}</em></span></button>)}</div></div>}
+          {queueHistory.length > 1 && <div className="admin-ai-queue-history"><div className="admin-ai-queue-history-head"><strong>Последни опашки</strong><span>Изберете опашка за подробен статус.</span></div><div className="admin-ai-queue-history-list">{queueHistory.slice(1).map(previous => <button type="button" key={previous.batchId} className={`admin-ai-queue-history-row${queueBatchId === previous.batchId ? " is-selected" : ""}`} onClick={() => setQueueBatchId(previous.batchId)}><span><strong>{previous.autoPublish ? "Генериране и публикуване" : "Генериране за преглед"}</strong><small>{formatDate(previous.createdAt)} · {previous.total} продукта</small></span><span><b>{previous.processed}/{previous.total}</b><em className={`admin-ai-status admin-ai-status-${previous.status}`}>{previous.status === "completed" ? "Завършена" : previous.status === "failed" ? "С грешки" : previous.status === "paused" ? "На пауза" : "Чакаща"}</em></span></button>)}</div></div>}
         </div>}
         {contentQuery.isLoading ? <div className="admin-empty-state"><Loader2 className="animate-spin" /> Зареждане…</div> : contentQuery.error ? <div className="admin-form-error" role="alert">Нямате достъп или AI съдържанието не може да се зареди.</div> : (
           <div className="admin-ai-layout">

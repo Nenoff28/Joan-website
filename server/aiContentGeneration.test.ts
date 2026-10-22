@@ -86,6 +86,8 @@ describe("AI product content generation", () => {
     expect(service).toContain("publishApprovedAiContent");
     expect(service).toContain("restoreAiBackups");
     expect(service).toContain("aiFeaturesToJson");
+    expect(service).toContain("publish quality gate");
+    expect(service).toContain("publishResult.published !== 1");
     expect(router).toContain("generateAiContent");
     expect(router).toContain("saveAiSettings");
     expect(router).toContain("checkFreeAiConnection");
@@ -104,6 +106,11 @@ describe("AI product content generation", () => {
     expect(page).toContain("await utils.admin.aiQueue.invalidate()");
     expect(page).toContain("дневният лимит е изключен");
     expect(page).toContain("admin-ai-queue-progress");
+    expect(page).toContain("admin-ai-workflow-guide");
+    expect(page).toContain("queueHistoryQuery");
+    expect(page).toContain("selectedQueueQuery");
+    expect(page).toContain("toast.success(\"AI съдържанието е запазено.\")");
+    expect(page).toContain("Текуща опашка");
     expect(page).toContain("technicalRows");
     expect(page).toContain("admin-ai-technical-table");
     expect(page).toContain("replace(/\\\\n/g");
