@@ -15,7 +15,7 @@ const FREE_AI_PROVIDER = "manus";
 const FREE_AI_MODEL = "gpt-5-mini";
 const OFFLINE_AI_INSTRUCTION = `
 
-ВАЖНО ЗА ТЕКУЩИЯ РЕЖИМ: Работиш напълно без Google Search, Gemini и външни заявки. Не проучвай интернет и не твърди, че си го направил. Използвай само подадените данни за продукта и общи, безопасни формулировки без измислени технически факти. Отговори САМО с един валиден JSON обект без markdown, обяснение или текст преди/след него със следните полета: description (непразен низ), features (масив от низове, може да е празен), seo_title, seo_description, keywords, source_urls (празен масив), confidence (точно "висока" или "ниска").`;
+ВАЖНО ЗА ТЕКУЩИЯ РЕЖИМ: Работиш напълно без Google Search, Gemini и външни заявки. Не проучвай интернет и не твърди, че си го направил. Използвай всички подадени данни за продукта. Не съкращавай техническата информация: пренеси всяка налична характеристика като отделен елемент във features във формат "Параметър: стойност", а в description обясни подробно продукта и приложението му. Можеш да преформулираш само за по-добра четливост; не измисляй липсващи технически факти, размери, мощности, материали или сертификати. Ако данните са малко, бъди точен, но не добавяй фиктивни параметри. Отговори САМО с един валиден JSON обект без markdown, обяснение или текст преди/след него със следните полета: description (подробен непразен низ), features (масив от низове, може да е празен само ако няма никакви технически данни), seo_title, seo_description, keywords, source_urls (празен масив), confidence (точно "висока" или "ниска").`;
 
 async function database() {
   const db = await getDb();
@@ -409,11 +409,40 @@ export function validateAiPayload(payload: Record<string, unknown>, options: { r
   return errors;
 }
 
-function normalizeAiPayload(payload: Record<string, unknown>) {
+function normalizedComparison(value: string) {
+  return value.toLowerCase().replace(/[\s:;,.\-–—/()]+/g, "").trim();
+}
+
+function mergeSourceText(generated: string, source: string) {
+  const generatedText = generated.trim();
+  const sourceText = source.trim();
+  if (!sourceText || !generatedText) return generatedText || sourceText;
+  if (generatedText.includes(sourceText)) return generatedText;
+  if (generatedText.length >= sourceText.length * 0.75) return generatedText;
+  return `${generatedText}\n\n${sourceText}`;
+}
+
+function mergeSourceFeatures(generated: string, source: string) {
+  const generatedLines = generated.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  const sourceLines = source.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  const comparisons = generatedLines.map(normalizedComparison);
+  for (const sourceLine of sourceLines) {
+    const normalized = normalizedComparison(sourceLine);
+    if (normalized.length > 0 && !comparisons.some(item => item.includes(normalized) || normalized.includes(item))) {
+      generatedLines.push(sourceLine);
+      comparisons.push(normalized);
+    }
+  }
+  return generatedLines.join("\n");
+}
+
+function normalizeAiPayload(payload: Record<string, unknown>, sourceDescription = "", sourceFeatures = "") {
   const confidence = textField(payload.confidence).toLowerCase();
+  const generatedDescription = textField(payload.description);
+  const generatedFeatures = Array.isArray(payload.features) ? payload.features.filter((item): item is string => typeof item === "string" && item.trim().length > 0).join("\n") : "";
   return {
-    aiDescription: textField(payload.description) || null,
-    aiFeatures: Array.isArray(payload.features) ? payload.features.filter((item): item is string => typeof item === "string").join("\n") || null : null,
+    aiDescription: mergeSourceText(generatedDescription, sourceDescription) || null,
+    aiFeatures: mergeSourceFeatures(generatedFeatures, sourceFeatures) || null,
     aiSeoTitle: textField(payload.seo_title) || null,
     aiSeoDescription: textField(payload.seo_description) || null,
     aiKeywords: textField(payload.keywords) || null,
@@ -445,7 +474,7 @@ async function reserveDailyGeneration(db: Awaited<ReturnType<typeof database>>, 
 
 export async function generateAdminAiContent(productId: number, options?: { skipQuota?: boolean }) {
   const db = await database();
-  const [product] = await db.select({ id: catalogueProducts.id, name: catalogueProducts.name, brand: catalogueProducts.brand, sku: catalogueProducts.sku }).from(catalogueProducts).where(eq(catalogueProducts.id, productId)).limit(1);
+  const [product] = await db.select({ id: catalogueProducts.id, name: catalogueProducts.name, brand: catalogueProducts.brand, sku: catalogueProducts.sku, description: catalogueProducts.description, featuresJson: catalogueProducts.featuresJson, categoryName: catalogueCategories.name }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueCategories.id, catalogueProducts.categoryId)).where(eq(catalogueProducts.id, productId)).limit(1);
   if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Продуктът не е намерен." });
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
@@ -456,7 +485,17 @@ export async function generateAdminAiContent(productId: number, options?: { skip
   }
 
   const model = FREE_AI_MODEL;
-  const productInput = `Марка: ${product.brand || "няма посочена"}\nИме на продукта: ${product.name}\nEAN/артикулен номер: ${product.sku || "няма посочен"}`;
+  const sourceDescription = stripHtml(product.description || "");
+  const sourceFeatures = formatLegacyFeatures(product.featuresJson || "");
+  const productInput = `ДАННИ ОТ КАТАЛОГА (единственият разрешен източник на факти):
+Категория: ${product.categoryName || "няма посочена"}
+Марка: ${product.brand || "няма посочена"}
+Име на продукта: ${product.name}
+EAN/артикулен номер: ${product.sku || "няма посочен"}
+Съществуващо описание:
+${sourceDescription || "няма въведено описание"}
+Съществуващи технически данни:
+${sourceFeatures || "няма въведени технически данни"}`;
   let lastError = "AI резултатът не премина програмната проверка.";
   const totalUsage: FreeAiUsage = { inputTokens: 0, outputTokens: 0, searchCount: 0 };
   for (let attempt = 0; attempt <= 2; attempt += 1) {
@@ -472,7 +511,7 @@ export async function generateAdminAiContent(productId: number, options?: { skip
         lastError = validationErrors.join("; ");
         continue;
       }
-      const payload = normalizeAiPayload(parsed);
+      const payload = normalizeAiPayload(parsed, sourceDescription, sourceFeatures);
       await saveAdminAiContent({ productId, aiProvider: FREE_AI_PROVIDER, aiModel: model, aiStatus: "generated", ...payload, aiError: null, aiGeneratedAt: new Date().toISOString(), aiInputTokens: totalUsage.inputTokens, aiOutputTokens: totalUsage.outputTokens, aiSearchCount: totalUsage.searchCount });
       return { success: true, status: "generated" as const, raw, attempts: attempt + 1, usage: totalUsage };
     } catch (error) {

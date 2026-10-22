@@ -60,6 +60,9 @@ describe("AI product content generation", () => {
     expect(service).toContain("validateAiPayload");
     expect(service).toContain("for (let attempt = 0; attempt <= 2");
     expect(service).toContain("parseAiJsonObject(raw)");
+    expect(service).toContain("featuresJson: catalogueProducts.featuresJson");
+    expect(service).toContain("Съществуващи технически данни:");
+    expect(service).toContain("mergeSourceFeatures");
     expect(service).toContain('aiStatus: "error"');
     expect(service).toContain("onDuplicateKeyUpdate({ set: { aiStatus: \"error\"");
     expect(service).toContain("publishApprovedAiContent");
