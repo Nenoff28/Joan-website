@@ -115,6 +115,8 @@ describe("AI product content generation", () => {
     expect(page).toContain("Одобри въпреки грешката");
     expect(page).toContain("selectedErrorCount");
     expect(page).toContain('item.aiStatus === "error"');
+    expect(page).toContain("utils.admin.aiProductIds.invalidate()");
+    expect(page).toContain("Няма одобрени продукти.");
     expect(page).toContain("technicalRows");
     expect(page).toContain("admin-ai-technical-table");
     expect(page).toContain("replace(/\\\\n/g");

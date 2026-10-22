@@ -127,7 +127,7 @@ export default function AdminAIContent() {
     onError: error => toast.error(`Действието не бе изпълнено: ${error.message}`),
   });
   const reviewBatchMutation = trpc.admin.reviewAiContentBatch.useMutation({
-    onSuccess: async (result) => { setSelectedIds(new Set()); toast.success(`Одобрени продукти: ${result.reviewed}. Пропуснати: ${result.skipped.length}.`); await utils.admin.aiContent.invalidate(); await utils.admin.aiCategories.invalidate(); },
+    onSuccess: async (result) => { setSelectedIds(new Set()); toast.success(result.reviewed ? `Одобрени продукти: ${result.reviewed}. Пропуснати: ${result.skipped.length}.` : `Няма одобрени продукти. Пропуснати: ${result.skipped.length}.`); await Promise.all([utils.admin.aiContent.invalidate(), utils.admin.aiCategories.invalidate(), utils.admin.aiProductIds.invalidate()]); },
     onError: error => toast.error(`Масовото одобряване не бе изпълнено: ${error.message}`),
   });
   const publishMutation = trpc.admin.publishApprovedAiContent.useMutation({
