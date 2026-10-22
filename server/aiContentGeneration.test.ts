@@ -68,6 +68,8 @@ describe("AI product content generation", () => {
     expect(service).toContain("extractLegacyDescriptionFeatures");
     expect(service).toContain("Номинален обем");
     expect(service).toContain("extractProductModel(product.name)");
+    expect(service).toContain("backupDescription");
+    expect(service).toContain("backupFeaturesJson");
     expect(service).toContain('aiStatus: "error"');
     expect(service).toContain("onDuplicateKeyUpdate({ set: { aiStatus: \"error\"");
     expect(service).toContain("publishApprovedAiContent");

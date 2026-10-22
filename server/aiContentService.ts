@@ -448,7 +448,6 @@ function buildAuthoritativeFeatures(model: string | null, sku: string | null, ca
     return label !== "модел" && label !== "model" && label !== "категория" && label !== "category";
   });
   const identity = (model?.trim() || sku?.trim()) ? [`Модел: ${(model?.trim() || sku?.trim())}`] : [];
-  if (model?.trim() && sku?.trim() && model.trim() !== sku.trim()) identity.push(`Вътрешен код: ${sku.trim()}`);
   const category = categoryName?.trim() ? [`Категория: ${categoryName.trim()}`] : [];
   return [...identity, ...withoutGeneratedIdentity, ...category].join("\n");
 }
@@ -521,7 +520,7 @@ async function reserveDailyGeneration(db: Awaited<ReturnType<typeof database>>, 
 
 export async function generateAdminAiContent(productId: number, options?: { skipQuota?: boolean }) {
   const db = await database();
-  const [product] = await db.select({ id: catalogueProducts.id, name: catalogueProducts.name, brand: catalogueProducts.brand, sku: catalogueProducts.sku, description: catalogueProducts.description, featuresJson: catalogueProducts.featuresJson, categoryName: catalogueCategories.name }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueCategories.id, catalogueProducts.categoryId)).where(eq(catalogueProducts.id, productId)).limit(1);
+  const [product] = await db.select({ id: catalogueProducts.id, name: catalogueProducts.name, brand: catalogueProducts.brand, sku: catalogueProducts.sku, description: catalogueProducts.description, featuresJson: catalogueProducts.featuresJson, backupDescription: catalogueProductAiBackups.description, backupFeaturesJson: catalogueProductAiBackups.featuresJson, categoryName: catalogueCategories.name }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueCategories.id, catalogueProducts.categoryId)).leftJoin(catalogueProductAiBackups, eq(catalogueProductAiBackups.productId, catalogueProducts.id)).where(eq(catalogueProducts.id, productId)).limit(1);
   if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Продуктът не е намерен." });
   const [settings] = await db.select().from(aiContentSettings).where(eq(aiContentSettings.id, 1)).limit(1);
   if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "AI системният prompt не е настроен." });
@@ -532,10 +531,10 @@ export async function generateAdminAiContent(productId: number, options?: { skip
   }
 
   const model = FREE_AI_MODEL;
-  const rawSourceDescription = product.description || "";
+  const rawSourceDescription = product.backupDescription || product.description || "";
   const sourceDescription = stripHtml(rawSourceDescription);
   const descriptionFeatures = extractLegacyDescriptionFeatures(rawSourceDescription);
-  const sourceFeatures = buildAuthoritativeFeatures(extractProductModel(product.name), product.sku, product.categoryName, [formatLegacyFeatures(product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
+  const sourceFeatures = buildAuthoritativeFeatures(extractProductModel(product.name), product.sku, product.categoryName, [formatLegacyFeatures(product.backupFeaturesJson || product.featuresJson || ""), descriptionFeatures].filter(Boolean).join("\n"));
   const productInput = `ДАННИ ОТ КАТАЛОГА (единственият разрешен източник на факти):
 Категория: ${product.categoryName || "няма посочена"}
 Марка: ${product.brand || "няма посочена"}
