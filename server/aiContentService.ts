@@ -436,13 +436,26 @@ function mergeSourceFeatures(generated: string, source: string) {
   return generatedLines.join("\n");
 }
 
+function buildAuthoritativeFeatures(sku: string | null, categoryName: string | null, rawFeatures: string) {
+  const sourceLines = rawFeatures.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  const withoutGeneratedIdentity = sourceLines.filter(line => {
+    const label = line.split(":", 1)[0]?.trim().toLowerCase();
+    return label !== "модел" && label !== "model" && label !== "категория" && label !== "category";
+  });
+  const identity = sku?.trim() ? [`Модел: ${sku.trim()}`] : [];
+  const category = categoryName?.trim() ? [`Категория: ${categoryName.trim()}`] : [];
+  return [...identity, ...withoutGeneratedIdentity, ...category].join("\n");
+}
+
 function normalizeAiPayload(payload: Record<string, unknown>, sourceDescription = "", sourceFeatures = "") {
   const confidence = textField(payload.confidence).toLowerCase();
   const generatedDescription = textField(payload.description);
   const generatedFeatures = Array.isArray(payload.features) ? payload.features.filter((item): item is string => typeof item === "string" && item.trim().length > 0).join("\n") : "";
   return {
     aiDescription: mergeSourceText(generatedDescription, sourceDescription) || null,
-    aiFeatures: mergeSourceFeatures(generatedFeatures, sourceFeatures) || null,
+    // Technical data is authoritative catalogue data. Never let the model
+    // replace a source value with a guessed capacity, model or power rating.
+    aiFeatures: sourceFeatures.trim() || mergeSourceFeatures(generatedFeatures, sourceFeatures) || null,
     aiSeoTitle: textField(payload.seo_title) || null,
     aiSeoDescription: textField(payload.seo_description) || null,
     aiKeywords: textField(payload.keywords) || null,
@@ -486,7 +499,7 @@ export async function generateAdminAiContent(productId: number, options?: { skip
 
   const model = FREE_AI_MODEL;
   const sourceDescription = stripHtml(product.description || "");
-  const sourceFeatures = formatLegacyFeatures(product.featuresJson || "");
+  const sourceFeatures = buildAuthoritativeFeatures(product.sku, product.categoryName, formatLegacyFeatures(product.featuresJson || ""));
   const productInput = `ДАННИ ОТ КАТАЛОГА (единственият разрешен източник на факти):
 Категория: ${product.categoryName || "няма посочена"}
 Марка: ${product.brand || "няма посочена"}
