@@ -1340,6 +1340,8 @@ a.feature-category-card[href="/category/stroitelstvo"] img { filter: none !impor
 .admin-manual-drawer-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 14px 24px; border-top: 1px solid #e1e5e2; background: #fff; }
 .admin-manual-drawer-actions button { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #ccd5d1; border-radius: 7px; background: #fff; color: #283338; padding: 10px 13px; font-size: 12px; cursor: pointer; }
 .admin-manual-drawer-actions button:hover { border-color: #d71920; color: #a80f15; }
+.admin-manual-view-button { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #ccd5d1; border-radius: 7px; background: #eef3f0; color: #283338; padding: 10px 13px; font-size: 12px; cursor: pointer; }
+.admin-manual-view-button:hover { border-color: #d71920; color: #a80f15; background: #fff; }
 .admin-manual-drawer-actions button:disabled { opacity: .5; cursor: wait; }
 @keyframes admin-manual-drawer-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
 @media (max-width: 760px) { .admin-manual-row { grid-template-columns: 20px 42px minmax(0, 1fr) auto; } .admin-manual-row .admin-ai-status { grid-column: 3; justify-self: start; } .admin-manual-edit-button { grid-column: 4; grid-row: 1 / span 2; } .admin-manual-drawer-head, .admin-manual-drawer-body, .admin-manual-drawer-actions { padding-left: 16px; padding-right: 16px; } .admin-manual-drawer-actions { flex-direction: column; } .admin-manual-drawer-actions button { justify-content: center; } }

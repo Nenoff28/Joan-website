@@ -8,6 +8,7 @@ type Confidence = "high" | "low";
 type Item = {
   productId: number;
   name: string;
+  slug: string;
   sku: string | null;
   brand: string | null;
   imageUrl: string;
@@ -22,6 +23,11 @@ type Item = {
   aiSeoDescription: string | null;
   aiKeywords: string | null;
   aiConfidence: Confidence | null;
+  oldDescription: string | null;
+  oldFeatures: string;
+  oldSeoTitle: string | null;
+  oldSeoDescription: string | null;
+  oldKeywords: string | null;
 };
 type Category = { id: number; name: string; count: number };
 const labels: Record<Status, string> = { pending: "Чакащ", generated: "Генериран", reviewed: "Прегледан", published: "Публикуван", error: "Грешка" };
@@ -55,10 +61,10 @@ export default function AdminManualContent() {
 
   useEffect(() => {
     if (selected) {
-      setForm({ description: selected.aiDescription ?? "", features: selected.aiFeatures ?? "", seoTitle: selected.aiSeoTitle ?? "", seoDescription: selected.aiSeoDescription ?? "", keywords: selected.aiKeywords ?? "" });
+      setForm({ description: selected.oldDescription ?? "", features: selected.oldFeatures ?? "", seoTitle: selected.oldSeoTitle ?? "", seoDescription: selected.oldSeoDescription ?? "", keywords: selected.oldKeywords ?? "" });
       setDrawerOpen(true);
     }
-  }, [selected]);
+  }, [selectedId]);
 
   const refresh = async () => {
     await Promise.all([utils.admin.aiContent.invalidate(), utils.admin.aiCategories.invalidate(), utils.admin.aiProductIds.invalidate()]);
@@ -122,7 +128,7 @@ export default function AdminManualContent() {
         <label>SEO заглавие<input value={form.seoTitle} onChange={e => update("seoTitle", e.target.value)} maxLength={60} /><small>{form.seoTitle.length}/60 знака</small></label>
         <label>SEO описание<textarea rows={4} value={form.seoDescription} onChange={e => update("seoDescription", e.target.value)} maxLength={200} /><small>{form.seoDescription.length}/200 знака</small></label>
         <label>Ключови думи<textarea rows={3} value={form.keywords} onChange={e => update("keywords", e.target.value)} maxLength={255} /><small>{form.keywords.length}/255 знака</small></label>
-      </div><div className="admin-manual-drawer-actions"><button type="button" onClick={saveDraft} disabled={saveMutation.isPending || publishMutation.isPending}><Save size={15} /> {saveMutation.isPending ? "Запазване…" : "Запази ръчните данни"}</button><button type="button" className="admin-primary" onClick={publish} disabled={saveMutation.isPending || publishMutation.isPending}>{publishMutation.isPending ? "Актуализиране…" : "Актуализирай в сайта"}</button></div>
+      </div><div className="admin-manual-drawer-actions"><a className="admin-manual-view-button" href={`/product/${selected.slug}`} target="_blank" rel="noreferrer"><Eye size={15} /> Виж в сайта</a><button type="button" onClick={saveDraft} disabled={saveMutation.isPending || publishMutation.isPending}><Save size={15} /> {saveMutation.isPending ? "Запазване…" : "Запази ръчните данни"}</button><button type="button" className="admin-primary" onClick={publish} disabled={saveMutation.isPending || publishMutation.isPending}>{publishMutation.isPending ? "Актуализиране…" : "Актуализирай в сайта"}</button></div>
     </aside></div>}
   </section>;
 }

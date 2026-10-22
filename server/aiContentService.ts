@@ -109,6 +109,7 @@ function mapRow(row: { product: typeof catalogueProducts.$inferSelect; category:
   return {
     productId: row.product.id,
     name: row.product.name,
+    slug: row.product.slug,
     sku: row.product.sku,
     brand: row.product.brand,
     imageUrl: row.product.imageUrl,
