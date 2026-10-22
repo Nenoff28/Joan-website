@@ -1,13 +1,22 @@
 export type TechnicalSpecification = { label: string; value: string };
 
 const modelLabels = new Set(["модел", "model", "вътрешен код", "internal code"]);
-const featurePairPattern = /^\s*([^:]{2,72}?)\s*(?::|[–—-])\s+(.+?)\s*$/;
+const featurePairPattern = /^\s*([^:]{2,72}?)\s*(?::|[–—-])\s*(.+?)\s*$/;
+
+function normalizeTechnicalValue(value: string) {
+  return value
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/(\d)(?=(?:мл|ml|кг|kg|гр|g|мм|mm|см|cm|kw|kW|mpa|MPa|л|l|w|W|v|V|hz|Hz)(?=\s|$|[^A-Za-zА-Яа-я]))/g, "$1 ")
+    .replace(/(\d)\s*(час(?:а)?|мин(?:ути)?|сек(?:унди)?)/gi, "$1 $2")
+    .replace(/\s+([,.;])/g, "$1");
+}
 
 function parseFeaturePair(feature: string): TechnicalSpecification | null {
   const match = feature.match(featurePairPattern);
   if (!match) return null;
   const label = match[1].replace(/\s+/g, " ").trim();
-  const value = match[2].replace(/\s+/g, " ").trim();
+  const value = normalizeTechnicalValue(match[2]);
   return label && value ? { label, value } : null;
 }
 
@@ -47,7 +56,24 @@ function plainText(value: string) {
 }
 
 function normaliseInlinePairs(value: string) {
-  return value.replace(/(?=\s+[А-ЯA-Z][^:\nА-Я]{1,96}:\s*)/g, "\n");
+  return value.split("\n").map((line) => {
+    const text = line.trim();
+    if (!text || !text.includes(":")) return text;
+    const colonPositions = Array.from(text.matchAll(/:/g)).map(match => match.index ?? -1).filter(index => index >= 0);
+    if (colonPositions.length < 2) return text;
+    const boundaries = [0];
+    for (let index = 1; index < colonPositions.length; index += 1) {
+      const segmentStart = colonPositions[index - 1] + 1;
+      const segment = text.slice(segmentStart, colonPositions[index]);
+      const candidates = Array.from(segment.matchAll(/(?:^|\s)([А-ЯA-Z][А-Яа-яA-Za-z0-9]{2,})(?=\s|$|\[|\()/g));
+      const candidate = candidates.at(-1);
+      if (!candidate?.[1] || candidate.index == null) continue;
+      const relativeStart = candidate.index + (candidate[0].startsWith(" ") ? 1 : 0);
+      const absoluteStart = segmentStart + relativeStart;
+      if (absoluteStart > boundaries[boundaries.length - 1]) boundaries.push(absoluteStart);
+    }
+    return boundaries.map((start, index) => text.slice(start, boundaries[index + 1]).trim()).filter(Boolean).join("\n");
+  }).filter(Boolean).join("\n");
 }
 
 function collectPairs(value: string) {
@@ -57,7 +83,7 @@ function collectPairs(value: string) {
       const match = line.match(bulletPattern);
       if (!match) return [];
       const label = match[1].replace(/\s+/g, " ").trim();
-      const specificationValue = match[2].replace(/\s+/g, " ").trim();
+      const specificationValue = normalizeTechnicalValue(match[2]);
       if (!label || !specificationValue || ignoredLabels.has(label.toLocaleLowerCase("bg-BG"))) return [];
       return [{ label, value: specificationValue }];
     });

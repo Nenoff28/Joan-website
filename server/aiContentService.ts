@@ -4,7 +4,7 @@ import { aiContentSettings, aiGenerationBatches, aiGenerationDailyUsage, aiGener
 import { getDb } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { legacyCategoryRootsByPublicSlug } from "./productCategoryAssignments";
-import { splitProductDescription } from "./technicalSpecifications";
+import { alignInternalCodeFeatures, splitProductDescription } from "./technicalSpecifications";
 
 export type AiContentStatus = "pending" | "generated" | "reviewed" | "published" | "error";
 export type AiContentConfidence = "high" | "low";
@@ -268,8 +268,17 @@ export async function reviewAdminAiContentBatch(productIds: number[], action: "a
   return { success: true, aiStatus: nextStatus, reviewed: eligible.length, skipped } as const;
 }
 
-function aiFeaturesToJson(value: string | null) {
-  return JSON.stringify((value ?? "").split(/\\n|\r?\n/).map(item => item.trim()).filter(Boolean));
+export function canonicalizeAiFeatures(value: string | null, sku: string | null | undefined) {
+  const normalizedLines = alignInternalCodeFeatures((value ?? "").split(/\\n|\r?\n/).map(item => item.trim()).filter(Boolean), sku);
+  const technicalSpecs = splitProductDescription("", normalizedLines).technicalSpecs
+    .filter(specification => !/^категория$|^category$/i.test(specification.label.trim()));
+  return technicalSpecs.length
+    ? technicalSpecs.map(specification => `${specification.label}: ${specification.value}`)
+    : normalizedLines;
+}
+
+function aiFeaturesToJson(value: string | null, sku: string | null | undefined) {
+  return JSON.stringify(canonicalizeAiFeatures(value, sku));
 }
 
 export async function publishApprovedAiContent(productIds?: number[]) {
@@ -287,13 +296,29 @@ export async function publishApprovedAiContent(productIds?: number[]) {
       for (const id of ids) if (!found.has(id)) skipped.push(id);
     }
     for (const row of rows) {
+      const canonicalFeatures = canonicalizeAiFeatures(row.ai.aiFeatures, row.product.sku);
+      const publishValidationErrors = validateAiPayload({
+        description: row.ai.aiDescription ?? "",
+        features: canonicalFeatures,
+        seo_title: row.ai.aiSeoTitle ?? "",
+        seo_description: row.ai.aiSeoDescription ?? "",
+        keywords: row.ai.aiKeywords ?? "",
+        source_urls: [],
+        confidence: row.ai.aiConfidence === "high" ? "висока" : row.ai.aiConfidence === "low" ? "ниска" : "",
+      });
+      if (publishValidationErrors.length) {
+        const message = `Публикуването е спряно: ${publishValidationErrors.join("; ")}`;
+        await tx.update(catalogueProductAiContent).set({ aiStatus: "error", aiError: message }).where(eq(catalogueProductAiContent.productId, row.product.id));
+        skipped.push(row.product.id);
+        continue;
+      }
       const [existingBackup] = await tx.select().from(catalogueProductAiBackups).where(eq(catalogueProductAiBackups.productId, row.product.id)).limit(1);
       if (!existingBackup || existingBackup.restoredAt) {
         const backupValues = { productId: row.product.id, description: row.product.description, featuresJson: row.product.featuresJson, seoTitle: row.product.legacyMetaTitleBg, seoDescription: row.product.legacyMetaDescriptionBg, keywords: row.product.legacySeoKeywordBg, restoredAt: null };
         if (existingBackup) await tx.update(catalogueProductAiBackups).set(backupValues).where(eq(catalogueProductAiBackups.productId, row.product.id));
         else await tx.insert(catalogueProductAiBackups).values(backupValues);
       }
-      await tx.update(catalogueProducts).set({ description: row.ai.aiDescription ?? row.product.description, featuresJson: aiFeaturesToJson(row.ai.aiFeatures), legacyMetaTitleBg: row.ai.aiSeoTitle, legacyMetaDescriptionBg: row.ai.aiSeoDescription, legacySeoKeywordBg: row.ai.aiKeywords }).where(eq(catalogueProducts.id, row.product.id));
+      await tx.update(catalogueProducts).set({ description: row.ai.aiDescription ?? row.product.description, featuresJson: JSON.stringify(canonicalFeatures), legacyMetaTitleBg: row.ai.aiSeoTitle, legacyMetaDescriptionBg: row.ai.aiSeoDescription, legacySeoKeywordBg: row.ai.aiKeywords }).where(eq(catalogueProducts.id, row.product.id));
       await tx.update(catalogueProductAiContent).set({ aiStatus: "published", aiError: null }).where(eq(catalogueProductAiContent.productId, row.product.id));
       published += 1;
     }
@@ -405,7 +430,12 @@ export function validateAiPayload(payload: Record<string, unknown>, options: { r
   const errors: string[] = [];
   const features = payload.features;
   const sourceUrls = payload.source_urls;
-  if (!textField(payload.description)) errors.push("description трябва да е непразен текст");
+  const description = textField(payload.description);
+  if (!description) errors.push("description трябва да е непразен текст");
+  const descriptionPairs = description.match(/(?:^|\s)[А-ЯA-Z][^:\n]{2,72}:\s*/g) ?? [];
+  if (/технически\s+данни|основни\s+характеристики|характеристики\s*:/i.test(description) || descriptionPairs.length >= 2) {
+    errors.push("description трябва да е отделен текст, без технически списък");
+  }
   if (typeof payload.seo_title !== "string" || payload.seo_title.trim().length > 60) errors.push("seo_title трябва да е до 60 знака");
   if (typeof payload.seo_description !== "string" || payload.seo_description.trim().length > 200) errors.push("seo_description трябва да е до 200 знака");
   if (typeof payload.keywords !== "string" || payload.keywords.trim().length > 255) errors.push("keywords трябва да е до 255 знака");

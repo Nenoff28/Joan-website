@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parseAiJsonObject, validateAiPayload } from "./aiContentService";
+import { canonicalizeAiFeatures, parseAiJsonObject, validateAiPayload } from "./aiContentService";
 
 describe("AI product content generation", () => {
   it("extracts the first balanced JSON object from surrounding prose or markdown", () => {
@@ -29,6 +29,15 @@ describe("AI product content generation", () => {
       "source_urls трябва да съдържа поне един валиден URL",
     ]);
     expect(validateAiPayload({ description: "Няма информация", features: [], seo_title: "Заглавие", seo_description: "Описание", keywords: "ключова дума", confidence: "ниска", source_urls: ["https://example.com"] })).toContain("съдържанието не трябва да съдържа фрази без информационна стойност");
+    expect(validateAiPayload({ description: "Описание на продукта. Номинална мощност: 3 kW Номинален обем: 80 л", features: [], seo_title: "Заглавие", seo_description: "Описание", keywords: "ключова дума", confidence: "ниска", source_urls: [] })).toContain("description трябва да е отделен текст, без технически списък");
+  });
+
+  it("canonicalizes technical data before publish", () => {
+    expect(canonicalizeAiFeatures("Номинална мощност: 3 kW Максимално количество: 177л\nМодел: 9685\nКатегория: Баня\nРазмери:79 x 44 см", "118909")).toEqual([
+      "Номинална мощност: 3 kW",
+      "Максимално количество: 177 л",
+      "Размери: 79 x 44 см",
+    ]);
   });
 
   it("keeps AI fields isolated and records generation errors without clearing previous content", () => {
