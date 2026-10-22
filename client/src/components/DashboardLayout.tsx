@@ -28,6 +28,7 @@ import {
   BookOpen,
   Boxes,
   ClipboardList,
+  Edit3,
   History,
   LayoutDashboard,
   LogOut,
@@ -57,6 +58,7 @@ const menuItems = [
   { icon: History, label: "Активност", path: "/admin/activity" },
   { icon: UsersRound, label: "Потребители и роли", path: "/admin/users-roles" },
   { icon: Sparkles, label: "AI съдържание", path: "/admin/ai-content", adminOnly: true },
+  { icon: Edit3, label: "Ръчно съдържание", path: "/admin/manual-content", adminOnly: true },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

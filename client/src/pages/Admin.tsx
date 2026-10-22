@@ -3,6 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import AdminUsersRoles from "@/components/AdminUsersRoles";
 import AdminCategoriesEditor from "@/components/AdminCategoriesEditor";
 import AdminAIContent from "./AdminAIContent";
+import AdminManualContent from "./AdminManualContent";
 import { trpc } from "@/lib/trpc";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
@@ -3383,8 +3384,8 @@ function AdminWorkspace({
   if (redirectPath) {
     return <AccessDeniedState text="Пренасочване към първата разрешена секция…" />;
   }
-  if (location === "/admin/ai-content" && staff?.role.slug !== "admin" && staff?.source !== "manus") {
-    return <AccessDeniedState text="AI съдържанието е достъпно само за администратор." />;
+  if ((location === "/admin/ai-content" || location === "/admin/manual-content") && staff?.role.slug !== "admin" && staff?.source !== "manus") {
+    return <AccessDeniedState text="Тази секция е достъпна само за администратор." />;
   }
   if (!canVisitAdminSection(permissions, location)) {
     return <AccessDeniedState />;
@@ -3403,6 +3404,7 @@ function AdminWorkspace({
   if (location === "/admin/activity") return <AdminActivity permissions={permissions} />;
   if (location === "/admin/users-roles") return <AdminUsersRoles />;
   if (location === "/admin/ai-content") return <AdminAIContent />;
+  if (location === "/admin/manual-content") return <AdminManualContent />;
   return <AccessDeniedState text="Непознат административен маршрут." />;
 }
 export default function Admin() {
