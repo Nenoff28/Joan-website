@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import serverless from "serverless-http";
-import { createProductionApp } from "../../server/_core/index";
+import { createProductionApp } from "../../server/_core/productionApp";
 
 let handlerPromise: Promise<Handler> | undefined;
 

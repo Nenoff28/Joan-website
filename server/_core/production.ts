@@ -1,0 +1,81 @@
+import express, { type Express } from "express";
+import fs from "fs";
+import type { Request, Response } from "express";
+import path from "path";
+import superjson from "superjson";
+import { buildSsrPrefetch } from "./ssrCaller";
+import type { HeadMeta } from "../../client/src/ssr/prefetch";
+import { getPublicProductBySlug, getPublicSitemapEntries } from "../catalogueService";
+
+const canonicalOrigin = (process.env.CANONICAL_ORIGIN ?? "").replace(/\/+$/, "");
+const siteName = process.env.SITE_NAME ?? "ЖОАН";
+const escapeHtml = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+const compact = (value: string, max: number) => { const normalized = value.replace(/\s+/g, " ").trim(); return normalized.length > max ? `${normalized.slice(0, max - 1).trimEnd()}…` : normalized; };
+
+function headTags(head: HeadMeta) {
+  const title = escapeHtml(compact(head.title || siteName, 70));
+  const description = escapeHtml(compact(head.description, 200));
+  const canonical = head.canonicalPath && canonicalOrigin ? `${canonicalOrigin}${head.canonicalPath}` : "";
+  const resolvedImage = head.ogImage || "/manus-storage/joan-existing-logo_61725b9d.webp";
+  const image = resolvedImage.startsWith("/") && canonicalOrigin ? `${canonicalOrigin}${resolvedImage}` : resolvedImage;
+  return [
+    `<title>${title}</title>`, `<meta name="description" content="${description}" />`, `<meta property="og:type" content="${head.ogType === "product" ? "product" : "website"}" />`, `<meta property="og:title" content="${title}" />`, `<meta property="og:description" content="${description}" />`, `<meta property="og:locale" content="bg_BG" />`, `<meta property="og:site_name" content="${escapeHtml(siteName)}" />`, `<meta name="twitter:card" content="summary_large_image" />`, `<meta name="twitter:title" content="${title}" />`, `<meta name="twitter:description" content="${description}" />`,
+    canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}" /><meta property="og:url" content="${escapeHtml(canonical)}" />` : "",
+    image ? `<meta property="og:image" content="${escapeHtml(image)}" /><meta name="twitter:image" content="${escapeHtml(image)}" />${head.ogImageAlt ? `<meta property="og:image:alt" content="${escapeHtml(head.ogImageAlt)}" />` : ""}` : "",
+    head.noindex || head.notFound ? `<meta name="robots" content="noindex, follow" />` : `<meta name="robots" content="index, follow, max-image-preview:large" />`,
+  ].filter(Boolean).join("\n");
+}
+
+function compose(template: string, html: string, head: HeadMeta, state: unknown, nonce?: string) {
+  const stateJson = JSON.stringify(superjson.serialize(state)).replace(/</g, "\\u003c");
+  const nonceAttribute = nonce ? ` nonce="${nonce}"` : "";
+  return template.replace("</body>", () => `<script${nonceAttribute}>window.__RQ_STATE__=${stateJson}</script></body>`).replace("<!--app-head-->", () => headTags(head)).replace("<!--app-html-->", () => html);
+}
+
+function normalizePath(reqPath: string, originalUrl: string) { const query = originalUrl.slice(reqPath.length); return (reqPath.replace(/\/+$/, "") || "/").replace(/^\/\/+/, "/") + query; }
+function productionDistRoot() { return path.resolve(process.cwd(), "dist"); }
+
+async function canonicalProductRedirect(req: Request, res: Response) {
+  const requestUrl = new URL(req.originalUrl, "http://localhost");
+  const match = requestUrl.pathname.match(/^\/product\/([a-z0-9-]+)$/);
+  if (!match) return false;
+  const found = await getPublicProductBySlug(match[1]);
+  if (found && found.product.slug !== match[1]) {
+    res.redirect(301, `/product/${found.product.slug}${requestUrl.search}`);
+    return true;
+  }
+  return false;
+}
+
+export function serveProductionStatic(app: Express) {
+  const distPath = path.join(productionDistRoot(), "public");
+  const ssrEntryPath = path.join(productionDistRoot(), "server-ssr", "entry-server.js");
+  app.get("/robots.txt", (_req, res) => res.set("Cache-Control", "public, max-age=3600").type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /favorites\nSitemap: ${canonicalOrigin}/sitemap.xml\n`));
+  app.get("/sitemap.xml", async (_req, res, next) => {
+    try {
+      const entries = await getPublicSitemapEntries();
+      const fixed = ["/", "/products", "/about", "/contact", "/delivery", "/terms", "/privacy", "/faq", "/returns"];
+      const urls = [...fixed.map((entryPath) => ({ path: entryPath, updatedAt: new Date() })), ...entries.categories.map((entry) => ({ path: `/category/${entry.slug}`, updatedAt: entry.updatedAt })), ...entries.products.map((entry) => ({ path: `/product/${entry.slug}`, updatedAt: entry.updatedAt }))];
+      const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((entry) => `<url><loc>${escapeHtml(`${canonicalOrigin}${entry.path}`)}</loc><lastmod>${new Date(entry.updatedAt).toISOString().slice(0, 10)}</lastmod></url>`).join("")}</urlset>`;
+      res.set("Cache-Control", "public, max-age=3600").type("application/xml").send(xml);
+    } catch (error) { next(error); }
+  });
+  app.use((req, res, next) => {
+    if (req.path === "/index.html") return res.redirect(301, "/");
+    if (req.path !== "/" && /\/+$/ .test(req.path)) return res.redirect(301, normalizePath(req.path, req.originalUrl));
+    next();
+  });
+  app.use(express.static(distPath, { index: false, redirect: false, etag: true, setHeaders: (res, filePath) => { if (/\.(?:css|js|mjs|woff2?|png|jpe?g|webp|svg|ico)$/i.test(filePath)) res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800"); } }));
+  app.use("*", async (req, res) => {
+    if (await canonicalProductRedirect(req, res)) return;
+    const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
+    try {
+      const { render } = await import(ssrEntryPath);
+      const result = await render(req.originalUrl, await buildSsrPrefetch(req, res));
+      res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState, res.locals.cspNonce));
+    } catch (error) {
+      console.error("[SSR] render failed, serving shell:", error);
+      res.status(200).set("Cache-Control", "no-cache").type("html").end(compose(template, "", { title: siteName, description: "Онлайн каталог на ЖОАН." }, {}, res.locals.cspNonce));
+    }
+  });
+}

@@ -21,15 +21,22 @@ describe("Netlify deployment contract", () => {
     const config = read("netlify.toml");
     const functionSource = read("netlify/functions/server.ts");
     const appSource = read("server/_core/index.ts");
+    const productionAppSource = read("server/_core/productionApp.ts");
+    const productionSource = read("server/_core/production.ts");
     expect(config).toContain('from = "/api/*"');
     expect(config).toContain('from = "/manus-storage/*"');
     expect(config).toContain('to = "/.netlify/functions/server/:splat"');
     expect(functionSource).toContain("createProductionApp");
+    expect(functionSource).toContain('from "../../server/_core/productionApp"');
+    expect(functionSource).not.toContain('from "../../server/_core/index"');
     expect(functionSource).toContain("serverless(app, { basePath:");
     expect(functionSource).toContain('basePath: "/.netlify/functions/server"');
     expect(appSource).toContain('app.use("/api/trpc"');
     expect(appSource).toContain("registerStorageProxy(app)");
     expect(appSource).toContain("serveStatic(app)");
+    expect(productionAppSource).toContain("serveProductionStatic(app)");
+    expect(productionAppSource).not.toContain('from "./vite"');
+    expect(productionSource).not.toContain('from "vite"');
   });
 
   it("does not turn managed media or database content into fake static data", () => {
