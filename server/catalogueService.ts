@@ -488,11 +488,21 @@ function publicBrochure(brochure: typeof catalogueBrochures.$inferSelect) {
   return { id: brochure.id, title: brochure.title, pageUrls, pageCount: brochure.pageCount, sourcePdfUrl: brochure.sourcePdfUrl, isActive: brochure.isActive, isArchived: brochure.isArchived, createdAt: brochure.createdAt, updatedAt: brochure.updatedAt, isManaged: true };
 }
 
+function fallbackPublicBrochure() {
+  return { id: 0, title: "Промо брошура", pageUrls: fallbackBrochurePages, pageCount: fallbackBrochurePages.length, sourcePdfUrl: null, isActive: true, isArchived: false, createdAt: null, updatedAt: null, isManaged: false };
+}
+
 async function getPublicBrochureUncached() {
-  await ensureBrochureSeeded();
-  const db = await requireDb();
-  const [brochure] = await db.select().from(catalogueBrochures).where(and(eq(catalogueBrochures.isActive, true), eq(catalogueBrochures.isArchived, false))).orderBy(desc(catalogueBrochures.updatedAt)).limit(1);
-  return brochure ? publicBrochure(brochure) : { id: 0, title: "Промо брошура", pageUrls: fallbackBrochurePages, pageCount: fallbackBrochurePages.length, sourcePdfUrl: null, isActive: true, isArchived: false, createdAt: null, updatedAt: null, isManaged: false };
+  try {
+    await ensureBrochureSeeded();
+    const db = await requireDb();
+    const [brochure] = await db.select().from(catalogueBrochures).where(and(eq(catalogueBrochures.isActive, true), eq(catalogueBrochures.isArchived, false))).orderBy(desc(catalogueBrochures.updatedAt)).limit(1);
+    return brochure ? publicBrochure(brochure) : fallbackPublicBrochure();
+  } catch (error) {
+    brochureSeeded = null;
+    console.warn("[Catalogue] Brochure table/query unavailable; serving the deployment-safe fallback brochure.", error instanceof Error ? error.message : error);
+    return fallbackPublicBrochure();
+  }
 }
 
 export function getPublicBrochure() {
