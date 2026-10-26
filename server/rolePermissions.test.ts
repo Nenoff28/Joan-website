@@ -302,6 +302,14 @@ describe("staff access resolution", () => {
     await expect(caller.admin.products()).resolves.toEqual({ products: ["legacy-admin-visible"] });
   });
 
+  it("gives the customer-backed system admin the current permission set", async () => {
+    configureCustomerRole("admin", []);
+    fixtures.roleRows[0].isSystem = true;
+    const access = await getStaffAccess(contextFor(null));
+    expect(access?.permissions).toEqual(ALL_PERMISSIONS);
+    expect(canVisitAdminSection(access?.permissions ?? [], "/admin/database")).toBe(true);
+  });
+
   it("re-reads the role on every request so a revoked permission is stale-proof", async () => {
     configureCustomerRole("custom-orders", ["orders.read"]);
     const ctx = contextFor(null);

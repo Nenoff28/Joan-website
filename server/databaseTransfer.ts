@@ -112,7 +112,7 @@ function validateDump(sql: string) {
   const statements = splitSqlStatements(sql);
   if (!statements.length) throw new Error("SQL файлът не съдържа изпълними команди.");
   const normalizedStatements = statements.map(stripLeadingSqlComments);
-  const forbidden = /\b(CREATE\s+DATABASE|DROP\s+DATABASE|GRANT|REVOKE|LOAD\s+DATA|CALL|UPDATE|DELETE\s+FROM|TRUNCATE|ALTER\s+USER)\b/i;
+  const forbidden = /^(CREATE\s+DATABASE|DROP\s+DATABASE|GRANT|REVOKE|LOAD\s+DATA|CALL|UPDATE|DELETE\s+FROM|TRUNCATE|ALTER\s+USER)\b/i;
   const unsafe = normalizedStatements.find(statement => forbidden.test(statement));
   if (unsafe) throw new Error("Файлът съдържа неподдържана или опасна SQL команда.");
   const supported = normalizedStatements.every(statement => /^(SET|DROP\s+TABLE|CREATE\s+TABLE|INSERT\s+INTO|ALTER\s+TABLE)\b/i.test(statement));

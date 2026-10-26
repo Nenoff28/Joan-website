@@ -8,7 +8,7 @@ import AdminDatabaseTransfer from "./AdminDatabaseTransfer";
 import { trpc } from "@/lib/trpc";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { latinPathToken, type CategoryNode } from "@/lib/categoryHierarchy";
-import { canVisitAdminSection, firstAdminPath, hasPermission, type Permission } from "@shared/permissions";
+import { ALL_PERMISSIONS, canVisitAdminSection, firstAdminPath, hasPermission, type Permission } from "@shared/permissions";
 import { productPayloadSchema, productFieldErrors, readableProductError } from "@shared/productValidation";
 import { productImageType, readProductImage, uploadProductImagesSequentially } from "@/lib/productImageUpload";
 import {
@@ -3370,7 +3370,7 @@ function AdminWorkspace({
   error: boolean;
 }) {
   const [location, setLocation] = useLocation();
-  const permissions = staff?.permissions ?? [];
+  const permissions = staff?.role.slug === "admin" ? ALL_PERMISSIONS : (staff?.permissions ?? []);
   const redirectPath =
     location === "/admin" && !can(permissions, "dashboard.read")
       ? firstAdminPath(permissions)

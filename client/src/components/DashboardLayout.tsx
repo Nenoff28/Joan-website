@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { canVisitAdminSection } from "@shared/permissions";
+import { ALL_PERMISSIONS, canVisitAdminSection } from "@shared/permissions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -205,8 +205,9 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isAdministrator = user?.source === "manus" || user?.role.slug === "admin";
+  const effectivePermissions = user?.role.slug === "admin" ? ALL_PERMISSIONS : (user?.permissions ?? []);
   const visibleMenuItems = menuItems.filter(item =>
-    (!item.adminOnly || isAdministrator) && canVisitAdminSection(user?.permissions ?? [], item.path)
+    (!item.adminOnly || isAdministrator) && canVisitAdminSection(effectivePermissions, item.path)
   );
   const activeMenuItem = visibleMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();

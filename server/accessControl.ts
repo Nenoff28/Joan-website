@@ -72,7 +72,7 @@ export async function getStaffAccess(
         .where(eq(accessRoles.id, identity.accessRoleId))
         .limit(1)
     : [];
-  const permissions = role ? parsePermissions(role.permissionsJson) : [];
+  const permissions = role?.slug === "admin" ? [...ALL_PERMISSIONS] : role ? parsePermissions(role.permissionsJson) : [];
   const [actor] = identity.staffUserId
     ? await db
         .select()
