@@ -69,6 +69,7 @@ import {
   previewLegacyCustomerWorkbook,
 } from "./customerAccounts";
 import { importLegacyOrders, previewLegacyOrders } from "./legacyOrders";
+import { exportDatabase, importDatabase, previewDatabaseImport } from "./databaseTransfer";
 
 const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
@@ -169,6 +170,9 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),
   }),
   admin: router({
+    databaseExport: administratorOnlyProcedure().mutation(() => exportDatabase()),
+    databaseImportPreview: administratorOnlyProcedure().input(z.object({ sql: z.string().min(1).max(50 * 1024 * 1024) })).mutation(({ input }) => previewDatabaseImport(input.sql)),
+    databaseImport: administratorOnlyProcedure().input(z.object({ sql: z.string().min(1).max(50 * 1024 * 1024), checksum: z.string().regex(/^[a-f0-9]{64}$/), confirmReplace: z.literal(true) })).mutation(({ input }) => importDatabase(input.sql, input.checksum, input.confirmReplace)),
     aiContent: administratorOnlyProcedure().input(z.object({ status: aiContentStatusSchema.optional(), confidence: aiContentConfidenceSchema.optional(), query: z.string().trim().max(160).optional(), categoryId: z.number().int().positive().optional(), availability: aiAvailabilityFilterSchema.optional(), visibility: aiVisibilityFilterSchema.optional(), sort: aiContentSortSchema.optional(), page: z.number().int().min(1).max(100000).default(1), pageSize: z.number().int().min(1).max(100).default(50) }).optional()).query(({ input }) => getAdminAiContent(input)),
     aiSettings: administratorOnlyProcedure().query(() => getAdminAiSettings()),
     saveAiSettings: administratorOnlyProcedure().input(z.object({ systemPrompt: z.string().trim().min(20).max(100_000), model: z.string().trim().min(2).max(160), dailyGenerationLimit: z.number().int().min(0).max(100_000) })).mutation(({ input }) => saveAdminAiSettings(input.systemPrompt, input.model, input.dailyGenerationLimit)),

@@ -81,6 +81,13 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    name: "База данни",
+    permissions: [
+      { key: "database.read", label: "Експорт и преглед на database backup" },
+      { key: "database.import", label: "Импорт и заместване на database backup" },
+    ],
+  },
+  {
     name: "Потребители",
     permissions: [
       { key: "users.read", label: "Преглед на потребители" },
@@ -141,6 +148,7 @@ export const ADMIN_SECTION_PERMISSIONS: Record<string, Permission> = {
   "/admin/customers": "customers.read",
   "/admin/legacy-orders": "legacy_orders.read",
   "/admin/activity": "activity.read",
+  "/admin/database": "database.read",
   "/admin/users-roles": "users.read",
 };
 export function canVisitAdminSection(
