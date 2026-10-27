@@ -1,16 +1,15 @@
 import express, { type Express } from "express";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
-  const moduleRoot = path.dirname(fileURLToPath(import.meta.url));
   const defaultMediaCandidates = process.env.NODE_ENV === "production"
     ? [
         path.resolve(process.cwd(), "dist/public/media"),
-        path.resolve(moduleRoot, "../../dist/public/media"),
-        path.resolve(moduleRoot, "../../../dist/public/media"),
+        path.resolve(process.cwd(), "public/media"),
+        path.resolve("/var/task/dist/public/media"),
+        path.resolve("/var/task/public/media"),
       ]
     : [path.resolve(process.cwd(), "client/public/media")];
   const configuredMediaRoot = process.env.LOCAL_MEDIA_ROOT?.trim();
