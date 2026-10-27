@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { getCustomerSessionSigningKey } from "./customerAccounts";
 import {
@@ -55,5 +56,18 @@ describe("Google customer OIDC configuration", () => {
     expect(cookies[0]).toMatchObject({ name: GOOGLE_STATE_COOKIE, options: { httpOnly: true, secure: true, sameSite: "lax", path: "/" } });
     expect(cookies[0]?.value).not.toContain("test-only-client-secret");
     expect(getCustomerSessionSigningKey()).toBeInstanceOf(Uint8Array);
+  });
+
+  it("uses the dedicated customer session secret when it is configured", () => {
+    const legacySecret = "legacy";
+    const customerSecret = "customer";
+    process.env.JWT_SECRET = legacySecret;
+    process.env.JOAN_CUSTOMER_SESSION_SECRET = customerSecret;
+
+    const expected = createHash("sha256")
+      .update(`joan-customer-session:${customerSecret}`)
+      .digest();
+
+    expect(Buffer.from(getCustomerSessionSigningKey())).toEqual(expected);
   });
 });

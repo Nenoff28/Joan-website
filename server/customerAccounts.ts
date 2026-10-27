@@ -192,8 +192,8 @@ function tokenHash(token: string) {
 }
 
 function sessionSecret() {
-  if (!ENV.cookieSecret) throw new Error("Customer session signing is unavailable.");
-  return createHash("sha256").update(`joan-customer-session:${ENV.cookieSecret}`).digest();
+  if (!ENV.customerSessionSecret) throw new Error("Customer session signing is unavailable.");
+  return createHash("sha256").update(`joan-customer-session:${ENV.customerSessionSecret}`).digest();
 }
 
 /** Returns the derived signing key without exposing the configured secret itself. */
