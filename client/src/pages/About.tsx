@@ -54,7 +54,7 @@ export default function About() {
             }
           >
             <source
-              src="/manus-storage/joan-hero_0c2a067a.mp4"
+              src="/media/joan-hero_0c2a067a.mp4"
               type="video/mp4"
             />
           </video>
@@ -128,7 +128,7 @@ export default function About() {
           </div>
           <figure>
             <img
-              src="/manus-storage/joan-original-about_26666781.jpg"
+              src="/media/joan-original-about_26666781.jpg"
               alt={en ? "Joan store interior" : "Интериор от магазин Жоан"}
             />
           </figure>

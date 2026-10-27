@@ -52,7 +52,7 @@ import "./productCardBrandLogo.css";
 
 const lightWordmarkBrands = new Set(["Ceresit", "Cerva", "Elite", "FAYANS", "GRONE", "Legrand", "Makena", "SPIRIT", "Vormann", "York", "Zvezda"]);
 const catalogueLogoRefinementBrands = new Set(["Bertani", "Cerva", "CetaForm", "Dupli-Color", "Effect", "Elite", "Makena", "Moment", "Motip", "Orient", "Payper", "Timmer", "Vents", "Yaparlar", "York", "Генковски", "ЖОАН"]);
-const joanLogoUrl = "/manus-storage/joan-existing-logo_61725b9d.webp";
+const joanLogoUrl = "/media/joan-existing-logo_61725b9d.webp";
 
 const categoryIcons = {
   drill: Drill,
@@ -87,7 +87,7 @@ function usePageTitle(title: string, description: string, canonicalUrl?: string,
     setMeta('meta[name="twitter:title"]', "name", "twitter:title", resolvedTitle);
     setMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
     setMeta('meta[name="twitter:card"]', "name", "twitter:card", ogImage ? "summary_large_image" : "summary");
-    const resolvedImage = ogImage || `${window.location.origin}/manus-storage/joan-existing-logo_61725b9d.webp`;
+    const resolvedImage = ogImage || `${window.location.origin}/media/joan-existing-logo_61725b9d.webp`;
     setMeta('meta[property="og:image"]', "property", "og:image", resolvedImage);
     setMeta('meta[property="og:image:alt"]', "property", "og:image:alt", ogImageAlt || "Лого на строителен хипермаркет ЖОАН");
     setMeta('meta[name="twitter:image"]', "name", "twitter:image", resolvedImage);
@@ -106,7 +106,7 @@ function Wordmark() {
   const { language, t } = useLanguage();
   return (
     <Link href="/" className="brand-mark" aria-label={`ЖОАН — ${t("home")}`}>
-      <img src="/manus-storage/joan-existing-logo_61725b9d.webp" alt={language === "en" ? "Joan building hypermarket logo" : "Лого на Строителен хипермаркет Жоан"} className="brand-real-logo" />
+      <img src="/media/joan-existing-logo_61725b9d.webp" alt={language === "en" ? "Joan building hypermarket logo" : "Лого на Строителен хипермаркет Жоан"} className="brand-real-logo" />
     </Link>
   );
 }
@@ -337,7 +337,7 @@ function Footer() {
           <a className="footer-contact-line" href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={16} /> {store.phones[2]}</a>
           <a className="footer-contact-line" href={`mailto:${store.email}`} style={{ paddingBottom: "0px", paddingTop: "5px" }}><Mail size={16} style={{ paddingBottom: "0px", paddingTop: "5px" }} /> {store.email}</a>
           <a className="footer-contact-line footer-map-link" href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer" style={{ borderColor: "#ffffff", borderStyle: "none" }}><MapPin size={16} style={{ borderColor: "#ffffff", borderStyle: "none" }} /> {language === "en" ? "Silistra, 22 Tutrakan St." : store.address}</a>
-          <div className="footer-social-row" aria-label={language === "en" ? "Social media" : "Социални мрежи"}><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Joan on Facebook" title="Joan on Facebook"><img src="/manus-storage/joan-facebook-alpha-transparent_00d72f60.png" alt="Joan on Facebook" /></a><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on Instagram — profile coming soon" : "Instagram на ЖОАН — профилът предстои"} title={language === "en" ? "Instagram — coming soon" : "Instagram — скоро"}><img src="/manus-storage/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram" /></span><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on TikTok — profile coming soon" : "TikTok на ЖОАН — профилът предстои"} title={language === "en" ? "TikTok — coming soon" : "TikTok — скоро"}><img src="/manus-storage/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok" /></span></div>
+          <div className="footer-social-row" aria-label={language === "en" ? "Social media" : "Социални мрежи"}><a className="footer-facebook" href="https://www.facebook.com/www.joan.bg" target="_blank" rel="noreferrer" aria-label="Joan on Facebook" title="Joan on Facebook"><img src="/media/joan-facebook-alpha-transparent_00d72f60.png" alt="Joan on Facebook" /></a><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on Instagram — profile coming soon" : "Instagram на ЖОАН — профилът предстои"} title={language === "en" ? "Instagram — coming soon" : "Instagram — скоро"}><img src="/media/joan-instagram-alpha-transparent_ad89717c.png" alt="Instagram" /></span><span className="footer-social-placeholder" role="img" aria-label={language === "en" ? "Joan on TikTok — profile coming soon" : "TikTok на ЖОАН — профилът предстои"} title={language === "en" ? "TikTok — coming soon" : "TikTok — скоро"}><img src="/media/joan-tiktok-replacement-transparent_e8932721.png" alt="TikTok" /></span></div>
         </div>
         <nav className="footer-column" aria-labelledby="footer-customers-title">
           <h3 id="footer-customers-title">{language === "en" ? "For customers" : "За клиенти"}</h3>

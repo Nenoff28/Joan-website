@@ -268,7 +268,7 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <img
-                    src="/manus-storage/joan-existing-logo_61725b9d.webp"
+                    src="/media/joan-existing-logo_61725b9d.webp"
                     alt="Жоан"
                     className="admin-sidebar-logo"
                   />
@@ -357,7 +357,7 @@ function DashboardLayoutContent({
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
                 <img
-                  src="/manus-storage/joan-existing-logo_61725b9d.webp"
+                  src="/media/joan-existing-logo_61725b9d.webp"
                   alt="Жоан"
                   className="admin-mobile-logo"
                 />

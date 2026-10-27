@@ -24,14 +24,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 
 const fallbackBrochurePages = [
-  "/manus-storage/page-1_7884f6f6.jpg",
-  "/manus-storage/page-2_9b25fc80.jpg",
-  "/manus-storage/page-3_6c0ba892.jpg",
-  "/manus-storage/page-4_b096aaa9.jpg",
-  "/manus-storage/page-5_a794f27b.jpg",
-  "/manus-storage/page-6_be1779c9.jpg",
-  "/manus-storage/page-7_4cdd94c0.jpg",
-  "/manus-storage/page-8_d10987e1.jpg",
+  "/media/page-1_7884f6f6.jpg",
+  "/media/page-2_9b25fc80.jpg",
+  "/media/page-3_6c0ba892.jpg",
+  "/media/page-4_b096aaa9.jpg",
+  "/media/page-5_a794f27b.jpg",
+  "/media/page-6_be1779c9.jpg",
+  "/media/page-7_4cdd94c0.jpg",
+  "/media/page-8_d10987e1.jpg",
 ];
 
 const homepageCategoryPath = (slug: string, labels: string[] = []) => {
@@ -55,7 +55,7 @@ export default function Home() {
   const promoBanners = [
     {
       id: "ideal-standard-1",
-      image: "/manus-storage/ideal-standard-promo_907d970b.jpg",
+      image: "/media/ideal-standard-promo_907d970b.jpg",
       alt: "Ideal Standard Amazi II Rimless+ конзолна тоалетна чиния на промоция",
       eyebrow: en ? "Bathroom offer · slide 1" : "Оферта за баня · слайд 1",
       title: "Ideal Standard Amazi II Rimless+",
@@ -65,7 +65,7 @@ export default function Home() {
     },
     {
       id: "ideal-standard-2",
-      image: "/manus-storage/ideal-standard-promo_907d970b.jpg",
+      image: "/media/ideal-standard-promo_907d970b.jpg",
       alt: "Ideal Standard Amazi II Rimless+ конзолна тоалетна чиния на промоция",
       eyebrow: en ? "Bathroom offer · slide 2" : "Оферта за баня · слайд 2",
       title: "Ideal Standard Amazi II Rimless+",
@@ -75,7 +75,7 @@ export default function Home() {
     },
     {
       id: "ideal-standard-3",
-      image: "/manus-storage/ideal-standard-promo_907d970b.jpg",
+      image: "/media/ideal-standard-promo_907d970b.jpg",
       alt: "Ideal Standard Amazi II Rimless+ конзолна тоалетна чиния на промоция",
       eyebrow: en ? "Bathroom offer · slide 3" : "Оферта за баня · слайд 3",
       title: "Ideal Standard Amazi II Rimless+",
@@ -85,7 +85,7 @@ export default function Home() {
     },
     {
       id: "ideal-standard-4",
-      image: "/manus-storage/ideal-standard-promo_907d970b.jpg",
+      image: "/media/ideal-standard-promo_907d970b.jpg",
       alt: "Ideal Standard Amazi II Rimless+ конзолна тоалетна чиния на промоция",
       eyebrow: en ? "Bathroom offer · slide 4" : "Оферта за баня · слайд 4",
       title: "Ideal Standard Amazi II Rimless+",
