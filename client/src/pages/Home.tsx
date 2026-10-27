@@ -103,7 +103,7 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [promoBanners.length]);
   const brochurePages = brochureQuery.data?.pageUrls?.length
-    ? brochureQuery.data.pageUrls
+    ? brochureQuery.data.pageUrls.map(publicMediaUrl)
     : fallbackBrochurePages;
   const brochureTitle =
     brochureQuery.data?.title ??
