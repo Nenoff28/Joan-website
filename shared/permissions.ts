@@ -92,6 +92,7 @@ export const PERMISSION_GROUPS = [
     permissions: [
       { key: "users.read", label: "Преглед на потребители" },
       { key: "users.assign_roles", label: "Назначаване и отнемане на роли" },
+      { key: "users.manage_passwords", label: "Задаване на нови пароли" },
     ],
   },
   {
@@ -131,6 +132,7 @@ export function normalizePermissions(input: readonly string[]): Permission[] {
       selected.add("users.read");
       selected.add("roles.read");
     }
+    if (key === "users.manage_passwords") selected.add("users.read");
   }
   return ALL_PERMISSIONS.filter(key => selected.has(key));
 }

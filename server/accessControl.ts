@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import {
   accessRoles,
   adminActivities,
+  customerCredentials,
   customerProfiles,
   users,
   type User,
@@ -13,7 +14,7 @@ import {
   type Permission,
 } from "../shared/permissions";
 import type { TrpcContext } from "./_core/context";
-import { getCustomerIdentityFromRequest } from "./customerAccounts";
+import { getCustomerIdentityFromRequest, hashCustomerPassword } from "./customerAccounts";
 import { getDb } from "./db";
 
 export type StaffAccess = {
@@ -426,5 +427,58 @@ export async function assignAccessRole(
         }),
       });
     return { success: true };
+  });
+}
+
+export async function resetCustomerPassword(
+  actor: StaffAccess,
+  customerId: number,
+  newPassword: string
+) {
+  assertPermission(actor, "users.manage_passwords");
+  const passwordHash = hashCustomerPassword(newPassword);
+  const db = await database();
+
+  return db.transaction(async tx => {
+    const [profile] = await tx
+      .select({ id: customerProfiles.id, email: customerProfiles.email, firstName: customerProfiles.firstName, lastName: customerProfiles.lastName })
+      .from(customerProfiles)
+      .where(eq(customerProfiles.id, customerId))
+      .limit(1)
+      .for("update");
+    if (!profile)
+      throw new TRPCError({ code: "NOT_FOUND", message: "Профилът не е намерен." });
+
+    const [credential] = await tx
+      .select({ id: customerCredentials.id, sessionVersion: customerCredentials.sessionVersion })
+      .from(customerCredentials)
+      .where(eq(customerCredentials.customerId, customerId))
+      .limit(1)
+      .for("update");
+    if (!credential)
+      throw new TRPCError({ code: "NOT_FOUND", message: "За профила няма защитен запис за парола." });
+
+    await tx
+      .update(customerCredentials)
+      .set({
+        passwordHash,
+        passwordSetAt: new Date(),
+        failedLoginCount: 0,
+        lockedUntil: null,
+        sessionVersion: credential.sessionVersion + 1,
+      })
+      .where(eq(customerCredentials.id, credential.id));
+    await tx.insert(adminActivities).values({
+      adminUserId: actor.id,
+      action: "customer.password_reset",
+      entityType: "customer_profile",
+      entityId: customerId,
+      metadataJson: JSON.stringify({
+        email: profile.email,
+        name: `${profile.firstName} ${profile.lastName}`.trim(),
+        actorCustomerId: actor.customerId,
+      }),
+    });
+    return { success: true as const };
   });
 }

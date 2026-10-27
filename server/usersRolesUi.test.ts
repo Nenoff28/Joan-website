@@ -19,6 +19,7 @@ describe("users and roles administration UI contract", () => {
     expect(component).toContain("enabled: canListUsers");
     expect(component).toContain("enabled: canListRoles");
     expect(component).toContain("trpc.access.assignRole.useMutation()");
+    expect(component).toContain("trpc.access.resetPassword.useMutation()");
     expect(component).toContain("trpc.access.saveRole.useMutation()");
     expect(component).toContain("trpc.access.deleteRole.useMutation()");
   });
@@ -32,6 +33,7 @@ describe("users and roles administration UI contract", () => {
     expect(component).toContain("assignRole.mutate(");
     expect(component).toContain("saveRole.mutate(");
     expect(component).toContain("deleteRole.mutate(");
+    expect(component).toContain("resetPassword.mutate(");
     expect(component).not.toContain("window.confirm");
     expect(component).not.toContain("confirm(");
   });
@@ -48,7 +50,8 @@ describe("users and roles administration UI contract", () => {
 
   it("does not expose credential values or invent fallback profile data", () => {
     expect(component).not.toMatch(/passwordHash|passwordSalt|clientSecret|sessionVersion/);
-    expect(component).not.toMatch(/password|парол/i);
+    expect(component).toContain("Нова парола");
+    expect(component).toContain("Текущата парола не може да бъде видяна");
     expect(component).not.toContain("dummy");
     expect(component).not.toContain("mockUsers");
     expect(component).not.toContain("fallback");

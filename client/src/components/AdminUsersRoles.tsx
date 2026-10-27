@@ -40,6 +40,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
+  KeyRound,
   Loader2,
   Plus,
   Save,
@@ -178,17 +179,23 @@ function UserAccessTable({
   roles,
   draftRoles,
   canAssign,
+  canResetPassword,
   isSaving,
   onRoleDraftChange,
   onSaveRole,
+  onResetPassword,
+  resettingUserId,
 }: {
   users: UserRecord[];
   roles: RoleRecord[];
   draftRoles: Partial<Record<number, number>>;
   canAssign: boolean;
+  canResetPassword: boolean;
   isSaving: boolean;
   onRoleDraftChange: (customerId: number, value: string) => void;
   onSaveRole: (user: UserRecord) => void;
+  onResetPassword: (user: UserRecord) => void;
+  resettingUserId: number | null;
 }) {
   return (
     <Table className="aur-users-table">
@@ -266,30 +273,49 @@ function UserAccessTable({
                 </div>
               </TableCell>
               <TableCell className="aur-table-action-cell">
-                {canAssign ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={
-                      isSaving || unchanged || typeof selectedRole !== "number"
-                    }
-                    onClick={() => onSaveRole(user)}
-                  >
-                    {isSaving ? (
-                      <Loader2
-                        size={14}
-                        className="animate-spin"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Save size={14} aria-hidden="true" />
-                    )}
-                    Запази
-                  </Button>
-                ) : (
-                  <span className="aur-read-only-label">Само преглед</span>
-                )}
+                <div className="aur-user-actions">
+                  {canAssign && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={
+                        isSaving || unchanged || typeof selectedRole !== "number"
+                      }
+                      onClick={() => onSaveRole(user)}
+                    >
+                      {isSaving ? (
+                        <Loader2
+                          size={14}
+                          className="animate-spin"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Save size={14} aria-hidden="true" />
+                      )}
+                      Запази
+                    </Button>
+                  )}
+                  {canResetPassword && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={resettingUserId === user.id}
+                      onClick={() => onResetPassword(user)}
+                    >
+                      {resettingUserId === user.id ? (
+                        <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                      ) : (
+                        <KeyRound size={14} aria-hidden="true" />
+                      )}
+                      Нова парола
+                    </Button>
+                  )}
+                  {!canAssign && !canResetPassword && (
+                    <span className="aur-read-only-label">Само преглед</span>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           );
@@ -314,6 +340,10 @@ export default function AdminUsersRoles() {
   const [roleDraft, setRoleDraft] = useState<RoleDraft | null>(null);
   const [roleError, setRoleError] = useState<string | null>(null);
   const [roleToDelete, setRoleToDelete] = useState<RoleRecord | null>(null);
+  const [passwordUser, setPasswordUser] = useState<UserRecord | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const staffQuery = trpc.staff.me.useQuery();
   const staff = staffQuery.data;
@@ -322,6 +352,8 @@ export default function AdminUsersRoles() {
   const canListUsers = canAccess && hasPermission(permissions, "users.read");
   const canAssignRoles =
     canAccess && hasPermission(permissions, "users.assign_roles");
+  const canManagePasswords =
+    canAccess && hasPermission(permissions, "users.manage_passwords");
   const canListRoles = canAccess && hasPermission(permissions, "roles.read");
   const canWriteRoles = canAccess && hasPermission(permissions, "roles.write");
 
@@ -356,6 +388,7 @@ export default function AdminUsersRoles() {
   }
 
   const assignRole = trpc.access.assignRole.useMutation();
+  const resetPassword = trpc.access.resetPassword.useMutation();
   const saveRole = trpc.access.saveRole.useMutation();
   const deleteRole = trpc.access.deleteRole.useMutation();
 
@@ -406,6 +439,47 @@ export default function AdminUsersRoles() {
       return;
     }
     commitAssignment({ customerId: user.id, roleId, userName });
+  }
+
+  function openPasswordEditor(user: UserRecord) {
+    setPasswordError(null);
+    setNewPassword("");
+    setPasswordConfirmation("");
+    setPasswordUser(user);
+  }
+
+  function closePasswordEditor() {
+    if (resetPassword.isPending) return;
+    setPasswordUser(null);
+    setPasswordError(null);
+    setNewPassword("");
+    setPasswordConfirmation("");
+  }
+
+  function saveNewPassword() {
+    if (!passwordUser || !canManagePasswords) return;
+    if (newPassword.length < 12) {
+      setPasswordError("Новата парола трябва да е поне 12 символа.");
+      return;
+    }
+    if (newPassword !== passwordConfirmation) {
+      setPasswordError("Двете въведени пароли не съвпадат.");
+      return;
+    }
+    setPasswordError(null);
+    resetPassword.mutate(
+      { customerId: passwordUser.id, newPassword },
+      {
+        onSuccess: () => {
+          toast.success("Новата парола е зададена. Старите сесии са прекратени.");
+          closePasswordEditor();
+        },
+        onError: error => {
+          setPasswordError(error.message);
+          toast.error(error.message || "Паролата не можа да бъде променена.");
+        },
+      }
+    );
   }
 
   function startNewRole() {
@@ -522,7 +596,8 @@ export default function AdminUsersRoles() {
         <ShieldCheck size={17} aria-hidden="true" />
         <span>
           <strong>Ролите се проверяват на сървъра.</strong> Промяната важи от
-          следващата заявка.
+          следващата заявка. Текущите пароли не се показват; при нужда задайте
+          нова парола.
         </span>
       </div>
 
@@ -604,9 +679,12 @@ export default function AdminUsersRoles() {
                         roles={roles}
                         draftRoles={draftRoles}
                         canAssign={canAssignRoles}
+                        canResetPassword={canManagePasswords}
                         isSaving={assignRole.isPending}
                         onRoleDraftChange={setUserRoleDraft}
                         onSaveRole={requestAssignment}
+                        onResetPassword={openPasswordEditor}
+                        resettingUserId={resetPassword.isPending ? passwordUser?.id ?? null : null}
                       />
                     )}
                   {assignmentError && <ErrorMessage text={assignmentError} />}
@@ -913,6 +991,51 @@ export default function AdminUsersRoles() {
           </Card>
         </div>
       )}
+
+      <AlertDialog
+        open={passwordUser !== null}
+        onOpenChange={open => {
+          if (!open) closePasswordEditor();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Задаване на нова парола</AlertDialogTitle>
+            <AlertDialogDescription>
+              Текущата парола не може да бъде видяна, защото се пази само като
+              защитен hash. Задайте нова парола за {passwordUser ? displayUserName(passwordUser) : "потребителя"}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="aur-password-form">
+            <label>
+              Нова парола
+              <Input
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                placeholder="Минимум 12 символа"
+                onChange={event => setNewPassword(event.target.value)}
+              />
+            </label>
+            <label>
+              Повторете новата парола
+              <Input
+                type="password"
+                autoComplete="new-password"
+                value={passwordConfirmation}
+                onChange={event => setPasswordConfirmation(event.target.value)}
+              />
+            </label>
+            {passwordError && <ErrorMessage text={passwordError} />}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetPassword.isPending}>Отказ</AlertDialogCancel>
+            <AlertDialogAction disabled={resetPassword.isPending} onClick={saveNewPassword}>
+              {resetPassword.isPending ? "Записване…" : "Задай новата парола"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={pendingGrant !== null}

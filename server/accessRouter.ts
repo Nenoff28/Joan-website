@@ -8,6 +8,7 @@ import {
   listAccessRoles,
   listAccessUsers,
   publicStaffAccess,
+  resetCustomerPassword,
   saveAccessRole,
 } from "./accessControl";
 import { permissionProcedure } from "./permissionProcedures";
@@ -63,5 +64,15 @@ export const accessRouter = router({
     )
     .mutation(({ input, ctx }) =>
       assignAccessRole(ctx.staff, input.customerId, input.roleId)
+    ),
+  resetPassword: permissionProcedure("users.manage_passwords")
+    .input(
+      z.object({
+        customerId: z.number().int().positive(),
+        newPassword: z.string().min(12).max(256),
+      })
+    )
+    .mutation(({ input, ctx }) =>
+      resetCustomerPassword(ctx.staff, input.customerId, input.newPassword)
     ),
 });

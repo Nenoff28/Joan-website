@@ -308,6 +308,28 @@
   border-color: var(--aur-line);
   font-size: 0.7rem;
 }
+.aur-user-actions {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+.aur-password-form {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.4rem 0;
+}
+.aur-password-form label {
+  color: var(--aur-ink);
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 0.35rem;
+}
+.aur-password-form .aur-feedback {
+  margin: 0;
+}
 .aur-read-only-label {
   color: var(--aur-muted);
   font-size: 0.66rem;

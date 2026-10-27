@@ -255,6 +255,7 @@ describe("shared permission semantics", () => {
     expect(normalizePermissions(["orders.write"])).toEqual(["orders.read", "orders.write"]);
     expect(normalizePermissions(["customers.import"])).toEqual(["customers.read", "customers.import"]);
     expect(hasPermission(normalizePermissions(["roles.write"]), "roles.read")).toBe(true);
+    expect(normalizePermissions(["users.manage_passwords"])).toEqual(["users.read", "users.manage_passwords"]);
   });
 
   it("rejects unrecognized permissions instead of silently widening a role", () => {
