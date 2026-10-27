@@ -397,7 +397,7 @@ export function ProductCard({ product, compact = false }: { product: StorefrontP
         <Link href={`/product/${product.slug}`}><img src={publicMediaUrl(product.image)} alt={product.imageAlt || product.name} loading="lazy" decoding="async" /></Link>
       </div>
       <div className="product-card-body">
-        <p className={`product-brand product-card-brand${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{brandLogo && !failedBrandLogo ? <img className="product-card-brand-logo" src={brandLogo} alt="" onError={() => setFailedBrandLogo(true)} /> : <span>{productBrand}</span>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></p>
+        <p className={`product-brand product-card-brand${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{brandLogo && !failedBrandLogo ? <img className="product-card-brand-logo" src={publicMediaUrl(brandLogo)} alt="" onError={() => setFailedBrandLogo(true)} /> : <span>{productBrand}</span>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></p>
         <Link href={`/product/${product.slug}`} className="product-title">{product.name}</Link>
         {!compact && <p className="product-features">{product.features.slice(0, 2).join(" · ")}</p>}
         <div className="product-buy-row">
