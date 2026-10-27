@@ -1,16 +1,35 @@
 import express, { type Express } from "express";
+import fs from "node:fs";
 import path from "node:path";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
-  const localMediaRoot = process.env.LOCAL_MEDIA_ROOT?.trim();
+  const defaultMediaRoot = process.env.NODE_ENV === "production"
+    ? path.resolve(process.cwd(), "dist/public/media")
+    : path.resolve(process.cwd(), "client/public/media");
+  const configuredMediaRoot = process.env.LOCAL_MEDIA_ROOT?.trim();
+  const localMediaRoot = configuredMediaRoot || (fs.existsSync(defaultMediaRoot) ? defaultMediaRoot : "");
   if (localMediaRoot) {
     const resolvedRoot = path.resolve(localMediaRoot);
     app.use("/manus-storage", express.static(resolvedRoot, {
-      fallthrough: false,
+      fallthrough: true,
       immutable: true,
       maxAge: "7d",
     }));
+    app.get("/manus-storage/*", (req, res) => {
+      const key = (req.params as Record<string, string>)[0];
+      const webpKey = key?.replace(/\.(?:jpe?g|png|mpo)$/i, ".webp");
+      if (!key || !webpKey || webpKey === key) {
+        res.status(404).send("Local media file not found");
+        return;
+      }
+      const candidate = path.resolve(resolvedRoot, webpKey);
+      if (!candidate.startsWith(`${resolvedRoot}${path.sep}`) || !fs.existsSync(candidate)) {
+        res.status(404).send("Local media file not found");
+        return;
+      }
+      res.sendFile(candidate);
+    });
     console.log(`[StorageProxy] Serving local media from ${resolvedRoot}`);
     return;
   }
