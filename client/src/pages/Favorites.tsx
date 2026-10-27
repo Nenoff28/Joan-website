@@ -1,3 +1,4 @@
+import { publicMediaUrl } from "@/lib/media";
 /** DESIGN REMINDER — Red Workshop Modernism: Favorites remain a practical saved-materials ledger, not a lifestyle wishlist. */
 import { Breadcrumbs, Layout, PageMeta } from "@/components/Storefront";
 import { useFavorites } from "@/contexts/FavoritesContext";
@@ -109,7 +110,7 @@ export default function Favorites() {
                     href={`/product/${product.slug}`}
                     className="favorite-product-media"
                   >
-                    <img src={product.image} alt={product.imageAlt} />
+                    <img src={publicMediaUrl(product.image)} alt={product.imageAlt} />
                   </Link>
                   <div className="favorite-product-copy">
                     <p className="product-brand">{product.brand || "ЖОАН"}</p>

@@ -1,3 +1,4 @@
+import { publicMediaUrl } from "@/lib/media";
 /** Catalogue workbench: supports focused category browsing and the dedicated complete product listing. */
 import { Breadcrumbs, CategoryIcon, JsonLd, Layout, PageMeta, ProductCard } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -139,7 +140,7 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
           ) : (
             <>
               <section className="category-hero">
-                <img src={category.image} alt={`${category.label} — ${category.description}`} /><div className="category-hero-overlay" />
+                <img src={publicMediaUrl(category.image)} alt={`${category.label} — ${category.description}`} /><div className="category-hero-overlay" />
                 <div className="category-hero-content">
                   <p className="eyebrow">{en ? "Joan catalogue" : "Каталог Жоан"}</p><h1>{category.label}</h1><p>{category.description}</p>
                   {selectedPathLabel && <div className="category-hero-path"><span>{selectedPath.join(" / ")}</span><button type="button" onClick={() => selectSubcategory([])}>{en ? "All in" : "Всички в"} {category.label}</button></div>}

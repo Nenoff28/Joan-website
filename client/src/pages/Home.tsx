@@ -1,3 +1,4 @@
+import { publicMediaUrl } from "@/lib/media";
 import {
   CategoryIcon,
   JsonLd,
@@ -311,7 +312,7 @@ export default function Home() {
               aria-label={promoBanners[activePromoBanner].alt}
             >
               <img
-                src={promoBanners[activePromoBanner].image}
+                src={publicMediaUrl(promoBanners[activePromoBanner].image)}
                 alt={promoBanners[activePromoBanner].alt}
               />
             </Link>
@@ -642,7 +643,7 @@ export default function Home() {
                 className="feature-category-card"
               >
                 <img
-                  src={category.image}
+                  src={publicMediaUrl(category.image)}
                   alt={`${category.label} — ${category.description}`}
                   loading="lazy"
                 />

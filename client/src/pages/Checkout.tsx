@@ -1,3 +1,4 @@
+import { publicMediaUrl } from "@/lib/media";
 /** DESIGN REMINDER — Red Workshop Modernism: the demo checkout behaves like a clear work order—precise fields, visible validation, zero payment ambiguity. */
 import { Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -904,7 +905,7 @@ export default function Checkout() {
                           key={row.product.slug}
                         >
                           <img
-                            src={row.product.image}
+                            src={publicMediaUrl(row.product.image)}
                             alt={row.product.imageAlt}
                           />
                           <div>
