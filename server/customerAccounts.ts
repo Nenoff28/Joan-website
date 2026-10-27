@@ -355,6 +355,9 @@ function isDuplicateDatabaseError(error: unknown) {
 /** Creates a first-party customer profile; role fields are intentionally not accepted from clients. */
 export async function registerCustomerAccount(input: CustomerRegistrationInput, response: { cookie: (name: string, value: string, options: Record<string, unknown>) => void }) {
   const values = validateCustomerRegistrationInput(input);
+  // Fail before any database write if the production session signer is missing.
+  // This prevents orphaned profiles when a deployment has incomplete secrets.
+  getCustomerSessionSigningKey();
   const db = await requiredDb();
   try {
     const [existing] = await db.select({ id: customerProfiles.id }).from(customerProfiles).where(eq(customerProfiles.email, values.email)).limit(1);
