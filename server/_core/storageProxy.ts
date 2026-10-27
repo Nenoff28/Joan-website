@@ -1,14 +1,20 @@
 import express, { type Express } from "express";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
-  const defaultMediaRoot = process.env.NODE_ENV === "production"
-    ? path.resolve(process.cwd(), "dist/public/media")
-    : path.resolve(process.cwd(), "client/public/media");
+  const moduleRoot = path.dirname(fileURLToPath(import.meta.url));
+  const defaultMediaCandidates = process.env.NODE_ENV === "production"
+    ? [
+        path.resolve(process.cwd(), "dist/public/media"),
+        path.resolve(moduleRoot, "../../dist/public/media"),
+        path.resolve(moduleRoot, "../../../dist/public/media"),
+      ]
+    : [path.resolve(process.cwd(), "client/public/media")];
   const configuredMediaRoot = process.env.LOCAL_MEDIA_ROOT?.trim();
-  const localMediaRoot = configuredMediaRoot || (fs.existsSync(defaultMediaRoot) ? defaultMediaRoot : "");
+  const localMediaRoot = configuredMediaRoot || defaultMediaCandidates.find((candidate) => fs.existsSync(candidate)) || "";
   if (localMediaRoot) {
     const resolvedRoot = path.resolve(localMediaRoot);
     app.use("/manus-storage", express.static(resolvedRoot, {
