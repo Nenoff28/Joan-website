@@ -7,7 +7,7 @@ const styles = readFileSync(resolve(process.cwd(), "client/src/components/produc
 
 describe("catalogue logo refinements", () => {
   it("uses the official Joan logo when a product has the storefront Joan fallback brand", () => {
-    expect(storefront).toContain('const joanLogoUrl = "/manus-storage/joan-existing-logo_61725b9d.webp"');
+    expect(storefront).toContain('const joanLogoUrl = "/media/joan-existing-logo_61725b9d.webp"');
     expect(storefront).toContain('product.brandLogo ?? (productBrand === "ЖОАН" ? joanLogoUrl : undefined)');
   });
 
