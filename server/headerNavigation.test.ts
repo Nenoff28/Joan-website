@@ -49,12 +49,10 @@ describe("streamlined storefront header navigation", () => {
   });
 
   it("does not reset a manually selected mega-menu tab during catalogue refreshes", () => {
-    expect(headerSource).toContain("const lastRouteCategorySync = useRef<string | null>(null);");
-    expect(headerSource).toContain("const manualMegaCategorySelection = useRef(false);");
-    expect(headerSource).toContain("if (manualMegaCategorySelection.current) return;");
-    expect(headerSource).toContain("if (lastRouteCategorySync.current === location) return;");
-    expect(headerSource).toContain("lastRouteCategorySync.current = location;");
-    expect(headerSource).toContain("manualMegaCategorySelection.current = true;");
+    expect(headerSource).not.toContain("lastRouteCategorySync");
+    expect(headerSource).not.toContain("manualMegaCategorySelection");
+    expect(headerSource).toContain("if (!open && routeCategorySlug) setActiveMegaCategory(routeCategorySlug);");
+    expect(headerSource).toContain("onClick={() => setActiveMegaCategory(category.slug)}");
   });
 
   it("exposes ЧЗВ through neutral desktop and mobile navigation without a promotion shortcut", () => {
