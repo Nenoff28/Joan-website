@@ -51,6 +51,7 @@ describe("streamlined storefront header navigation", () => {
   it("does not reset a manually selected mega-menu tab during catalogue refreshes", () => {
     expect(headerSource).not.toContain("lastRouteCategorySync");
     expect(headerSource).not.toContain("manualMegaCategorySelection");
+    expect(headerSource).not.toContain('className="mega-menu" onMouseLeave');
     expect(headerSource).toContain("if (!open && routeCategorySlug) setActiveMegaCategory(routeCategorySlug);");
     expect(headerSource).toContain("onClick={() => setActiveMegaCategory(category.slug)}");
   });

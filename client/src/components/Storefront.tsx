@@ -256,7 +256,7 @@ function Header() {
       </div>
 
       {megaOpen && (
-        <div id="catalogue-mega-menu" className="mega-menu" onMouseLeave={() => setMegaOpen(false)}>
+        <div id="catalogue-mega-menu" className="mega-menu">
           <div className="page-frame mega-grid">
             <aside className="mega-intro">
               <span className="signal-line" />
