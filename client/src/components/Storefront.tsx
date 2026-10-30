@@ -267,7 +267,7 @@ function Header() {
             </aside>
             <div className="mega-catalogue-workspace"><div className="mega-category-tabs" role="tablist" aria-label={t("categories")}>{categories.map((category) => {
               const Icon = categoryIcons[category.icon]; const isActive = category.slug === activeMegaCategory;
-              return <button key={category.slug} type="button" role="tab" aria-selected={isActive} aria-controls="active-mega-category" className={isActive ? "is-active" : ""} onClick={() => setActiveMegaCategory(category.slug)}><Icon size={15} /><span>{category.label}</span></button>;
+              return <Link key={category.slug} href={`/category/${category.slug}`} role="tab" aria-selected={isActive} aria-controls="active-mega-category" className={isActive ? "is-active" : ""} onClick={() => setMegaOpen(false)}><Icon size={15} /><span>{category.label}</span></Link>;
             })}</div><div id="active-mega-category" role="tabpanel" className="mega-categories">{(() => { const category = categories.find((item) => item.slug === activeMegaCategory) ?? categories[0]; return category ? <MegaCategoryTree category={category} activePath={activeCategoryPath(location, category.slug)} onNavigate={() => setMegaOpen(false)} /> : null; })()}</div></div>
           </div>
         </div>

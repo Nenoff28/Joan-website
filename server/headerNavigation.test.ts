@@ -53,7 +53,8 @@ describe("streamlined storefront header navigation", () => {
     expect(headerSource).not.toContain("manualMegaCategorySelection");
     expect(headerSource).not.toContain('className="mega-menu" onMouseLeave');
     expect(headerSource).toContain("if (!open && routeCategorySlug) setActiveMegaCategory(routeCategorySlug);");
-    expect(headerSource).toContain("onClick={() => setActiveMegaCategory(category.slug)}");
+    expect(headerSource).toContain('href={`/category/${category.slug}`}');
+    expect(headerSource).toContain('onClick={() => setMegaOpen(false)}');
   });
 
   it("exposes ЧЗВ through neutral desktop and mobile navigation without a promotion shortcut", () => {
