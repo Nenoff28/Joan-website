@@ -162,6 +162,7 @@ function Header() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const lastRouteCategorySync = useRef<string | null>(null);
+  const manualMegaCategorySelection = useRef(false);
   const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity, normalizeSlugs } = useCart();
   const { products: cartProducts } = useCatalogueProducts(cartItems.map((item) => item.slug));
   useEffect(() => normalizeSlugs(cartProducts.flatMap((product) => product.legacyPublicSlug ? [{ from: product.legacyPublicSlug, to: product.slug }] : [])), [cartProducts, normalizeSlugs]);
@@ -181,8 +182,10 @@ function Header() {
   useEffect(() => {
     // Sync once per route. Data refreshes must not overwrite a tab selected by
     // the user while the catalogue menu remains open.
+    if (manualMegaCategorySelection.current) return;
     if (lastRouteCategorySync.current === location) return;
     lastRouteCategorySync.current = location;
+    manualMegaCategorySelection.current = false;
     if (routeCategorySlug) setActiveMegaCategory(routeCategorySlug);
   }, [location, routeCategorySlug]);
   const searchMatches = query.trim() ? searchResults.products : [];
@@ -275,7 +278,7 @@ function Header() {
             </aside>
             <div className="mega-catalogue-workspace"><div className="mega-category-tabs" role="tablist" aria-label={t("categories")}>{categories.map((category) => {
               const Icon = categoryIcons[category.icon]; const isActive = category.slug === activeMegaCategory;
-              return <button key={category.slug} type="button" role="tab" aria-selected={isActive} aria-controls="active-mega-category" className={isActive ? "is-active" : ""} onClick={() => setActiveMegaCategory(category.slug)}><Icon size={15} /><span>{category.label}</span></button>;
+              return <button key={category.slug} type="button" role="tab" aria-selected={isActive} aria-controls="active-mega-category" className={isActive ? "is-active" : ""} onClick={() => { manualMegaCategorySelection.current = true; setActiveMegaCategory(category.slug); }}><Icon size={15} /><span>{category.label}</span></button>;
             })}</div><div id="active-mega-category" role="tabpanel" className="mega-categories">{(() => { const category = categories.find((item) => item.slug === activeMegaCategory) ?? categories[0]; return category ? <MegaCategoryTree category={category} activePath={activeCategoryPath(location, category.slug)} onNavigate={() => setMegaOpen(false)} /> : null; })()}</div></div>
           </div>
         </div>
