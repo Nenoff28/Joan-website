@@ -48,6 +48,12 @@ describe("streamlined storefront header navigation", () => {
     expect(headerSource).toContain("aria-current={childActive ? \"page\" : undefined}");
   });
 
+  it("does not reset a manually selected mega-menu tab during catalogue refreshes", () => {
+    expect(headerSource).toContain("const lastRouteCategorySync = useRef<string | null>(null);");
+    expect(headerSource).toContain("if (lastRouteCategorySync.current === location) return;");
+    expect(headerSource).toContain("lastRouteCategorySync.current = location;");
+  });
+
   it("exposes ЧЗВ through neutral desktop and mobile navigation without a promotion shortcut", () => {
     expect(headerSource).toContain('aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>');
     expect(headerSource).not.toContain('className="faq-nav-link"');

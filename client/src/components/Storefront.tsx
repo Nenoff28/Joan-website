@@ -46,7 +46,7 @@ import {
   Waves,
   X,
 } from "lucide-react";
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import "./productCardBrandLogo.css";
 
@@ -161,6 +161,7 @@ function Header() {
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const lastRouteCategorySync = useRef<string | null>(null);
   const { items: cartItems, count: cartCount, addItem, removeItem, setQuantity, normalizeSlugs } = useCart();
   const { products: cartProducts } = useCatalogueProducts(cartItems.map((item) => item.slug));
   useEffect(() => normalizeSlugs(cartProducts.flatMap((product) => product.legacyPublicSlug ? [{ from: product.legacyPublicSlug, to: product.slug }] : [])), [cartProducts, normalizeSlugs]);
@@ -173,10 +174,17 @@ function Header() {
   const cartTotal = cartRows.reduce((total, row) => total + (Number(row.product.price?.replace("€", "")) || 0) * row.quantity, 0);
   const cartCopy = language === "bg" ? { heading: "Вашата количка", empty: "Количката е празна.", browse: "Разгледайте продуктите", remove: "Премахни", review: "Преглед на цялата количка", count: "артикула", total: "Общо" } : { heading: "Your cart", empty: "Your cart is empty.", browse: "Browse products", remove: "Remove", review: "Review full cart", count: "items", total: "Total" };
 
+  const routeCategorySlug = useMemo(
+    () => categories.find((category) => activeCategoryPath(location, category.slug))?.slug ?? null,
+    [categories, location],
+  );
   useEffect(() => {
-    const categoryForRoute = categories.find((category) => activeCategoryPath(location, category.slug));
-    if (categoryForRoute) setActiveMegaCategory(categoryForRoute.slug);
-  }, [categories, location]);
+    // Sync once per route. Data refreshes must not overwrite a tab selected by
+    // the user while the catalogue menu remains open.
+    if (lastRouteCategorySync.current === location) return;
+    lastRouteCategorySync.current = location;
+    if (routeCategorySlug) setActiveMegaCategory(routeCategorySlug);
+  }, [location, routeCategorySlug]);
   const searchMatches = query.trim() ? searchResults.products : [];
 
   function submitSearch(event: FormEvent) {
