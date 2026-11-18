@@ -1,6 +1,9 @@
 import { publicMediaUrl } from "@/lib/media";
 import { displayPrice } from "@/lib/price";
 import { store } from "@/lib/storeData";
+import { courierOfficeAddress } from "@/lib/courierAddress";
+import { CourierOfficePicker } from "@/components/CourierOfficePicker";
+import type { CourierOffice } from "../../../server/couriers/types";
 /** DESIGN REMINDER — Red Workshop Modernism: the demo checkout behaves like a clear work order—precise fields, visible validation, zero payment ambiguity. */
 import { Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -151,7 +154,9 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [pickup, setPickup] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState<"address" | "office" | "pickup">("address");
+  const pickup = deliveryMethod === "pickup";
+  const [courierChoice, setCourierChoice] = useState<{ office: CourierOffice; priceEur: number | null } | null>(null);
   const [regionQuery, setRegionQuery] = useState("");
   const [cityQuery, setCityQuery] = useState("");
   const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
@@ -400,7 +405,9 @@ export default function Checkout() {
     if (!/^\S+@\S+\.\S+$/.test(values.email)) next.email = t("validationEmail");
     if ((values.phone.match(/\d/g) || []).length < 7)
       next.phone = t("validationPhone");
-    if (!pickup) {
+    if (deliveryMethod === "office" && !courierChoice)
+      next.address = language === "bg" ? "Изберете офис на куриер." : "Choose a courier office.";
+    if (deliveryMethod === "address") {
       if (values.address.trim().length < 6) next.address = t("validationAddress");
       if (!values.region)
         next.region = language === "bg" ? "Изберете област." : "Select a region.";
@@ -449,7 +456,9 @@ export default function Checkout() {
         // No delivery-method column: a pickup request records the store itself as the address, which the team reads in the order.
         ...(pickup
           ? { address: `Вземане от магазина — ${store.address}`, region: "Силистра", city: "Силистра", postcode: "7500" }
-          : { address: values.address.trim(), region: values.region.trim(), city: values.city.trim(), postcode: values.postcode.trim() }),
+          : deliveryMethod === "office" && courierChoice
+          ? courierOfficeAddress(courierChoice.office, courierChoice.priceEur)
+          :{ address: values.address.trim(), region: values.region.trim(), city: values.city.trim(), postcode: values.postcode.trim() }),
         invoiceRequested: values.invoiceRequested,
         invoiceCompanyName: values.invoiceRequested ? values.invoiceCompanyName.trim() : null,
         invoiceEik: values.invoiceRequested ? values.invoiceEik.trim() : null,
@@ -593,17 +602,25 @@ export default function Checkout() {
                     <legend>{language === "bg" ? "Как да получите поръчката" : "How you receive the order"}</legend>
                     <div className="invoice-choice-group" role="radiogroup" aria-label={language === "bg" ? "Начин на получаване" : "Delivery method"}>
                       <label className="invoice-choice">
-                        <input type="radio" name="deliveryMethod" checked={!pickup} onChange={() => setPickup(false)} />
+                        <input type="radio" name="deliveryMethod" checked={deliveryMethod === "address"} onChange={() => setDeliveryMethod("address")} />
                         <span>{language === "bg" ? "Експресна доставка до адрес" : "Express delivery to an address"}</span>
                       </label>
                       <label className="invoice-choice">
-                        <input type="radio" name="deliveryMethod" checked={pickup} onChange={() => { setPickup(true); setErrors(current => ({ ...current, address: undefined, region: undefined, city: undefined, postcode: undefined })); }} />
+                        <input type="radio" name="deliveryMethod" checked={deliveryMethod === "office"} onChange={() => { setDeliveryMethod("office"); setErrors(current => ({ ...current, address: undefined, region: undefined, city: undefined, postcode: undefined })); }} />
+                        <span>{language === "bg" ? "До офис на Спиди или Еконт" : "To a Speedy or Econt office"}</span>
+                      </label>
+                      <label className="invoice-choice">
+                        <input type="radio" name="deliveryMethod" checked={pickup} onChange={() => { setDeliveryMethod("pickup"); setErrors(current => ({ ...current, address: undefined, region: undefined, city: undefined, postcode: undefined })); }} />
                         <span>{language === "bg" ? "Вземане от магазина в Силистра" : "Pick up at the Silistra store"}</span>
                       </label>
                     </div>
                     {pickup && <p className="pickup-note">{language === "bg" ? `Магазин ЖОАН, ${store.address}. Ще Ви се обадим, за да потвърдим кога поръчката е готова за вземане.` : `JOAN store, ${store.address}. We will call you to confirm when the order is ready for pickup.`}</p>}
+                    {deliveryMethod === "office" && <>
+                      <CourierOfficePicker selected={courierChoice?.office ?? null} onChange={(office, priceEur) => { setCourierChoice({ office, priceEur }); setErrors(current => ({ ...current, address: undefined })); }} />
+                      {errors.address && <small className="field-error">{errors.address}</small>}
+                    </>}
                   </fieldset>
-                  {!pickup && <fieldset>
+                  {deliveryMethod === "address" && <fieldset>
                     <legend>
                       <PackageCheck size={18} /> {t("deliveryAddress")}
                     </legend>
@@ -998,7 +1015,7 @@ export default function Checkout() {
                   <h2>{language === "bg" ? "Какво следва" : "What happens next"}</h2>
                   <ol>
                     <li>{language === "bg" ? "Оператор на Жоан се свързва с Вас, за да потвърди наличност, цена и доставка." : "A Joan operator contacts you to confirm availability, price and delivery."}</li>
-                    {pickup ? <li>{language === "bg" ? `Вземате поръчката от магазина: ${store.address}.` : `You collect the order at the store: ${store.address}.`}</li> : <>
+                    {pickup ? <li>{language === "bg" ? `Вземате поръчката от магазина: ${store.address}.` : `You collect the order at the store: ${store.address}.`}</li> : deliveryMethod === "office" ? <li>{language === "bg" ? "Пратката се изпраща до избрания офис; ориентировъчната цена е за 2 кг и се потвърждава от оператор." : "The parcel goes to the chosen office; the estimated price is for 2 kg and confirmed by an operator."}</li> : <>
                       <li>{language === "bg" ? "Доставката е експресна и е за сметка на клиента." : "Delivery is express and paid by the customer."}</li>
                       <li>{language === "bg" ? "Поръчка до 16:00 в работен ден се изпраща същия ден и пристига на следващия." : "Orders placed by 16:00 on a working day ship the same day and arrive the next day."}</li>
                     </>}
