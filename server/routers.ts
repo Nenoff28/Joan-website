@@ -70,6 +70,7 @@ import {
 } from "./customerAccounts";
 import { importLegacyOrders, previewLegacyOrders } from "./legacyOrders";
 import { exportDatabase, importDatabase, previewDatabaseImport } from "./databaseTransfer";
+import { shippingService } from "./couriers/shippingService";
 
 const availabilitySchema = z.enum(["in_stock", "on_request", "out_of_stock"]);
 const orderStatusSchema = z.enum(["new", "contacted", "confirmed", "closed", "cancelled"]);
@@ -99,6 +100,12 @@ const publicCataloguePageSchema = z.object({
 });
 export const appRouter = router({
   system: systemRouter,
+  shipping: router({
+    offices: publicProcedure.query(() => shippingService().offices()),
+    quote: publicProcedure
+      .input(z.object({ courier: z.enum(["econt", "speedy"]), officeCode: z.string().trim().min(1).max(32) }))
+      .query(({ input, ctx }) => shippingService().quote(input.courier, input.officeCode, String(ctx.req.ip ?? ctx.req.socket?.remoteAddress ?? "unknown"))),
+  }),
   staff: staffRouter,
   access: accessRouter,
   auth: router({
