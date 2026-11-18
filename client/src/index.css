@@ -1485,3 +1485,6 @@ article.product-card .availability-on_request { color: #8a5410; }
 .quick-order-results .quick-order-status { color: var(--red); font-weight: 700; }
 /* The phone utility rail is too narrow for the quick-order link; it stays in the mobile menu. */
 @media (max-width: 760px) { .utility-actions a[href="/quick-order"] { display: none; } }
+
+/* Checkout: delivery or pickup at the Silistra store */
+.delivery-method-fieldset .pickup-note { background: #f6f7f3; border: 1px solid var(--line); color: var(--charcoal); font-size: .84rem; line-height: 1.5; margin-top: .8rem; padding: .75rem .9rem; }

@@ -1,5 +1,6 @@
 import { publicMediaUrl } from "@/lib/media";
 import { displayPrice } from "@/lib/price";
+import { store } from "@/lib/storeData";
 /** DESIGN REMINDER — Red Workshop Modernism: the demo checkout behaves like a clear work order—precise fields, visible validation, zero payment ambiguity. */
 import { Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -150,6 +151,7 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pickup, setPickup] = useState(false);
   const [regionQuery, setRegionQuery] = useState("");
   const [cityQuery, setCityQuery] = useState("");
   const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
@@ -398,13 +400,15 @@ export default function Checkout() {
     if (!/^\S+@\S+\.\S+$/.test(values.email)) next.email = t("validationEmail");
     if ((values.phone.match(/\d/g) || []).length < 7)
       next.phone = t("validationPhone");
-    if (values.address.trim().length < 6) next.address = t("validationAddress");
-    if (!values.region)
-      next.region = language === "bg" ? "Изберете област." : "Select a region.";
-    if (values.city.trim().length < 2 || !values.locationKey)
-      next.city = t("validationCity");
-    if (!/^\d{4}$/.test(values.postcode))
-      next.postcode = t("validationPostcode");
+    if (!pickup) {
+      if (values.address.trim().length < 6) next.address = t("validationAddress");
+      if (!values.region)
+        next.region = language === "bg" ? "Изберете област." : "Select a region.";
+      if (values.city.trim().length < 2 || !values.locationKey)
+        next.city = t("validationCity");
+      if (!/^\d{4}$/.test(values.postcode))
+        next.postcode = t("validationPostcode");
+    }
     if (values.invoiceRequested) {
       if (values.invoiceCompanyName.trim().length < 2)
         next.invoiceCompanyName = language === "bg" ? "Въведете име на фирмата." : "Enter the company name.";
@@ -442,10 +446,10 @@ export default function Checkout() {
         fullName: values.fullName.trim(),
         email: values.email.trim(),
         phone: values.phone.trim(),
-        address: values.address.trim(),
-        region: values.region.trim(),
-        city: values.city.trim(),
-        postcode: values.postcode.trim(),
+        // No delivery-method column: a pickup request records the store itself as the address, which the team reads in the order.
+        ...(pickup
+          ? { address: `Вземане от магазина — ${store.address}`, region: "Силистра", city: "Силистра", postcode: "7500" }
+          : { address: values.address.trim(), region: values.region.trim(), city: values.city.trim(), postcode: values.postcode.trim() }),
         invoiceRequested: values.invoiceRequested,
         invoiceCompanyName: values.invoiceRequested ? values.invoiceCompanyName.trim() : null,
         invoiceEik: values.invoiceRequested ? values.invoiceEik.trim() : null,
@@ -583,7 +587,21 @@ export default function Checkout() {
                       </label>
                     </div>
                   </fieldset>
-                  <fieldset>
+                  <fieldset className="delivery-method-fieldset">
+                    <legend>{language === "bg" ? "Как да получите поръчката" : "How you receive the order"}</legend>
+                    <div className="invoice-choice-group" role="radiogroup" aria-label={language === "bg" ? "Начин на получаване" : "Delivery method"}>
+                      <label className="invoice-choice">
+                        <input type="radio" name="deliveryMethod" checked={!pickup} onChange={() => setPickup(false)} />
+                        <span>{language === "bg" ? "Експресна доставка до адрес" : "Express delivery to an address"}</span>
+                      </label>
+                      <label className="invoice-choice">
+                        <input type="radio" name="deliveryMethod" checked={pickup} onChange={() => { setPickup(true); setErrors(current => ({ ...current, address: undefined, region: undefined, city: undefined, postcode: undefined })); }} />
+                        <span>{language === "bg" ? "Вземане от магазина в Силистра" : "Pick up at the Silistra store"}</span>
+                      </label>
+                    </div>
+                    {pickup && <p className="pickup-note">{language === "bg" ? `Магазин ЖОАН, ${store.address}. Ще Ви се обадим, за да потвърдим кога поръчката е готова за вземане.` : `JOAN store, ${store.address}. We will call you to confirm when the order is ready for pickup.`}</p>}
+                  </fieldset>
+                  {!pickup && <fieldset>
                     <legend>
                       <PackageCheck size={18} /> {t("deliveryAddress")}
                     </legend>
@@ -732,7 +750,7 @@ export default function Checkout() {
                         <small className="field-error">{errors.postcode}</small>
                       )}
                     </label>
-                  </fieldset>
+                  </fieldset>}
                   <fieldset className="invoice-fieldset">
                     <legend>{language === "bg" ? "Данни за фактура" : "Invoice details"}</legend>
                     <div className="invoice-choice-group" role="radiogroup" aria-label={language === "bg" ? "Желаете ли фактура" : "Do you want an invoice"}>
@@ -978,8 +996,10 @@ export default function Checkout() {
                   <h2>{language === "bg" ? "Какво следва" : "What happens next"}</h2>
                   <ol>
                     <li>{language === "bg" ? "Оператор на Жоан се свързва с Вас, за да потвърди наличност, цена и доставка." : "A Joan operator contacts you to confirm availability, price and delivery."}</li>
-                    <li>{language === "bg" ? "Доставката е експресна и е за сметка на клиента." : "Delivery is express and paid by the customer."}</li>
-                    <li>{language === "bg" ? "Поръчка до 16:00 в работен ден се изпраща същия ден и пристига на следващия." : "Orders placed by 16:00 on a working day ship the same day and arrive the next day."}</li>
+                    {pickup ? <li>{language === "bg" ? `Вземате поръчката от магазина: ${store.address}.` : `You collect the order at the store: ${store.address}.`}</li> : <>
+                      <li>{language === "bg" ? "Доставката е експресна и е за сметка на клиента." : "Delivery is express and paid by the customer."}</li>
+                      <li>{language === "bg" ? "Поръчка до 16:00 в работен ден се изпраща същия ден и пристига на следващия." : "Orders placed by 16:00 on a working day ship the same day and arrive the next day."}</li>
+                    </>}
                   </ol>
                   <Link href="/delivery">{language === "bg" ? "Условия за доставка" : "Delivery terms"} <ArrowRight size={15} /></Link>
                 </div>
