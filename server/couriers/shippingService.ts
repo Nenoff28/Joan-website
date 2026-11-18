@@ -70,6 +70,16 @@ export function createShippingService(adapters: Adapters, options: { weightKg: n
   };
 }
 
+type RequestLike = { headers: Record<string, string | string[] | undefined>; ip?: string; socket?: { remoteAddress?: string } };
+
+/** Express does not trust the hosting proxy here, so req.ip would be the proxy for every visitor; the first forwarded hop is the visitor.
+ * shortcut: the header can be spoofed to dodge the price limit, which only protects the couriers' calculators; fine until abuse shows up. */
+export function visitorAddress(request: RequestLike) {
+  const forwarded = request.headers["x-forwarded-for"];
+  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim();
+  return (first || request.ip || request.socket?.remoteAddress || "unknown").slice(0, 128);
+}
+
 export function shippingAdaptersFromEnv(env: Record<string, string | undefined>): Adapters {
   const adapters: Adapters = {};
   if (env.ECONT_USERNAME && env.ECONT_PASSWORD) {

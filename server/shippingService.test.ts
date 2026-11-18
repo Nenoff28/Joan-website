@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createShippingService, shippingAdaptersFromEnv } from "./couriers/shippingService";
+import { createShippingService, shippingAdaptersFromEnv, visitorAddress } from "./couriers/shippingService";
 import type { CourierOffice } from "./couriers/types";
 
 const office = (courier: "econt" | "speedy", code: string): CourierOffice => ({ courier, code, name: code, city: "Силистра", postcode: "7500", address: "", lat: 44.1, lng: 27.2, hours: "", isLocker: false });
@@ -57,5 +57,18 @@ describe("shippingAdaptersFromEnv", () => {
   it("configures only couriers with a username and password", () => {
     expect(Object.keys(shippingAdaptersFromEnv({ ECONT_API_URL: "https://ee.econt.com/services", ECONT_USERNAME: "u", ECONT_PASSWORD: "p" }))).toEqual(["econt"]);
     expect(Object.keys(shippingAdaptersFromEnv({ SPEEDY_USERNAME: "968304", SPEEDY_PASSWORD: "" }))).toEqual([]);
+  });
+});
+
+describe("visitorAddress", () => {
+  it("uses the first forwarded address so visitors behind the hosting proxy are limited separately", () => {
+    expect(visitorAddress({ headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" }, ip: "10.0.0.1" })).toBe("203.0.113.7");
+    expect(visitorAddress({ headers: { "x-forwarded-for": ["198.51.100.2"] }, ip: "10.0.0.1" })).toBe("198.51.100.2");
+  });
+
+  it("falls back to the socket address", () => {
+    expect(visitorAddress({ headers: {}, ip: "127.0.0.1" })).toBe("127.0.0.1");
+    expect(visitorAddress({ headers: {}, socket: { remoteAddress: "::1" } })).toBe("::1");
+    expect(visitorAddress({ headers: {} })).toBe("unknown");
   });
 });
