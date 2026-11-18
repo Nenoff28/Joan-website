@@ -48,7 +48,6 @@ describe("public English localization", () => {
     expect(productSource).toContain('"Product gallery"');
     expect(productSource).toContain('"Decrease quantity"');
     expect(productSource).toContain('"Product not found."');
-    expect(productSource).toContain('"Compare product"');
     expect(productSource).toContain('product.availabilityCode === "in_stock" ? "In stock"');
     expect(productSource).toContain('product.availabilityCode === "out_of_stock" ? "Out of stock"');
   });

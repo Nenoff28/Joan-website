@@ -1435,3 +1435,17 @@ article.product-card .availability-on_request { color: #8a5410; }
 
 /* Product cards show the model code, so tradespeople can match it to a list or the brochure. */
 .product-card-code { color: var(--slate); display: block; font-family: "Manrope", sans-serif; font-size: .68rem; font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: .02em; margin-top: .2rem; }
+
+/* 404 in the store's own frame, with a search box so the visitor can recover in one step. */
+.not-found-page { max-width: 720px; padding: 4.5rem 0 6rem; }
+.not-found-code { color: var(--red); font-family: "Manrope", sans-serif; font-size: .85rem; font-weight: 800; letter-spacing: .12em; }
+.not-found-page h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); margin: .4rem 0 .8rem; }
+.not-found-page > p:not(.not-found-code) { color: var(--slate); line-height: 1.55; max-width: 60ch; }
+.not-found-search { align-items: center; background: white; border: 1px solid var(--line); display: flex; gap: .6rem; margin-top: 1.6rem; min-height: 50px; padding-left: .85rem; }
+.not-found-search:focus-within { border-color: var(--red); }
+.not-found-search > svg { color: var(--slate); flex: 0 0 auto; }
+.not-found-search input { background: transparent; border: 0; flex: 1; font-size: 16px; min-width: 0; outline: 0; padding: .6rem 0; }
+.not-found-search button { align-self: stretch; background: var(--red); color: white; font-family: "Manrope", sans-serif; font-size: .8rem; font-weight: 800; padding: 0 1.1rem; }
+.not-found-links { align-items: center; display: flex; flex-wrap: wrap; gap: 1.2rem; margin-top: 1.6rem; }
+/* Phones: the back-to-top button sits on the left so it no longer covers the cart buttons on product cards. */
+@media (max-width: 760px) { body .back-to-top { left: .75rem; right: auto; } }
