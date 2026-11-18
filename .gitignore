@@ -129,3 +129,6 @@ mempalace.yaml
 
 # Local admin uploads when Manus Forge storage is not configured
 client/public/media/uploads/
+
+# Impeccable critique snapshots and caches
+.impeccable/
