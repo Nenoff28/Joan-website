@@ -51,6 +51,7 @@ async function canonicalProductRedirect(req: Request, res: Response) {
 export function serveProductionStatic(app: Express) {
   const distPath = path.join(productionDistRoot(), "public");
   const ssrEntryPath = path.join(productionDistRoot(), "server-ssr", "entry-server.js");
+  app.get("/cart", (_req, res) => res.redirect(301, "/checkout"));
   app.get("/robots.txt", (_req, res) => res.set("Cache-Control", "public, max-age=3600").type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /favorites\nSitemap: ${canonicalOrigin}/sitemap.xml\n`));
   app.get("/sitemap.xml", async (_req, res, next) => {
     try {

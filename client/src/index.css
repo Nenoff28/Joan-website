@@ -1412,3 +1412,14 @@ article.product-card .availability-on_request { color: #8a5410; }
 /* Mega menu category tabs: 12px legibility floor and a column wide enough for the longest names on one line. */
 .mega-catalogue-workspace { grid-template-columns: 245px minmax(0, 1fr); }
 .mega-category-tabs :is(button, a) { font-size: .75rem; }
+
+/* Mobile header: search stays visible under the logo row; the cart icon opens its own sheet instead of the menu. */
+.mobile-cart-sheet { display: none; }
+@media (max-width: 760px) {
+  .masthead .search-wrap { display: flex; grid-column: 1 / -1; grid-row: 2; margin-bottom: .65rem; min-height: 46px; }
+  .masthead .search-wrap input { font-size: 16px; }
+  .masthead .search-submit { font-size: .72rem; height: 44px; padding-inline: .85rem !important; }
+  .masthead .search-panel { max-height: 62vh; overflow: auto; }
+  .mobile-cart-sheet { align-items: end; background: rgba(15, 19, 19, .45); display: flex; inset: 0; position: fixed; z-index: 95; }
+  .mobile-cart-sheet .mini-cart { border-inline: 0; border-bottom: 0; max-height: 82vh; overflow: auto; position: static; width: 100%; }
+}

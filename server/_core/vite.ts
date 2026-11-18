@@ -54,6 +54,7 @@ export async function setupVite(app: Express, server: Server) {
   const vite = await createViteServer({ ...viteConfig, configFile: false, server: { middlewareMode: true, hmr: { server }, allowedHosts: true }, appType: "custom" });
   // Vite notices files added to public/ only after its watcher fires; serve fresh admin uploads immediately.
   app.use("/media/uploads", express.static(path.resolve(import.meta.dirname, "../..", "client", "public", "media", "uploads"), { fallthrough: true }));
+  app.get("/cart", (_req, res) => res.redirect(301, "/checkout"));
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     try {
@@ -72,6 +73,7 @@ export async function setupVite(app: Express, server: Server) {
 export function serveStatic(app: Express) {
   const distPath = process.env.NODE_ENV === "development" ? path.resolve(import.meta.dirname, "../..", "dist", "public") : path.join(productionDistRoot(), "public");
   const ssrEntryPath = path.join(productionDistRoot(), "server-ssr", "entry-server.js");
+  app.get("/cart", (_req, res) => res.redirect(301, "/checkout"));
   app.get("/robots.txt", (_req, res) => res.set("Cache-Control", "public, max-age=3600").type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /account\nDisallow: /checkout\nDisallow: /favorites\nSitemap: ${canonicalOrigin}/sitemap.xml\n`));
   app.get("/sitemap.xml", async (_req, res, next) => {
     try {
