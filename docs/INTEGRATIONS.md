@@ -14,7 +14,20 @@
 | Google вход за клиенти | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | `server/googleCustomerAuth.ts`, `docs/google-login-setup.md` | изключено |
 | Клиентски сесии | `JOAN_CUSTOMER_SESSION_SECRET` (fallback `JWT_SECRET`) | `server/customerAccounts.ts` | ✅ локален random secret |
 | SEO | `CANONICAL_ORIGIN`, `SITE_NAME` | `_core/vite.ts`, `_core/production.ts` | `http://localhost:3000` |
+| Еконт (офиси + цена) | `ECONT_API_URL`, `ECONT_USERNAME`, `ECONT_PASSWORD` | `server/couriers/econt.ts` | ✅ работи с интеграционния потребител (e-Econt > Профил > Интеграция за онлайн магазини); тест: `https://demo.econt.com/ee/services`, `iasp-dev` |
+| Спиди (офиси + цена) | `SPEEDY_USERNAME`, `SPEEDY_PASSWORD` | `server/couriers/speedy.ts` | ⚠️ входът за MySpeedy връща „Достъпът е отказан“ — API трябва да се включи от Спиди |
+| Тегло за цена | `SHIPPING_DEFAULT_WEIGHT_KG` (по подразбиране 2) | `server/couriers/shippingService.ts` | 2 кг |
 
-**Няма:** онлайн плащания, куриерски API (Еконт/Спиди се споменават само като текст), email SMTP, ERP/Zeron синхронизация, cron задачи.
+**Няма:** онлайн плащания, товарителници/наложен платеж/проследяване (куриерите се ползват само за офиси и ориентировъчна цена), email SMTP, ERP/Zeron синхронизация, cron задачи.
 
 **Manus-специфични dev инструменти:** `vite-plugin-manus-runtime` и debug collector във `vite.config.ts` (пише в `.manus-logs/` в dev). Безвредни локално; при напускане на Manus може да се премахнат след одобрение.
+
+
+## Куриери: карта с офиси (2026-11-18)
+
+- В поръчката: „До офис на Спиди или Еконт“ → карта (Leaflet + OpenStreetMap), търсене, филтър, списък; при избор — цена от куриера за 2 кг.
+- tRPC: `shipping.offices` (кеш 24 ч, 5 мин при грешка), `shipping.quote` (кеш 15 мин, 30/мин на посетител).
+- Изборът се записва в адреса на заявката: `Офис Еконт: <име> (<код>) — <адрес>; ориентировъчна доставка 6,70 €`.
+- Куриер без потребител/парола не се показва; ако няма нито един — „Изборът на офис временно не е наличен.“
+- **Живият сайт:** същите променливи трябва да се зададат в настройките на хостинга; CSP вече разрешава `https://*.tile.openstreetmap.org`.
+- Дизайн: `docs/superpowers/specs/2026-11-18-courier-office-map-design.md`.
