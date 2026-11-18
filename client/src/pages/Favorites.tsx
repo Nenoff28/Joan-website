@@ -1,4 +1,5 @@
 import { publicMediaUrl } from "@/lib/media";
+import { displayPrice } from "@/lib/price";
 /** DESIGN REMINDER — Red Workshop Modernism: Favorites remain a practical saved-materials ledger, not a lifestyle wishlist. */
 import { Breadcrumbs, Layout, PageMeta } from "@/components/Storefront";
 import { useFavorites } from "@/contexts/FavoritesContext";
@@ -126,7 +127,7 @@ export default function Favorites() {
                     <div className="favorite-product-bottom">
                       <div className="favorite-product-price">
                         {product.price ? (
-                          <b>{product.price}</b>
+                          <b>{displayPrice(product.price)}</b>
                         ) : (
                           <b className="ask-price">{t("enquiry")}</b>
                         )}

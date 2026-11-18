@@ -128,23 +128,21 @@ describe("homepage SEO audit regressions", () => {
     );
   });
 
-  it("renders 12 current catalogue products and 8 historically ordered best sellers before the brochure", () => {
+  it("shows the brochure first, then 12 new catalogue products and 8 historically ordered best sellers", () => {
     expect(homeSource).toContain(
-      'title={en ? "Current offers" : "Актуални предложения"}'
+      'title={en ? "New in the catalogue" : "Нови в каталога"}'
     );
     expect(homeSource).toContain("featuredProducts.products.slice(0, 12)");
     expect(homeSource).toContain(
       'title={en ? "Best sellers" : "Най-продавани"}'
     );
     expect(homeSource).toContain("(bestSellersQuery.data ?? []).slice(0, 8)");
-    expect(
-      homeSource.indexOf(
-        'title={en ? "Current offers" : "Актуални предложения"}'
-      )
-    ).toBeLessThan(homeSource.indexOf('id="brochure"'));
-    expect(
+    expect(homeSource.indexOf('id="brochure"')).toBeLessThan(
+      homeSource.indexOf('title={en ? "New in the catalogue" : "Нови в каталога"}')
+    );
+    expect(homeSource.indexOf('id="brochure"')).toBeLessThan(
       homeSource.indexOf('title={en ? "Best sellers" : "Най-продавани"}')
-    ).toBeLessThan(homeSource.indexOf('id="brochure"'));
+    );
   });
 
   it("uses click-open category flyouts and an animated, automatically rotating homepage banner", () => {

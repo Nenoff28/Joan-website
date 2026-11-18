@@ -29,7 +29,7 @@ describe("public English localization", () => {
 
   it("localizes homepage shelves and public support pages without translating imported product records", () => {
     expect(homeSource).toContain('"Building materials"');
-    expect(homeSource).toContain('"Current offers"');
+    expect(homeSource).toContain('"New in the catalogue"');
     expect(homeSource).toContain('"Best sellers"');
     expect(supportSources).toContain('"Terms of use"');
     expect(supportSources).toContain('"Product returns"');

@@ -1,4 +1,5 @@
 import { publicMediaUrl } from "@/lib/media";
+import { displayPrice } from "@/lib/price";
 /** DESIGN REMINDER — Red Workshop Modernism: the demo checkout behaves like a clear work order—precise fields, visible validation, zero payment ambiguity. */
 import { Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -912,7 +913,7 @@ export default function Checkout() {
                             <p className="product-brand">{row.product.brand}</p>
                             <h2>{row.product.name}</h2>
                             {row.product.sku?.trim() && <small className="checkout-product-code">{language === "bg" ? "Модел" : "Model"}: {row.product.sku}</small>}
-                            <b>{row.product.price ?? t("enquiry")}</b>
+                            <b>{displayPrice(row.product.price) ?? t("enquiry")}</b>
                             <div className="checkout-cart-controls">
                               <button
                                 type="button"
@@ -954,7 +955,7 @@ export default function Checkout() {
                     <div className="checkout-total">
                       <span>{t("total")}</span>
                       <strong>
-                        {total ? `${total.toFixed(2)}€` : t("enquiry")}
+                        {total ? displayPrice(`${total.toFixed(2)}€`) : t("enquiry")}
                       </strong>
                     </div>
                   </>

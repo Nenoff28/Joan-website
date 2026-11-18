@@ -1432,3 +1432,6 @@ article.product-card .availability-on_request { color: #8a5410; }
 .checkout-next-steps li::before { align-items: center; background: var(--charcoal); border-radius: 50%; color: white; content: counter(step); display: flex; font-size: .68rem; font-weight: 800; height: 1.4rem; justify-content: center; }
 .checkout-next-steps a { align-items: center; color: var(--red); display: inline-flex; font-size: .78rem; font-weight: 800; gap: .3rem; margin-top: .7rem; }
 @media (max-width: 760px) { .checkout-grid { display: flex; flex-direction: column; } .checkout-summary { margin: 0 0 1rem; order: -1; } }
+
+/* Product cards show the model code, so tradespeople can match it to a list or the brochure. */
+.product-card-code { color: var(--slate); display: block; font-family: "Manrope", sans-serif; font-size: .68rem; font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: .02em; margin-top: .2rem; }

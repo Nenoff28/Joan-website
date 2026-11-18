@@ -40,9 +40,9 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("Каталог Жоан");
   });
 
-  it("removes the redundant listing heading only for selected subcategory paths", () => {
+  it("removes the redundant listing heading for selected subcategory paths and the all-products page", () => {
     expect(categorySource).toContain('selectedPathLabel ? "is-selected-subcategory" : ""');
-    expect(categorySource).toContain('{!selectedPathLabel && <div className="listing-heading">');
+    expect(categorySource).toContain('{!selectedPathLabel && !showAll && <div className="listing-heading">');
     expect(categorySource).toContain("selected-path-filter");
   });
 

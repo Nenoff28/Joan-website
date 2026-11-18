@@ -363,61 +363,6 @@ export default function Home() {
           </div>
         </section>
         <section
-          id="current-offers"
-          className="promotions-section homepage-product-shelf"
-          aria-labelledby="current-offers-title"
-        >
-          <div className="page-frame">
-            <SectionHeading
-              eyebrow={en ? "Joan catalogue" : "Каталог Жоан"}
-              title={en ? "Current offers" : "Актуални предложения"}
-              text={
-                en
-                  ? "The most recently updated products in Joan’s catalogue."
-                  : "Последно обновените артикули в каталога на Жоан."
-              }
-              action={
-                <Link className="section-action" href="/products">
-                  {en ? "View all products" : "Виж всички продукти"}{" "}
-                  <ArrowRight size={17} />
-                </Link>
-              }
-            />
-            <div className="product-grid homepage-products">
-              {featuredProducts.products.slice(0, 12).map(product => (
-                <ProductCard key={product.slug} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-        {(bestSellersQuery.data?.length ?? 0) > 0 && <section
-          className="homepage-best-sellers"
-          aria-labelledby="best-sellers-title"
-        >
-          <div className="page-frame">
-            <SectionHeading
-              eyebrow={en ? "Customer favourites" : "Предпочитани от клиентите"}
-              title={en ? "Best sellers" : "Най-продавани"}
-              text={
-                en
-                  ? "The products Joan customers have ordered most."
-                  : "Артикулите, които клиентите на Жоан поръчват най-често."
-              }
-              action={
-                <Link className="section-action" href="/products">
-                  {en ? "Browse catalogue" : "Разгледайте каталога"}{" "}
-                  <ArrowRight size={17} />
-                </Link>
-              }
-            />
-            <div className="product-grid homepage-products">
-              {(bestSellersQuery.data ?? []).slice(0, 8).map(product => (
-                <ProductCard key={product.slug} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>}
-        <section
           id="brochure"
           className="brochure-section"
           aria-labelledby="brochure-title"
@@ -615,6 +560,61 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <section
+          id="current-offers"
+          className="promotions-section homepage-product-shelf"
+          aria-labelledby="current-offers-title"
+        >
+          <div className="page-frame">
+            <SectionHeading
+              eyebrow={en ? "Joan catalogue" : "Каталог Жоан"}
+              title={en ? "New in the catalogue" : "Нови в каталога"}
+              text={
+                en
+                  ? "Recently added and updated products in Joan’s catalogue."
+                  : "Последно добавените и обновени артикули в каталога на Жоан."
+              }
+              action={
+                <Link className="section-action" href="/products">
+                  {en ? "View all products" : "Виж всички продукти"}{" "}
+                  <ArrowRight size={17} />
+                </Link>
+              }
+            />
+            <div className="product-grid homepage-products">
+              {featuredProducts.products.slice(0, 12).map(product => (
+                <ProductCard key={product.slug} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+        {(bestSellersQuery.data?.length ?? 0) > 0 && <section
+          className="homepage-best-sellers"
+          aria-labelledby="best-sellers-title"
+        >
+          <div className="page-frame">
+            <SectionHeading
+              eyebrow={en ? "Customer favourites" : "Предпочитани от клиентите"}
+              title={en ? "Best sellers" : "Най-продавани"}
+              text={
+                en
+                  ? "The products Joan customers have ordered most."
+                  : "Артикулите, които клиентите на Жоан поръчват най-често."
+              }
+              action={
+                <Link className="section-action" href="/products">
+                  {en ? "Browse catalogue" : "Разгледайте каталога"}{" "}
+                  <ArrowRight size={17} />
+                </Link>
+              }
+            />
+            <div className="product-grid homepage-products">
+              {(bestSellersQuery.data ?? []).slice(0, 8).map(product => (
+                <ProductCard key={product.slug} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>}
         <section id="categories" className="page-frame category-section">
           <SectionHeading
             eyebrow={en ? "Start here" : "Започнете оттук"}
