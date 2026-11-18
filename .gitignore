@@ -132,3 +132,6 @@ client/public/media/uploads/
 
 # Impeccable critique snapshots and caches
 .impeccable/
+
+# Superpowers plan workspaces (ledgers, briefs)
+.superpowers/
