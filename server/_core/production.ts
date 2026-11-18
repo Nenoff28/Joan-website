@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import fs from "fs";
 import type { Request, Response } from "express";
 import path from "path";
+import { pathToFileURL } from "url";
 import superjson from "superjson";
 import { buildSsrPrefetch } from "./ssrCaller";
 import type { HeadMeta } from "../../client/src/ssr/prefetch";
@@ -70,7 +71,7 @@ export function serveProductionStatic(app: Express) {
     if (await canonicalProductRedirect(req, res)) return;
     const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
     try {
-      const { render } = await import(ssrEntryPath);
+      const { render } = await import(pathToFileURL(ssrEntryPath).href);
       const result = await render(req.originalUrl, await buildSsrPrefetch(req, res));
       res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState, res.locals.cspNonce));
     } catch (error) {

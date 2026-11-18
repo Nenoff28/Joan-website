@@ -45,12 +45,12 @@ describe("3D brochure viewer", () => {
     expect(homeSource).toContain('"Browse the offers in the monthly brochure."');
     expect(homeSource).toContain('"Разгледайте офертите от месечната брошура."');
     expect(homeSource).not.toContain("style={{fontSize: '20px'}}");
-    expect(homeSource).toContain('Browse<br />offers');
-    expect(homeSource).toContain('Разгледайте<br />офертите');
+    // The old "Browse offers" hero CTA was removed; only dead comments kept these strings alive. Check the live CTA instead.
+    expect(homeSource).toContain('<span>{en ? "Browse brochure" : "Разгледайте брошурата"}</span>');
     expect(homeSource).toContain("Строителни материали");
     expect(homeSource).not.toContain("style={{fontSize: '55px'}}");
     expect(styleSource).toContain(".brochure-heading-meta b { font-size: .9375rem;");
-    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}</h1>');
+    expect(homeSource).toContain('<h1 className="sr-only">{en ? "Building materials" : "Строителни материали"}</h1>');
     expect(homeSource).not.toContain('и инструменти</span>');
     expect(styleSource).toContain('.home-hero .hero-content h1::before, .home-hero .hero-content h1::after { content: none !important; display: none !important; }');
   });

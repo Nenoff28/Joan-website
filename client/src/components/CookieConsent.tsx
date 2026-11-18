@@ -55,7 +55,7 @@ export default function CookieConsent() {
 
   if (consent) return null;
   return (
-    <aside
+    <div
       className="cookie-consent"
       role="dialog"
       aria-live="polite"
@@ -90,6 +90,6 @@ export default function CookieConsent() {
           {en ? "Accept analytics" : "Приемам статистиката"}
         </button>
       </div>
-    </aside>
+    </div>
   );
 }

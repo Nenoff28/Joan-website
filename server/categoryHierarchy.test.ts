@@ -75,7 +75,8 @@ describe("public Joan category hierarchy", () => {
     expect(categorySource).toContain("const catalogueInput = useMemo(() =>");
     expect(categorySource).toContain("const navigateToCatalogue = (href: string)");
     expect(headerSource).toContain('href="/products"');
-    expect(homeSource).toContain('href="/products">{en ? "All products" : "Всички продукти"}');
-    expect(headerSource).toContain('location === "/products" || location.startsWith("/category")');
+    expect(homeSource).toContain('href="/products"');
+    // Catalogue routes render their own <Breadcrumbs>, so the generic header rail is skipped there.
+    expect(headerSource).toContain("!/^\\/(products|category\\/|product\\/|favorites)/.test(location)");
   });
 });

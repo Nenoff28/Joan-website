@@ -1,6 +1,6 @@
 import { publicMediaUrl } from "@/lib/media";
 /** DESIGN REMINDER — Product truth comes first: complete image, price/inquiry state, manufacturer identity and useful catalogue alternatives. */
-import { Breadcrumbs, JsonLd, Layout, PageMeta, ProductCard, SectionHeading } from "@/components/Storefront";
+import { Breadcrumbs, brandLogoFor, JsonLd, Layout, PageMeta, ProductCard, SectionHeading } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
@@ -53,6 +53,7 @@ export default function Product() {
   const carouselProducts = carouselSize ? Array.from({ length: carouselSize }, (_, offset) => related[(relatedStart + offset) % related.length]) : [];
   const rotateRecommendations = (direction: 1 | -1) => setRelatedStart((current) => related.length ? (current + direction + related.length) % related.length : 0);
   const productBrand = product.brand || "ЖОАН";
+  const brandLogo = brandLogoFor(product);
   const technicalSpecs = product.technicalSpecs?.length ? product.technicalSpecs : product.features.map((value) => ({ label: t("characteristic"), value }));
   const colorVariants = product.colorVariants?.filter((variant) => variant.slug && variant.label) ?? [];
   const currentColor = colorVariants.find((variant) => variant.isCurrent) ?? colorVariants[0];
@@ -89,7 +90,7 @@ export default function Product() {
             <div className="gallery-thumbs" aria-label={language === "en" ? "Product gallery" : "Галерия на продукта"}>{product.gallery.map((image, index) => <button type="button" key={`${image}-${index}`} onClick={() => setSelectedImage(index)} className={selectedImage === index ? "is-active" : ""} aria-label={language === "en" ? `Image ${index + 1} of ${product.gallery.length}` : `Снимка ${index + 1} от ${product.gallery.length}`} aria-pressed={selectedImage === index}><img src={publicMediaUrl(image)} alt={`${product.name} — ${language === "en" ? `image ${index + 1}` : `снимка ${index + 1}`}`} /><span>{String(index + 1).padStart(2, "0")}</span></button>)}</div>
           </div>
           <div className="product-detail-info">
-            <div className={`product-brand-logo-wrap${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{product.brandLogo && failedBrandLogo !== product.brandLogo ? <img className="product-brand-logo" src={publicMediaUrl(product.brandLogo)} alt="" onError={() => setFailedBrandLogo(product.brandLogo)} /> : <p className="product-brand">{productBrand}</p>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></div>
+            <div className={`product-brand-logo-wrap${lightWordmarkBrands.has(productBrand) ? " is-light-wordmark" : ""}`}>{brandLogo && failedBrandLogo !== brandLogo ? <img className="product-brand-logo" src={publicMediaUrl(brandLogo)} alt="" onError={() => setFailedBrandLogo(brandLogo)} /> : <p className="product-brand">{productBrand}</p>}<span className="sr-only">{language === "en" ? `Brand: ${productBrand}` : `Марка: ${productBrand}`}</span></div>
             <h1>{product.name}</h1>
             <div className={`detail-status detail-status-${product.availabilityCode ?? "on_request"}`}><span />{availabilityLabel}</div>
             {product.sku?.trim() && <div className="product-spec-pills"><span>{language === "en" ? "Model" : "Модел"}: {product.sku}</span></div>}

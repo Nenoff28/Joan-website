@@ -54,6 +54,11 @@ const lightWordmarkBrands = new Set(["Ceresit", "Cerva", "Elite", "FAYANS", "GRO
 const catalogueLogoRefinementBrands = new Set(["Bertani", "Cerva", "CetaForm", "Dupli-Color", "Effect", "Elite", "Makena", "Moment", "Motip", "Orient", "Payper", "Timmer", "Vents", "Yaparlar", "York", "Генковски", "ЖОАН"]);
 const joanLogoUrl = "/media/joan-existing-logo_61725b9d.webp";
 
+/** Manufacturer logo, or the JOAN logo for house-brand products that have no manufacturer record. */
+export function brandLogoFor(product: Pick<Product, "brand" | "brandLogo">) {
+  return product.brandLogo ?? ((product.brand || "ЖОАН") === "ЖОАН" ? joanLogoUrl : undefined);
+}
+
 const categoryIcons = {
   drill: Drill,
   trees: Trees,
@@ -294,7 +299,8 @@ function Header() {
           <div className="mobile-contact"><Phone size={18} /><span><b>{t("help")}</b>{store.phones[2]}</span></div>
         </div>
       )}
-      {location !== "/" && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location === "/products" || location.startsWith("/category") ? t("catalogue") : location.startsWith("/product/") ? t("representativeProduct") : location.startsWith("/favorites") ? t("favorites") : t("customerInfo")}</span></div>}
+      {/* Catalogue, product and favourites pages render their own <Breadcrumbs>; a second rail there duplicated the trail. */}
+      {location !== "/" && !/^\/(products|category\/|product\/|favorites)/.test(location) && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{t("customerInfo")}</span></div>}
     </header>
   );
 }
@@ -365,7 +371,10 @@ function Footer() {
 
 export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
   const { t } = useLanguage();
-  return <nav className="breadcrumbs" aria-label={t("catalogue")}><Link href="/">{t("home")}</Link>{items.map((item) => <span key={item.label}><ChevronRight size={14} />{item.href ? <Link href={item.href}>{item.label}</Link> : <b>{item.label}</b>}</span>)}</nav>;
+  // shortcut: relative item URLs (no canonical origin on the client); confirm in Google's Rich Results Test after deploy.
+  const trail = [{ label: t("home"), href: "/" }, ...items];
+  const breadcrumbLd = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: trail.map((item, index) => ({ "@type": "ListItem", position: index + 1, name: item.label, ...(item.href ? { item: item.href } : {}) })) };
+  return <nav className="breadcrumbs" aria-label={t("catalogue")}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} /><Link href="/">{t("home")}</Link>{items.map((item) => <span key={item.label}><ChevronRight size={14} />{item.href ? <Link href={item.href}>{item.label}</Link> : <b>{item.label}</b>}</span>)}</nav>;
 }
 
 export function SectionHeading({ eyebrow, title, text, action }: { eyebrow?: string; title: string; text?: string; action?: ReactNode }) {
@@ -383,7 +392,7 @@ export function ProductCard({ product, compact = false }: { product: StorefrontP
   const favorite = isFavorite(product.slug);
   const isOutOfStock = product.availabilityCode === "out_of_stock";
   const productBrand = product.brand || "ЖОАН";
-  const brandLogo = product.brandLogo ?? (productBrand === "ЖОАН" ? joanLogoUrl : undefined);
+  const brandLogo = brandLogoFor(product);
   const needsLogoRefinement = !compact && catalogueLogoRefinementBrands.has(productBrand);
   function handleFavorite() {
     toggleFavorite(product.slug);

@@ -198,10 +198,6 @@ export default function Home() {
     return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
-  /* href="/products">{en ? "All products" : "Всички продукти"} */
-  /* <h1>{en ? "Building materials" : "Строителни материали"}</h1> */
-  /* Browse<br />offers */
-  /* Разгледайте<br />офертите */
   return (
     <Layout>
       <PageMeta
@@ -214,6 +210,8 @@ export default function Home() {
       />
       <JsonLd />
       <main>
+        {/* The banner carousel is image-only, so the page heading is visually hidden but present for search engines and screen readers. */}
+        <h1 className="sr-only">{en ? "Building materials" : "Строителни материали"}</h1>
         <section
           className="homepage-entrance page-frame"
           aria-label={
@@ -375,8 +373,8 @@ export default function Home() {
               title={en ? "Current offers" : "Актуални предложения"}
               text={
                 en
-                  ? "12 recently updated real products from the current catalogue."
-                  : "12 последно обновени реални артикула от текущия каталог."
+                  ? "The most recently updated products in Joan’s catalogue."
+                  : "Последно обновените артикули в каталога на Жоан."
               }
               action={
                 <Link className="section-action" href="/products">
@@ -392,18 +390,18 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section
+        {(bestSellersQuery.data?.length ?? 0) > 0 && <section
           className="homepage-best-sellers"
           aria-labelledby="best-sellers-title"
         >
           <div className="page-frame">
             <SectionHeading
-              eyebrow={en ? "Historical data" : "Исторически данни"}
+              eyebrow={en ? "Customer favourites" : "Предпочитани от клиентите"}
               title={en ? "Best sellers" : "Най-продавани"}
               text={
                 en
-                  ? "8 products with the highest total quantity in migrated historical orders."
-                  : "8 продукта с най-голямо общо количество в мигрираните исторически поръчки."
+                  ? "The products Joan customers have ordered most."
+                  : "Артикулите, които клиентите на Жоан поръчват най-често."
               }
               action={
                 <Link className="section-action" href="/products">
@@ -418,7 +416,7 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </section>
+        </section>}
         <section
           id="brochure"
           className="brochure-section"

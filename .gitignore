@@ -112,3 +112,20 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Local tool outputs (Graphify knowledge graph, Manus Vite debug collector)
+graphify-out/
+.manus-logs/
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
+
+# Playwright outputs
+.playwright-cli/
+test-results/
+playwright-report/
+mempalace.yaml
+
+# Local admin uploads when Manus Forge storage is not configured
+client/public/media/uploads/

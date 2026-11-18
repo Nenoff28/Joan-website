@@ -127,6 +127,6 @@
 
   .product-grid .product-card:not(.product-card-compact) .availability,
   .catalogue-workbench .listing-grid .product-card:not(.product-card-compact) .availability {
-    font-size: 0.62rem !important;
+    font-size: 0.78rem !important; /* audit 2026-11-17: was 0.62rem (9.9px), below the 12px legibility floor */
   }
 }

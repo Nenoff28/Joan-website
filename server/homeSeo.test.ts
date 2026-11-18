@@ -28,7 +28,7 @@ describe("homepage SEO audit regressions", () => {
       "ЖОАН в Силистра: строителни материали, продукти за дома и градината."
     );
     expect(homeSource).toContain(
-      '<h1>{en ? "Building materials" : "Строителни материали"}</h1>'
+      '<h1 className="sr-only">{en ? "Building materials" : "Строителни материали"}</h1>'
     );
     expect(prefetchSource).toContain("HOME_TITLE");
     expect(prefetchSource).toContain("HOME_DESCRIPTION");

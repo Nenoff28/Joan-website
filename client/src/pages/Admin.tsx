@@ -282,9 +282,9 @@ function ShellHeading({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="admin-heading">
+    <header className="admin-heading" data-section={section}>
       <div>
-        <p className="admin-kicker">ЖОАН · {section}</p>
+        {/* The section name already shows as the active sidebar item; a kicker above the title repeated it. */}
         <h1>{title}</h1>
         <p>{text}</p>
       </div>
@@ -1583,11 +1583,9 @@ function AdminProducts({ permissions }: AdminPageProps) {
         </form>
       </section>}
       <section className="admin-panel">
-        <div className="admin-panel-head">
-          <div>
-            <p className="admin-kicker">ПУБЛИЧЕН КАТАЛОГ</p>
-            <h2>Артикули и контрол на качеството</h2>
-          </div>
+        <div className="admin-panel-head admin-panel-head-controls">
+          {/* Visually repeated the page title and took a whole column from the filters; kept for screen readers. */}
+          <h2 className="sr-only">Артикули и контрол на качеството</h2>
           <div className="admin-table-controls">
             <label className="admin-search">
               Търсене
@@ -1986,6 +1984,12 @@ function AdminPromotions({ permissions }: AdminPageProps) {
   }, [availableProducts, selectedId]);
   const selected =
     availableProducts.find(product => product.id === selectedId) ?? null;
+  // A <select> with ~11 000 options was unusable; filter by name/code and cap the options, always keeping the selected item.
+  const [priceSearch, setPriceSearch] = useState("");
+  const priceNeedle = priceSearch.trim().toLocaleLowerCase("bg-BG");
+  const priceMatches = priceNeedle ? availableProducts.filter(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(priceNeedle)) : availableProducts;
+  const priceOptions = priceMatches.slice(0, PRICE_PICKER_LIMIT);
+  if (selected && !priceOptions.some(product => product.id === selected.id)) priceOptions.unshift(selected);
   if (operations.isLoading || productsQuery.isLoading || categoriesQuery.isLoading) return <LoadingState />;
   if (!operations.data) return <ErrorState />;
   return (
@@ -2032,14 +2036,28 @@ function AdminPromotions({ permissions }: AdminPageProps) {
             <h2>Ценов контрол</h2>
           </div>
           <label className="admin-search">
-            Търсене
+            Търсене по име или код
+            <input
+              type="search"
+              value={priceSearch}
+              placeholder="напр. смесител или 137920"
+              onChange={event => {
+                setPriceSearch(event.target.value);
+                const needle = event.target.value.trim().toLocaleLowerCase("bg-BG");
+                const first = needle ? availableProducts.find(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(needle)) : undefined;
+                if (first) setSelectedId(first.id);
+              }}
+            />
+          </label>
+          <label className="admin-search">
+            Артикул ({priceMatches.length > PRICE_PICKER_LIMIT ? `първите ${PRICE_PICKER_LIMIT} от ${priceMatches.length}` : priceMatches.length})
             <select
               value={selectedId ?? ""}
               onChange={event => setSelectedId(Number(event.target.value))}
             >
-              {availableProducts.map(product => (
+              {priceOptions.map(product => (
                 <option key={product.id} value={product.id}>
-                  {product.name}
+                  {product.sku ? `${product.sku} · ` : ""}{product.name}
                 </option>
               ))}
             </select>
@@ -2132,6 +2150,9 @@ function promotionPreviewPrice(product: AdminProduct, mode: "specific" | "campai
   return Number.isFinite(percent) ? Math.round(base * (1 - percent / 100) * 100) / 100 : null;
 }
 
+const CAMPAIGN_LIST_LIMIT = 100;
+const PRICE_PICKER_LIMIT = 200;
+
 function PromotionCampaignPanel({ products, canWrite, categoryId, categoryTree, onCategoryChange }: { products: AdminProduct[]; canWrite: boolean; categoryId: number | null; categoryTree: PromotionCategoryOption[]; onCategoryChange: (categoryId: number | null) => void }) {
   const utils = trpc.useUtils();
   const campaigns = trpc.admin.promotionCampaigns.useQuery(undefined, { enabled: true });
@@ -2154,6 +2175,12 @@ function PromotionCampaignPanel({ products, canWrite, categoryId, categoryTree, 
     return products.filter(product => `${product.name} ${product.sku ?? ""}`.toLocaleLowerCase("bg-BG").includes(needle));
   }, [products, search]);
   const selectedProducts = useMemo(() => products.filter(product => selectedSet.has(product.id)), [products, selectedSet]);
+  // Rendering all ~11 000 catalogue rows produced ~58 000 DOM nodes; show the first matches plus everything already selected.
+  const visibleCampaignProducts = useMemo(() => {
+    const head = filteredProducts.slice(0, CAMPAIGN_LIST_LIMIT);
+    const shown = new Set(head.map(product => product.id));
+    return [...head, ...selectedProducts.filter(product => !shown.has(product.id))];
+  }, [filteredProducts, selectedProducts]);
   useEffect(() => {
     setSelectedIds([]);
     setRowDrafts({});
@@ -2259,7 +2286,7 @@ function PromotionCampaignPanel({ products, canWrite, categoryId, categoryTree, 
               </div>
             </div>
             <div className="admin-campaign-code-entry"><label>Добавяне на много вътрешни кодове<textarea value={codes} placeholder="137920, 137921 или по един код на ред" onChange={event => setCodes(event.target.value)} /></label><button type="button" className="admin-secondary" onClick={addCodes}>Добави кодовете</button>{codeMessage && <small>{codeMessage}</small>}</div>
-            <div className="admin-campaign-products">{filteredProducts.map(product => { const preview = promotionPreviewPrice(product, mode, form, rowDrafts); return <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"}</small><small className="admin-campaign-price-preview"><span>Текуща: {product.price ?? "Без цена"}</span><span>{preview === null ? "Промо: —" : `Промо: ${preview.toFixed(2)}€`}</span></small></span></label>; })}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
+            {filteredProducts.length > CAMPAIGN_LIST_LIMIT && <p className="admin-campaign-limit">Показани са първите {CAMPAIGN_LIST_LIMIT} от {filteredProducts.length} артикула (и всички избрани). Стеснете списъка с търсене или категория — „избор на всички“ важи за всички {filteredProducts.length}.</p>}<div className="admin-campaign-products">{visibleCampaignProducts.map(product => { const preview = promotionPreviewPrice(product, mode, form, rowDrafts); return <label className="admin-campaign-product" key={product.id}><input type="checkbox" checked={selectedSet.has(product.id)} onChange={() => toggleProduct(product.id)} /><img src={product.image} alt="" /><span><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без вътрешен код"}</small><small className="admin-campaign-price-preview"><span>Текуща: {product.price ?? "Без цена"}</span><span>{preview === null ? "Промо: —" : `Промо: ${preview.toFixed(2)}€`}</span></small></span></label>; })}{!filteredProducts.length && <p className="admin-empty-note">Няма намерени активни артикули с базова цена.</p>}</div>
           </div>
           {mode === "specific" && selectedProducts.length > 0 && <div className="admin-campaign-rows"><h3>Настройки по продукт</h3>{selectedProducts.map(product => { const row = rowDrafts[product.id] ?? { discountPercent: "", fixedPriceEur: "", startsAt: "", endsAt: "" }; const updateRow = (changes: Partial<PromotionRowDraft>) => setRowDrafts(current => ({ ...current, [product.id]: { ...row, ...changes } })); return <div className="admin-campaign-row" key={product.id}><div><b>{product.name}</b><small>{product.sku ? `Код: ${product.sku}` : "Без код"} · базова цена {product.price}</small></div><label>%<input type="number" min="0.01" max="100" step="0.01" value={row.discountPercent} onChange={event => updateRow({ discountPercent: event.target.value, fixedPriceEur: event.target.value ? "" : row.fixedPriceEur })} /></label><label>Цена EUR<input type="number" min="0" step="0.01" value={row.fixedPriceEur} onChange={event => updateRow({ fixedPriceEur: event.target.value, discountPercent: event.target.value ? "" : row.discountPercent })} /></label><label>Начало<input type="datetime-local" value={row.startsAt} onChange={event => updateRow({ startsAt: event.target.value })} /></label><label>Край<input type="datetime-local" value={row.endsAt} onChange={event => updateRow({ endsAt: event.target.value })} /></label><button type="button" className="admin-icon-button" aria-label={`Премахни ${product.name}`} onClick={() => setSelected(selectedIds.filter(id => id !== product.id))}><Trash2 size={16} /></button></div>; })}</div>}
           <div className="admin-form-actions"><button className="admin-primary" type="submit" disabled={selectedIds.length === 0 || !form.startsAt || pending}>{editingId ? <Save size={17} /> : <Plus size={17} />}{editingId ? "Запази промените" : "Създай промоция"}</button>{editingId && <button type="button" className="admin-secondary" onClick={resetEditor}>Откажи редакцията</button>}</div>
@@ -2942,13 +2969,17 @@ function AdminBrochures({ permissions }: AdminPageProps) {
   });
   const uploadPage = trpc.admin.uploadBrochurePage.useMutation();
   const replace = trpc.admin.replaceBrochure.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (_result, variables) => {
       await Promise.all([
         utils.admin.brochures.invalidate(),
         utils.catalogue.brochure.invalidate(),
         utils.admin.operations.invalidate(),
       ]);
-      toast("Новата брошура е активна на началната страница.");
+      toast(
+        variables.activate === false
+          ? "Брошурата е качена като неактивна версия."
+          : "Новата брошура е активна на началната страница."
+      );
     },
     onError: error =>
       toast(error.message || "Брошурата не можа да бъде заменена."),
@@ -2971,12 +3002,7 @@ function AdminBrochures({ permissions }: AdminPageProps) {
         const stored = await uploadPage.mutateAsync(page);
         pageUrls.push(stored.url);
       }
-      const payload = { title: title.trim() || "Промо брошура", pageUrls };
-      if (activateNow) replace.mutate(payload);
-      else
-        toast(
-          "Всички страници са качени. Активирайте версията след създаване на нов запис."
-        );
+      replace.mutate({ title: title.trim() || "Промо брошура", pageUrls, activate: activateNow });
     } catch (error) {
       toast(
         error instanceof Error

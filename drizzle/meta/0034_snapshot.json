@@ -1455,8 +1455,8 @@
         }
       },
       "foreignKeys": {
-        "catalogue_product_category_links_productId_catalogue_products_id_fk": {
-          "name": "catalogue_product_category_links_productId_catalogue_products_id_fk",
+        "cpc_link_product_fk": {
+          "name": "cpc_link_product_fk",
           "tableFrom": "catalogue_product_category_links",
           "tableTo": "catalogue_products",
           "columnsFrom": [
@@ -1468,8 +1468,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "catalogue_product_category_links_categoryId_catalogue_categories_id_fk": {
-          "name": "catalogue_product_category_links_categoryId_catalogue_categories_id_fk",
+        "cpc_link_category_fk": {
+          "name": "cpc_link_category_fk",
           "tableFrom": "catalogue_product_category_links",
           "tableTo": "catalogue_categories",
           "columnsFrom": [
@@ -2893,8 +2893,8 @@
         }
       },
       "foreignKeys": {
-        "legacy_customer_order_lines_legacyOrderRecordId_legacy_customer_orders_id_fk": {
-          "name": "legacy_customer_order_lines_legacyOrderRecordId_legacy_customer_orders_id_fk",
+        "lc_order_line_order_fk": {
+          "name": "lc_order_line_order_fk",
           "tableFrom": "legacy_customer_order_lines",
           "tableTo": "legacy_customer_orders",
           "columnsFrom": [
@@ -3049,8 +3049,8 @@
         }
       },
       "foreignKeys": {
-        "legacy_customer_orders_customerId_customer_profiles_id_fk": {
-          "name": "legacy_customer_orders_customerId_customer_profiles_id_fk",
+        "lc_order_customer_fk": {
+          "name": "lc_order_customer_fk",
           "tableFrom": "legacy_customer_orders",
           "tableTo": "customer_profiles",
           "columnsFrom": [

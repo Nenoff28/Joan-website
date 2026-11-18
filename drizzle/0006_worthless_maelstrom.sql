@@ -1,5 +1,4 @@
 ALTER TABLE `catalogue_categories` ADD `legacySeoKeywordBg` varchar(255);--> statement-breakpoint
-ALTER TABLE `catalogue_categories` ADD `legacySeoKeywordBg` varchar(255);--> statement-breakpoint
 ALTER TABLE `catalogue_categories` ADD `legacySeoKeywordEn` varchar(255);--> statement-breakpoint
 ALTER TABLE `catalogue_categories` ADD `legacyMetaTitleBg` varchar(500);--> statement-breakpoint
 ALTER TABLE `catalogue_categories` ADD `legacyMetaTitleEn` varchar(500);--> statement-breakpoint

@@ -4,6 +4,7 @@ CREATE TABLE `ai_content_settings` (
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `ai_content_settings_id` PRIMARY KEY(`id`)
 );
+--> statement-breakpoint
 
 INSERT INTO `ai_content_settings` (`id`, `systemPrompt`) VALUES (1, 'Ти си професионален копирайтър, продуктов специалист и SEO експерт, специализиран в създаването на съдържание за онлайн магазини на българския пазар.
 

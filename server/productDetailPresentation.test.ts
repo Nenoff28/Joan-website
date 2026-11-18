@@ -29,7 +29,7 @@ describe("product detail presentation", () => {
     expect(catalogueService).toContain('row.manufacturer?.officialLogoUrl');
     expect(catalogueService).not.toContain('row.manufacturer?.imageUrl');
     expect(productPage).toContain('className="product-brand-logo"');
-    expect(productPage).toContain('setFailedBrandLogo(product.brandLogo)');
+    expect(productPage).toContain('setFailedBrandLogo(brandLogo)');
   });
 
   it("passes verified manufacturer logos to catalogue cards with a text fallback", () => {

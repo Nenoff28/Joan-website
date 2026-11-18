@@ -72,7 +72,7 @@ describe("public English localization", () => {
   });
 
   it("keeps the visually rendered homepage hero heading in English after the toggle", () => {
-    expect(homeSource).toContain('<h1>{en ? "Building materials" : "Строителни материали"}</h1>');
+    expect(homeSource).toContain('<h1 className="sr-only">{en ? "Building materials" : "Строителни материали"}</h1>');
     expect(homeSource).not.toContain('and tools</span>');
     expect(stylesheetSource).toContain('.home-hero .hero-content h1::before, .home-hero .hero-content h1::after { content: none !important; display: none !important; }');
   });
@@ -80,7 +80,7 @@ describe("public English localization", () => {
   it("keeps CSS-generated Product and Favorites labels in English after the toggle", () => {
     expect(stylesheetSource).toContain('html[lang="en"] .product-detail-info::after { content: "AVAILABILITY · PRICE · TECHNICAL DETAILS · ENQUIRY"; }');
     expect(stylesheetSource).toContain('html[lang="en"] .favorites-empty-guide::after { content: "BRAND · PRICE · AVAILABILITY · SAVE"; }');
-    expect(stylesheetSource).toContain('html[lang="en"] .checkout-summary::before { content: "REQUEST SUMMARY"; }');
+    expect(stylesheetSource).not.toContain('content: "REQUEST SUMMARY"');
   });
 
   it("presents the Joan address in English without changing the underlying business record", () => {

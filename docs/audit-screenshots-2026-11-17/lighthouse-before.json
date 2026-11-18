@@ -1,0 +1,174 @@
+[
+ {
+  "label": "before",
+  "formFactor": "mobile",
+  "name": "home",
+  "perf": 55,
+  "a11y": 87,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "15.3 s",
+  "FCP": "11.3 s",
+  "TBT": "80 ms",
+  "CLS": "0",
+  "KB": 3582,
+  "lcpEl": "<img src=\"/media/ideal-standard-promo_907d970b.jpg\" alt=\"Ideal Standard Amazi II Rimless+ ",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "color-contrast",
+   "meta-viewport",
+   "target-size",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "mobile",
+  "name": "products",
+  "perf": 49,
+  "a11y": 94,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "12.7 s",
+  "FCP": "11.6 s",
+  "TBT": "60 ms",
+  "CLS": "0.149",
+  "KB": 2859,
+  "lcpEl": "<p>",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "meta-viewport",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "mobile",
+  "name": "category",
+  "perf": 54,
+  "a11y": 94,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "12.6 s",
+  "FCP": "10.8 s",
+  "TBT": "40 ms",
+  "CLS": "0.08",
+  "KB": 2611,
+  "lcpEl": "<img src=\"/media/joan-tools-natural-20261017_514b8fe3.jpg\" alt=\"Инструменти — Професионалн",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "meta-viewport",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "mobile",
+  "name": "product",
+  "perf": 34,
+  "a11y": 94,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "13.9 s",
+  "FCP": "11.5 s",
+  "TBT": "30 ms",
+  "CLS": "0.548",
+  "KB": 2706,
+  "lcpEl": "<img data-loc=\"client\\src\\pages\\Product.tsx:88\" alt=\"ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА —",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "meta-viewport",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "desktop",
+  "name": "home",
+  "perf": 74,
+  "a11y": 88,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "2.7 s",
+  "FCP": "2.0 s",
+  "TBT": "10 ms",
+  "CLS": "0.03",
+  "KB": 3581,
+  "lcpEl": "<img src=\"/media/ideal-standard-promo_907d970b.jpg\" alt=\"Ideal Standard Amazi II Rimless+ ",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "color-contrast",
+   "meta-viewport",
+   "target-size",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "desktop",
+  "name": "products",
+  "perf": 77,
+  "a11y": 94,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "2.4 s",
+  "FCP": "2.0 s",
+  "TBT": "0 ms",
+  "CLS": "0.018",
+  "KB": 3264,
+  "lcpEl": "<h1>",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "meta-viewport",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "desktop",
+  "name": "category",
+  "perf": 79,
+  "a11y": 94,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "2.2 s",
+  "FCP": "1.9 s",
+  "TBT": "0 ms",
+  "CLS": "0.032",
+  "KB": 2611,
+  "lcpEl": "<img src=\"/media/joan-tools-natural-20261017_514b8fe3.jpg\" alt=\"Инструменти — Професионалн",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "meta-viewport",
+   "inspector-issues"
+  ]
+ },
+ {
+  "label": "before",
+  "formFactor": "desktop",
+  "name": "product",
+  "perf": 56,
+  "a11y": 94,
+  "bp": 93,
+  "seo": 100,
+  "LCP": "2.5 s",
+  "FCP": "2.1 s",
+  "TBT": "0 ms",
+  "CLS": "0.412",
+  "KB": 2707,
+  "lcpEl": "<img data-loc=\"client\\src\\pages\\Product.tsx:88\" alt=\"ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА —",
+  "failing": [
+   "errors-in-console",
+   "aria-allowed-role",
+   "meta-viewport",
+   "inspector-issues"
+  ]
+ }
+]

@@ -8,7 +8,7 @@ import { categoryLabelsFromTokens, categoryPathTokens } from "@/lib/categoryHier
 import { paginationItems } from "@/lib/pagination";
 import { isPromotionFilter, withPromotionFilter } from "@shared/catalogueFilters";
 import { ArrowRight, ChevronDown, Grid2X2, ListFilter, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useRoute, useSearch } from "wouter";
 import "./manufacturerFilter.css";
 
@@ -76,7 +76,9 @@ function CataloguePage({ showAll = false }: { showAll?: boolean }) {
 
   useEffect(() => { resetFilters(); setFiltersOpen(false); setPage(requestedPage); }, [category?.slug, selectedPathLabel, requestedPage, showAll]);
   useEffect(() => { setQuery(urlQuery); }, [urlQuery]);
-  useEffect(() => { setPage(1); }, [promotion]);
+  // Reset to page 1 only when the promotion filter actually changes; on first render this used to override ?page=N.
+  const lastPromotion = useRef(promotion);
+  useEffect(() => { if (lastPromotion.current !== promotion) { lastPromotion.current = promotion; setPage(1); } }, [promotion]);
   useEffect(() => {
     if (showAll || !category || selectedPath.length === 0) return;
     const canonicalPath = categoryPathTokens(selectedPath).join("~");

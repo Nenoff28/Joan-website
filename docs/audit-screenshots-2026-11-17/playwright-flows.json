@@ -1,0 +1,127 @@
+[
+ {
+  "name": "1440px header search suggestions",
+  "pass": true,
+  "info": "4 matches"
+ },
+ {
+  "name": "1440px search submit shows results",
+  "pass": true,
+  "info": "/products?query=%D1%81%D0%BC%D0%B5%D1%81%D0%B8%D1%82%D0%B5%D0%BB -> 5 cards"
+ },
+ {
+  "name": "1440px sort by price ascending",
+  "pass": true,
+  "info": "2.8, 3.8, 4.2, 4.5, 4.6, 5.3"
+ },
+ {
+  "name": "1440px filter \"На склад\"",
+  "pass": true,
+  "info": "33 cards, 0 not in stock, url /products"
+ },
+ {
+  "name": "1440px no-results state",
+  "pass": true,
+  "info": "Няма продукти за избрания филтър."
+ },
+ {
+  "name": "1440px add to cart with quantity 2",
+  "pass": true,
+  "info": "Количка: 2"
+ },
+ {
+  "name": "1440px cart drawer opens",
+  "pass": true,
+  "info": ""
+ },
+ {
+  "name": "1440px increase qty in cart",
+  "pass": true,
+  "info": "Количка: 3"
+ },
+ {
+  "name": "1440px remove from cart",
+  "pass": true,
+  "info": "Количка: 0"
+ },
+ {
+  "name": "1440px checkout empty-submit validation",
+  "pass": true,
+  "info": "15 error markers"
+ },
+ {
+  "name": "1440px checkout submits order request (local isolated DB)",
+  "pass": true,
+  "info": "Номера J-20261117-E0990. Не е извършено онлайн плащане. Екипът на Жоан ще се свърже с Вас за потвърждение на наличност, "
+ },
+ {
+  "name": "1440px contact form validation",
+  "pass": true,
+  "info": "5 invalid markers"
+ },
+ {
+  "name": "1440px no uncaught page errors",
+  "pass": true,
+  "info": ""
+ },
+ {
+  "name": "375px header search visible",
+  "pass": false,
+  "info": "search input hidden on this viewport"
+ },
+ {
+  "name": "375px sort by price ascending",
+  "pass": true,
+  "info": "2.8, 3.8, 4.2, 4.5, 4.6, 5.3"
+ },
+ {
+  "name": "375px filter \"На склад\"",
+  "pass": true,
+  "info": "33 cards, 0 not in stock, url /products"
+ },
+ {
+  "name": "375px no-results state",
+  "pass": true,
+  "info": "Няма продукти за избрания филтър."
+ },
+ {
+  "name": "375px add to cart with quantity 2",
+  "pass": true,
+  "info": "Количка: 2"
+ },
+ {
+  "name": "375px cart drawer opens",
+  "pass": true,
+  "info": ""
+ },
+ {
+  "name": "375px increase qty in cart",
+  "pass": true,
+  "info": "Количка: 3"
+ },
+ {
+  "name": "375px remove from cart",
+  "pass": true,
+  "info": "Количка: 0"
+ },
+ {
+  "name": "375px checkout empty-submit validation",
+  "pass": true,
+  "info": "15 error markers"
+ },
+ {
+  "name": "375px mobile catalogue menu opens",
+  "pass": true,
+  "info": ""
+ },
+ {
+  "name": "375px contact form validation",
+  "pass": true,
+  "info": "5 invalid markers"
+ },
+ {
+  "name": "375px no uncaught page errors",
+  "pass": true,
+  "info": ""
+ }
+]

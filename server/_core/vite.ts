@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
+import { pathToFileURL } from "url";
 import superjson from "superjson";
 import { createServer as createViteServer } from "vite";
 import { buildSsrPrefetch } from "./ssrCaller";
@@ -51,6 +52,8 @@ async function canonicalProductRedirect(req: Request, res: Response) {
 export async function setupVite(app: Express, server: Server) {
   const { default: viteConfig } = await import("../../vite.config");
   const vite = await createViteServer({ ...viteConfig, configFile: false, server: { middlewareMode: true, hmr: { server }, allowedHosts: true }, appType: "custom" });
+  // Vite notices files added to public/ only after its watcher fires; serve fresh admin uploads immediately.
+  app.use("/media/uploads", express.static(path.resolve(import.meta.dirname, "../..", "client", "public", "media", "uploads"), { fallthrough: true }));
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     try {
@@ -89,7 +92,7 @@ export function serveStatic(app: Express) {
     if (await canonicalProductRedirect(req, res)) return;
     const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
     try {
-      const { render } = await import(ssrEntryPath);
+      const { render } = await import(pathToFileURL(ssrEntryPath).href);
       const result = await render(req.originalUrl, await buildSsrPrefetch(req, res));
       res.status(result.head.notFound ? 404 : 200).set("Cache-Control", "no-cache").type("html").end(compose(template, result.html, result.head, result.dehydratedState, res.locals.cspNonce));
     } catch (error) {

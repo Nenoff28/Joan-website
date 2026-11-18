@@ -2,6 +2,8 @@
 // Uploads via Forge Server presigned URL to S3 (PUT direct).
 // Downloads return /manus-storage/{key} paths served via 307 redirect.
 
+import fs from "node:fs";
+import path from "node:path";
 import { ENV } from "./_core/env";
 
 function getForgeConfig() {
@@ -28,11 +30,36 @@ function appendHashSuffix(relKey: string): string {
   return `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
 
+/**
+ * Without Manus Forge (local development, self-hosting) uploads go to the static media folder that is already
+ * served at /media/. Keys get an `uploads/` prefix because publicMediaUrl() rewrites catalogue/ and brochures/
+ * keys to pre-converted .webp files, which a raw upload does not have.
+ * shortcut: files live on the app server's disk; move to object storage before running several instances or on Netlify.
+ */
+function localUploadDir() {
+  if (process.env.LOCAL_UPLOAD_DIR?.trim()) return path.resolve(process.env.LOCAL_UPLOAD_DIR.trim());
+  const candidates = process.env.NODE_ENV === "production"
+    ? [path.resolve(process.cwd(), "dist/public/media"), path.resolve("/var/task/dist/public/media")]
+    : [path.resolve(process.cwd(), "client/public/media")];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+}
+
+async function localStoragePut(relKey: string, data: Buffer | Uint8Array | string) {
+  const root = localUploadDir();
+  const key = appendHashSuffix(`uploads/${normalizeKey(relKey)}`);
+  const file = path.resolve(root, key);
+  if (!file.startsWith(root + path.sep)) throw new Error("Invalid storage key.");
+  await fs.promises.mkdir(path.dirname(file), { recursive: true });
+  await fs.promises.writeFile(file, typeof data === "string" ? Buffer.from(data) : data);
+  return { key, url: `/manus-storage/${key}` };
+}
+
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) return localStoragePut(relKey, data);
   const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
 

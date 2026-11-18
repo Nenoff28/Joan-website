@@ -35,4 +35,3 @@ INSERT INTO `access_roles` (`slug`,`name`,`description`,`permissionsJson`,`isSys
 INSERT INTO `access_roles` (`slug`,`name`,`description`,`permissionsJson`,`isSystem`) VALUES ('operator','Оператор','Обработка на поръчки и контактни запитвания.','["orders.read","orders.write","enquiries.read","enquiries.write"]',true);
 --> statement-breakpoint
 INSERT INTO `access_roles` (`slug`,`name`,`description`,`permissionsJson`,`isSystem`) VALUES ('admin','Администратор','Пълен достъп и управление на роли.','["dashboard.read","products.read","products.write","inventory.read","inventory.write","promotions.read","promotions.write","categories.read","categories.write","brochures.read","brochures.write","orders.read","orders.write","enquiries.read","enquiries.write","customers.read","customers.import","legacy_orders.read","legacy_orders.import","activity.read","users.read","users.assign_roles","roles.read","roles.write"]',true);
---> statement-breakpoint

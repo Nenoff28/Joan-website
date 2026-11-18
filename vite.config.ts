@@ -150,7 +150,8 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+// The Manus editor runtime (~367 KB inline, blocked by the production CSP anyway) is only useful inside the Manus dev preview.
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), { ...vitePluginManusRuntime(), apply: "serve" as const }, vitePluginManusDebugCollector()];
 
 export default defineConfig({
   plugins,

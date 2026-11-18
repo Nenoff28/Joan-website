@@ -59,9 +59,11 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
   }
   const productMatch = path.match(/^\/product\/([a-z0-9-]+)$/);
   if (productMatch) {
-    const data = await prefetch.product({ slug: productMatch[1] });
+    const productInput = { slug: productMatch[1], language: "bg" as const };
+    const data = await prefetch.product(productInput);
     if (!data?.product) return { title: SITE, description: DEFAULT_DESCRIPTION, notFound: true };
-    await seed(queryClient, getQueryKey(trpc.catalogue.product, { slug: productMatch[1] }, "query"), data);
+    // Key must match useCatalogueProduct ({ slug, language }) or SSR renders the loading state.
+    await seed(queryClient, getQueryKey(trpc.catalogue.product, productInput, "query"), data);
     const product = data.product;
     return { title: product.metaTitle || `${product.name} | ${SITE}`, description: product.metaDescription || product.description || DEFAULT_DESCRIPTION, canonicalPath: `/product/${product.slug}`, ogImage: product.image, ogImageAlt: product.imageAlt, ogType: "product", noindex: product.metaRobots === "noindex,follow" };
   }

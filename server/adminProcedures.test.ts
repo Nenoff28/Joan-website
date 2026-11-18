@@ -248,6 +248,14 @@ describe("administrator management procedures", () => {
     expect(service.replaceAdminBrochure).toHaveBeenCalledWith(input, 17);
   });
 
+  it("saves an uploaded brochure as an inactive version when activation is not requested", async () => {
+    const input = { title: "Inactive brochure", pageUrls: ["/manus-storage/brochures/page-01.jpg"], activate: false };
+    service.replaceAdminBrochure.mockResolvedValueOnce({ id: 30, pageCount: 1 });
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.admin.replaceBrochure(input)).resolves.toEqual({ id: 30, pageCount: 1 });
+    expect(service.replaceAdminBrochure).toHaveBeenCalledWith(input, 17);
+  });
+
   it("stores an individual rendered brochure page through the protected page-upload procedure", async () => {
     const input = { dataUrl: "data:image/jpeg;base64,SlBFR0RhdGE=", fileName: "page-01.jpg" };
     const stored = { key: "brochures/pages/page-01.jpg", url: "/manus-storage/brochures/pages/page-01.jpg" };

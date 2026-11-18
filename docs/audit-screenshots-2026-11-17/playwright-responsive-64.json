@@ -1,0 +1,1426 @@
+[
+ {
+  "w": 320,
+  "name": "home",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [
+   ".homepage-category-item:357",
+   ".homepage-category-link:357",
+   "SPAN:346",
+   ".homepage-category-item:438",
+   ".homepage-category-link:438"
+  ],
+  "smallTargets": 15,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "(0884) 742 770(288x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "products",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "category",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [
+   "BUTTON:421",
+   "BUTTON:576",
+   "BUTTON:674",
+   "BUTTON:775",
+   "BUTTON:892"
+  ],
+  "smallTargets": 16,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "product",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 19,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 21,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 22,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 16,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 320,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 320,
+  "vw": 320,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "home",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [
+   ".homepage-category-item:438",
+   ".homepage-category-link:438",
+   "svg:392",
+   "path:389",
+   "line:382"
+  ],
+  "smallTargets": 16,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "(0884) 742 770(343x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "products",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 27,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "category",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [
+   "BUTTON:421",
+   "BUTTON:576",
+   "BUTTON:674",
+   "BUTTON:775",
+   "BUTTON:892"
+  ],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "product",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 20,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 22,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 375,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 375,
+  "vw": 375,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "home",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [
+   ".homepage-category-item:438",
+   ".homepage-category-link:438",
+   "svg:392",
+   "SPAN:427",
+   ".homepage-category-item:651"
+  ],
+  "smallTargets": 16,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "(0884) 742 770(358x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "products",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 28,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "category",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [
+   "BUTTON:421",
+   "BUTTON:576",
+   "BUTTON:674",
+   "BUTTON:775",
+   "BUTTON:892"
+  ],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "product",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 20,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 22,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 390,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 390,
+  "vw": 390,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "home",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [
+   ".homepage-category-item:438",
+   ".homepage-category-link:438",
+   ".homepage-category-item:651",
+   ".homepage-category-link:651",
+   "svg:473"
+  ],
+  "smallTargets": 16,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "(0884) 742 770(398x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "products",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 35,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "category",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [
+   "BUTTON:576",
+   "BUTTON:674",
+   "BUTTON:775",
+   "BUTTON:892",
+   "BUTTON:972"
+  ],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "product",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 20,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 22,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(43x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)",
+   "Начало(39x17)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 430,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 430,
+  "vw": 430,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "home",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [],
+  "smallTargets": 16,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "products",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 79,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "category",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [],
+  "smallTargets": 30,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "product",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 20,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 22,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 768,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 768,
+  "vw": 768,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "home",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "products",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 57,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "category",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [],
+  "smallTargets": 28,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "product",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 21,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 24,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 18,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1024,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 1024,
+  "vw": 1024,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "home",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "products",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 45,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "category",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [],
+  "smallTargets": 28,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "product",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 21,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 24,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 18,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1440,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 1440,
+  "vw": 1440,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "home",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "Строителни материали"
+  ],
+  "overflow": [],
+  "smallTargets": 17,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Строителни материали | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "products",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "Всички продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 45,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Всички продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "category",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "Инструменти"
+  ],
+  "overflow": [],
+  "smallTargets": 28,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Инструменти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "product",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА"
+  ],
+  "overflow": [],
+  "smallTargets": 21,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "ВИДИМА СТОЯЩ СМЕСИТЕЛ ORION В0880АА | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "checkout",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "Заявка за доставка"
+  ],
+  "overflow": [],
+  "smallTargets": 23,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Заявка за доставка | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "contact",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "Нека намерим точното решение."
+  ],
+  "overflow": [],
+  "smallTargets": 24,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Контакти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "favorites",
+  "status": 200,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "Любими продукти"
+  ],
+  "overflow": [],
+  "smallTargets": 18,
+  "smallEx": [
+   "Експресна доставка(138x18)",
+   "Магазин(48x18)",
+   "Контакти(62x18)",
+   "(0884) 742 770(105x18)"
+  ],
+  "title": "Любими продукти | ЖОАН",
+  "errors": [
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ },
+ {
+  "w": 1920,
+  "name": "notfound",
+  "status": 404,
+  "scrollW": 1920,
+  "vw": 1920,
+  "h1": [
+   "404"
+  ],
+  "overflow": [],
+  "smallTargets": 0,
+  "smallEx": [],
+  "title": "Страницата не е намерена | ЖОАН",
+  "errors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "Permissions policy violation: unload is not allowed in this document."
+  ]
+ }
+]

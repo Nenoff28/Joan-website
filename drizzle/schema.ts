@@ -1,4 +1,4 @@
-import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, foreignKey, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /** Manus-authenticated users. The project owner becomes an admin during authentication. */
 export const users = mysqlTable("users", {
@@ -103,7 +103,7 @@ export const customerActivationTokens = mysqlTable("customer_activation_tokens",
 export const legacyCustomerOrders = mysqlTable("legacy_customer_orders", {
   id: int("id").autoincrement().primaryKey(),
   legacyOrderId: int("legacyOrderId").notNull().unique(),
-  customerId: int("customerId").references(() => customerProfiles.id),
+  customerId: int("customerId"),
   legacyCustomerId: int("legacyCustomerId"),
   storeName: varchar("storeName", { length: 255 }),
   orderStatus: varchar("orderStatus", { length: 160 }).notNull(),
@@ -116,12 +116,17 @@ export const legacyCustomerOrders = mysqlTable("legacy_customer_orders", {
   importedAt: timestamp("importedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [index("legacy_customer_orders_customer_date_idx").on(table.customerId, table.orderedAt), index("legacy_customer_orders_status_idx").on(table.orderStatus)]);
+}, (table) => [
+  // FK names match the deployed database (migration 0004); auto-generated names exceed MySQL's 64-char limit elsewhere.
+  foreignKey({ name: "lc_order_customer_fk", columns: [table.customerId], foreignColumns: [customerProfiles.id] }),
+  index("legacy_customer_orders_customer_date_idx").on(table.customerId, table.orderedAt),
+  index("legacy_customer_orders_status_idx").on(table.orderStatus),
+]);
 
 /** Product lines from historical orders remain immutable migration records and do not imply present-day catalogue availability. */
 export const legacyCustomerOrderLines = mysqlTable("legacy_customer_order_lines", {
   id: int("id").autoincrement().primaryKey(),
-  legacyOrderRecordId: int("legacyOrderRecordId").notNull().references(() => legacyCustomerOrders.id),
+  legacyOrderRecordId: int("legacyOrderRecordId").notNull(),
   legacyProductId: int("legacyProductId"),
   linePosition: int("linePosition").notNull(),
   productName: varchar("productName", { length: 500 }).notNull(),
@@ -132,7 +137,11 @@ export const legacyCustomerOrderLines = mysqlTable("legacy_customer_order_lines"
   lineTax: decimal("lineTax", { precision: 14, scale: 2 }),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => [index("legacy_customer_order_lines_order_idx").on(table.legacyOrderRecordId)]);
+}, (table) => [
+  // FK name matches the deployed database (migration 0004); the auto-generated name exceeds MySQL's 64-char limit.
+  foreignKey({ name: "lc_order_line_order_fk", columns: [table.legacyOrderRecordId], foreignColumns: [legacyCustomerOrders.id] }),
+  index("legacy_customer_order_lines_order_idx").on(table.legacyOrderRecordId),
+]);
 
 /** Catalogue taxonomies are managed independently from products. */
 export const catalogueCategories = mysqlTable("catalogue_categories", {
@@ -333,11 +342,17 @@ export const catalogueManufacturers = mysqlTable("catalogue_manufacturers", {
 /** Preserve legacy category membership beyond the primary category used by current storefront cards. */
 export const catalogueProductCategoryLinks = mysqlTable("catalogue_product_category_links", {
   id: int("id").autoincrement().primaryKey(),
-  productId: int("productId").notNull().references(() => catalogueProducts.id),
-  categoryId: int("categoryId").notNull().references(() => catalogueCategories.id),
+  productId: int("productId").notNull(),
+  categoryId: int("categoryId").notNull(),
   position: int("position").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => [index("catalogue_product_category_links_product_idx").on(table.productId), index("catalogue_product_category_links_category_idx").on(table.categoryId)]);
+}, (table) => [
+  // FK names match the deployed database (migration 0005); auto-generated names exceed MySQL's 64-char limit.
+  foreignKey({ name: "cpc_link_product_fk", columns: [table.productId], foreignColumns: [catalogueProducts.id] }),
+  foreignKey({ name: "cpc_link_category_fk", columns: [table.categoryId], foreignColumns: [catalogueCategories.id] }),
+  index("catalogue_product_category_links_product_idx").on(table.productId),
+  index("catalogue_product_category_links_category_idx").on(table.categoryId),
+]);
 
 /** Scheduled percentage campaigns; product base prices remain unchanged. */
 export const promotionCampaigns = mysqlTable("promotion_campaigns", {

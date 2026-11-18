@@ -24,7 +24,9 @@ describe("promotion campaigns", () => {
     expect(service).toContain("const startsAt = row.linkStartsAt ?? row.campaignStartsAt");
     expect(service).toContain("const endsAt = row.linkEndsAt ?? row.campaignEndsAt");
     expect(service).toContain("if (startsAt > now || (endsAt && endsAt <= now)) continue");
-    expect(service).toContain("Math.round(basePrice * (1 - (activePromotion.discountPercent ?? 0) / 100) * 100) / 100");
+    // The formula lives in shared/campaignPrice.ts so storefront and order requests cannot drift apart.
+    expect(readFileSync(new URL("../shared/campaignPrice.ts", import.meta.url), "utf8")).toContain("Math.round(basePrice * (1 - (campaign.discountPercent ?? 0) / 100) * 100) / 100");
+    expect(service).toContain("const promotionPrice = campaignPrice(basePrice, activePromotion);");
     expect(service).toContain("EXISTS (SELECT 1 FROM promotion_campaign_products");
   });
 

@@ -9,6 +9,8 @@ import { notifyOwner } from "./_core/notification";
 import { alignInternalCodeFeatures, alignInternalCodeTechnicalSpecs, splitProductDescription } from "./technicalSpecifications";
 import { buildProductCategoryOptions, canonicalSelectedSubcategoryPath, categoryPathNodes, legacyCategoryRootsByPublicSlug as categoryRootsByPublicSlug, validateSelectedSubcategoryPath, type ProductCategoryTreeRow } from "./productCategoryAssignments";
 import type { CategoryPayload as SharedCategoryPayload } from "../shared/categoryValidation";
+import { brandKeys } from "../shared/brandKeys";
+import { campaignPrice } from "../shared/campaignPrice";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
@@ -57,7 +59,7 @@ export type BrochureUploadPayload = {
   pages: Array<{ dataUrl: string; fileName: string }>;
 };
 
-export type BrochureReplacementPayload = { title: string; pageUrls: string[] };
+export type BrochureReplacementPayload = { title: string; pageUrls: string[]; activate?: boolean };
 
 const fallbackBrochurePages = [
   "/manus-storage/page-1_7884f6f6.jpg", "/manus-storage/page-2_9b25fc80.jpg", "/manus-storage/page-3_6c0ba892.jpg", "/manus-storage/page-4_b096aaa9.jpg",
@@ -134,6 +136,29 @@ function cachedPublicRead<T>(key: string, ttlMs: number, load: () => Promise<T>)
 
 function invalidatePublicReadCache() {
   publicReadCache.clear();
+}
+
+/** Logo per normalized brand key, for products whose brand spelling differs from the manufacturer record (ROCA/Roca, ТОРЕХ/Topex). */
+function manufacturerLogoIndex(db: Awaited<ReturnType<typeof requireDb>>): Promise<Map<string, string>> {
+  return cachedPublicRead("manufacturer-logo-index", 60_000, async () => {
+    const rows = await db.select({ name: catalogueManufacturers.name, logo: catalogueManufacturers.officialLogoUrl }).from(catalogueManufacturers);
+    const index = new Map<string, string>();
+    const ambiguous = new Set<string>();
+    for (const row of rows) {
+      if (!row.logo) continue;
+      for (const key of brandKeys(row.name)) {
+        // Two manufacturers sharing a key would make the logo a guess; leave such keys unmatched.
+        if (index.has(key) && index.get(key) !== row.logo) ambiguous.add(key);
+        else index.set(key, row.logo);
+      }
+    }
+    ambiguous.forEach((key) => index.delete(key));
+    return index;
+  });
+}
+
+function logoByBrand(index: Map<string, string>, brand: string | null | undefined) {
+  return brandKeys(brand).map((key) => index.get(key)).find(Boolean) ?? null;
 }
 
 /** Imports the existing public catalogue once, keeping current routes stable while admin management takes over. */
@@ -448,9 +473,7 @@ function publicProduct(product: typeof catalogueProducts.$inferSelect, category:
   const presentation = splitProductDescription(sourceDescription, features);
   const technicalSpecs = alignInternalCodeTechnicalSpecs(presentation.technicalSpecs, product.sku, language).filter(specification => !["категория", "category"].includes(specification.label.trim().toLocaleLowerCase("bg-BG")));
   const basePrice = product.priceEur === null ? null : Number(product.priceEur);
-  const promotionPrice = activePromotion && basePrice !== null
-    ? activePromotion.fixedPriceEur !== null ? activePromotion.fixedPriceEur : Math.max(0, Math.round(basePrice * (1 - (activePromotion.discountPercent ?? 0) / 100) * 100) / 100)
-    : null;
+  const promotionPrice = campaignPrice(basePrice, activePromotion);
   return {
     id: product.id,
     slug: product.slug,
@@ -520,7 +543,8 @@ export async function getPublicCatalogue(language: CatalogueLanguage = "bg") {
   const englishById: CategoryEnglishMap = new Map(categoryRows.flatMap((row) => row.english ? [[row.category.id, row.english] as const] : []));
   const roots = rootCategories(rows, true);
   const activePromotions = await activePromotionsByProductIds(db, productRows.map((row) => row.product.id));
-  return { categories: roots.map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id))) };
+  const logos = await manufacturerLogoIndex(db);
+  return { categories: roots.map((root) => publicCategory(root, englishById.get(root.id), language, categoryTreeForRows(rows, root, true, language, englishById))), products: productRows.map((row) => publicProduct(row.product, row.category, row.english, language, (row.manufacturer?.officialLogoUrl || logoByBrand(logos, row.product.brand)), activePromotions.get(row.product.id))) };
 }
 
 export type PublicCataloguePageInput = {
@@ -673,7 +697,8 @@ async function getPublicCataloguePageUncached(input: PublicCataloguePageInput) {
     db.select({ brand: language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).where(and(...publicCatalogueConditions({ ...input, language, brand: undefined, brands: undefined, query: undefined, minPrice: undefined, maxPrice: undefined, availability: undefined }, category && !input.path?.length ? category.id : undefined))).groupBy(language === "en" ? sql`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand).orderBy(asc(language === "en" ? sql<string>`COALESCE(${catalogueProductEnglish.brand}, ${catalogueProducts.brand})` : catalogueProducts.brand)),
   ]);
   const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
-  return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id))), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
+  const logos = await manufacturerLogoIndex(db);
+  return { products: rows.map((row) => publicProduct(row.product, row.category, row.english, language, (row.manufacturer?.officialLogoUrl || logoByBrand(logos, row.product.brand)), activePromotions.get(row.product.id))), total: Number(countRows[0]?.total ?? 0), page, pageSize, brands: brandRows.flatMap((row) => row.brand ? [row.brand] : []) };
 }
 
 export function getPublicCataloguePage(input: PublicCataloguePageInput) {
@@ -702,7 +727,8 @@ async function getPublicBestSellersUncached(limit = 8, language: CatalogueLangua
     .orderBy(desc(quantityTotals.units), desc(catalogueProducts.updatedAt), asc(catalogueProducts.name))
     .limit(cappedLimit);
   const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
-  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)));
+  const logos = await manufacturerLogoIndex(db);
+  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, (row.manufacturer?.officialLogoUrl || logoByBrand(logos, row.product.brand)), activePromotions.get(row.product.id)));
 }
 
 export function getPublicBestSellers(limit = 8, language: CatalogueLanguage = "bg") {
@@ -740,7 +766,8 @@ async function getPublicProductBySlugUncached(slug: string, language: CatalogueL
     isOutOfStock: candidate.product.availability === "out_of_stock" || (candidate.product.stockQuantity != null && Number(candidate.product.stockQuantity) <= 0),
     };
   });
-  return { product: publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id), colorVariants), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, candidate.manufacturer?.officialLogoUrl, activePromotions.get(candidate.product.id))) };
+  const logos = await manufacturerLogoIndex(db);
+  return { product: publicProduct(row.product, row.category, row.english, language, (row.manufacturer?.officialLogoUrl || logoByBrand(logos, row.product.brand)), activePromotions.get(row.product.id), colorVariants), related: relatedRows.map((candidate) => publicProduct(candidate.product, candidate.category, candidate.english, language, (candidate.manufacturer?.officialLogoUrl || logoByBrand(logos, candidate.product.brand)), activePromotions.get(candidate.product.id))) };
 }
 
 export function getPublicProductBySlug(slug: string, language: CatalogueLanguage = "bg") {
@@ -753,7 +780,8 @@ async function getPublicProductsBySlugsUncached(slugs: string[], language: Catal
   const db = await requireDb();
   const rows = await db.select({ product: catalogueProducts, category: catalogueCategories, english: catalogueProductEnglish, manufacturer: catalogueManufacturers }).from(catalogueProducts).innerJoin(catalogueCategories, eq(catalogueProducts.categoryId, catalogueCategories.id)).leftJoin(catalogueProductEnglish, eq(catalogueProductEnglish.productId, catalogueProducts.id)).leftJoin(catalogueManufacturers, eq(catalogueProducts.brand, catalogueManufacturers.name)).where(and(or(inArray(catalogueProducts.slug, slugs), inArray(catalogueProducts.legacyPublicSlug, slugs))!, eq(catalogueProducts.isActive, true), eq(catalogueCategories.isActive, true), eq(catalogueCategories.isArchived, false)));
   const activePromotions = await activePromotionsByProductIds(db, rows.map((row) => row.product.id));
-  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, row.manufacturer?.officialLogoUrl, activePromotions.get(row.product.id)));
+  const logos = await manufacturerLogoIndex(db);
+  return rows.map((row) => publicProduct(row.product, row.category, row.english, language, (row.manufacturer?.officialLogoUrl || logoByBrand(logos, row.product.brand)), activePromotions.get(row.product.id)));
 }
 
 export function getPublicProductsBySlugs(slugs: string[], language: CatalogueLanguage = "bg") {
@@ -832,7 +860,19 @@ export async function getAdminBrochures() {
   return rows.map(publicBrochure);
 }
 
-export async function getAdminProducts(options?: { includeArchived?: boolean }) {
+// Admin pages request products and operations in parallel; both built the full ~11 000-product list (~4 s each).
+// Concurrent callers now share one in-flight build. Nothing is kept after it resolves, so data is never stale.
+const adminProductsInFlight = new Map<string, ReturnType<typeof getAdminProductsUncached>>();
+export function getAdminProducts(options?: { includeArchived?: boolean }) {
+  const key = options?.includeArchived ? "all" : "current";
+  const pending = adminProductsInFlight.get(key);
+  if (pending) return pending;
+  const build = getAdminProductsUncached(options).finally(() => adminProductsInFlight.delete(key));
+  adminProductsInFlight.set(key, build);
+  return build;
+}
+
+async function getAdminProductsUncached(options?: { includeArchived?: boolean }) {
   await ensureCatalogueSeeded();
   const db = await requireDb();
   const [rows, taxonomyRows] = await Promise.all([
@@ -1506,10 +1546,13 @@ export async function createOrderRequest(input: OrderRequestInput) {
   return db.transaction(async (tx) => {
     const products = await tx.select().from(catalogueProducts).where(and(inArray(catalogueProducts.slug, requestedItems.map((item) => item.productSlug)), eq(catalogueProducts.isActive, true), ne(catalogueProducts.availability, "out_of_stock")));
     const productBySlug = new Map(products.map((product) => [product.slug, product]));
+    // Charge what the storefront shows: apply the same active campaign price as publicProduct().
+    const activePromotions = await activePromotionsByProductIds(db, products.map((product) => product.id));
     const resolvedItems = requestedItems.map((item) => {
       const product = productBySlug.get(item.productSlug);
       if (!product) throw new Error("One or more products are unavailable");
-      const price = product.priceEur ? Number(product.priceEur) : null;
+      const basePrice = product.priceEur ? Number(product.priceEur) : null;
+      const price = campaignPrice(basePrice, activePromotions.get(product.id)) ?? basePrice;
       return { product, quantity: item.quantity, price, total: price === null ? null : price * item.quantity };
     });
     const totalQuantity = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -1642,6 +1685,7 @@ export async function replaceAdminBrochure(input: BrochureReplacementPayload, ad
   const result = await db.insert(catalogueBrochures).values({ title: input.title.trim(), sourcePdfKey: null, sourcePdfUrl: null, pageUrlsJson: JSON.stringify(input.pageUrls), pageCount: input.pageUrls.length, isActive: false, isArchived: false });
   const id = Number(result[0].insertId);
   await logAdminActivity(adminUserId, "brochure.uploaded", "brochure", id, { title: input.title.trim(), pageCount: input.pageUrls.length, sourcePdfKey: null });
+  if (input.activate === false) return { id, pageCount: input.pageUrls.length };
   await activateAdminBrochure(id, adminUserId);
   await logAdminActivity(adminUserId, "brochure.replaced", "brochure", id, { title: input.title.trim(), pageCount: input.pageUrls.length });
   return { id, pageCount: input.pageUrls.length };
