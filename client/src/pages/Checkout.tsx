@@ -465,6 +465,8 @@ export default function Checkout() {
       setSubmittedItems(checkoutRows.map(row => ({ name: row.product.name, sku: row.product.sku?.trim() || null, quantity: row.quantity })));
       setRequestNumbers([result.requestNumber]);
       clearCart();
+      // The form is long; without this the confirmation renders above the visitor's scroll position.
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       const message = language === "bg"
         ? "Заявката не можа да бъде записана. Проверете данните и опитайте отново."

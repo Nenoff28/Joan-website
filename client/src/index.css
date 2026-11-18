@@ -1488,3 +1488,12 @@ article.product-card .availability-on_request { color: #8a5410; }
 
 /* Checkout: delivery or pickup at the Silistra store */
 .delivery-method-fieldset .pickup-note { background: #f6f7f3; border: 1px solid var(--line); color: var(--charcoal); font-size: .84rem; line-height: 1.5; margin-top: .8rem; padding: .75rem .9rem; }
+
+/* Confirmation dialogs: the global `button { background: none; border: 0 }` reset stripped shadcn's button styles, so
+   "Отказ" / "Да, изтрий" read as plain text. Same look as .admin-product-confirmation, at low specificity. */
+[data-slot="alert-dialog-title"] { font-size: 1.25rem; font-weight: 750; letter-spacing: -.015em; line-height: 1.35; }
+[data-slot="alert-dialog-description"] { color: #535e59; font-size: .875rem; line-height: 1.6; }
+:where([data-slot="alert-dialog-footer"]) button { background: #303739; border: 1px solid #303739; border-radius: 7px; color: #fff; font-size: .875rem; font-weight: 700; min-height: 42px; padding: .65rem 1rem; }
+:where([data-slot="alert-dialog-footer"]) button:where(:first-child) { background: #f4f5f3; border-color: #ced3d0; color: #303739; }
+:where([data-slot="alert-dialog-footer"]) button:where(:last-child:not(:first-child)) { background: var(--red); border-color: var(--red); }
+:where([data-slot="alert-dialog-footer"]) button:where(:disabled) { cursor: wait; opacity: .5; }

@@ -133,7 +133,8 @@ function App() {
           <CartProvider>
             <FavoritesProvider>
               <TooltipProvider>
-                <Toaster />
+                {/* Top-center: bottom-right toasts covered admin save buttons and swallowed the next click. */}
+                <Toaster position="top-center" />
                 <AppContent />
               </TooltipProvider>
             </FavoritesProvider>
