@@ -1676,6 +1676,7 @@ export async function activateAdminBrochure(id: number, adminUserId: number) {
     await tx.update(catalogueBrochures).set({ isActive: false }).where(eq(catalogueBrochures.isActive, true));
     await tx.update(catalogueBrochures).set({ isActive: true, isArchived: false }).where(eq(catalogueBrochures.id, id));
   });
+  invalidatePublicReadCache();
   await logAdminActivity(adminUserId, "brochure.activated", "brochure", id, { title: brochure.title, pageCount: brochure.pageCount });
 }
 
