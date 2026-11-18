@@ -1423,3 +1423,12 @@ article.product-card .availability-on_request { color: #8a5410; }
   .mobile-cart-sheet { align-items: end; background: rgba(15, 19, 19, .45); display: flex; inset: 0; position: fixed; z-index: 95; }
   .mobile-cart-sheet .mini-cart { border-inline: 0; border-bottom: 0; max-height: 82vh; overflow: auto; position: static; width: 100%; }
 }
+
+/* Checkout: on phones the order summary comes before the form; "what happens next" restates the published delivery terms. */
+.checkout-next-steps { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+.checkout-next-steps h2 { font-size: 1rem; margin-bottom: .55rem; }
+.checkout-next-steps ol { counter-reset: step; display: grid; gap: .5rem; list-style: none; margin: 0; padding: 0; }
+.checkout-next-steps li { color: var(--slate); counter-increment: step; display: grid; font-size: .82rem; gap: .55rem; grid-template-columns: 1.4rem 1fr; line-height: 1.45; }
+.checkout-next-steps li::before { align-items: center; background: var(--charcoal); border-radius: 50%; color: white; content: counter(step); display: flex; font-size: .68rem; font-weight: 800; height: 1.4rem; justify-content: center; }
+.checkout-next-steps a { align-items: center; color: var(--red); display: inline-flex; font-size: .78rem; font-weight: 800; gap: .3rem; margin-top: .7rem; }
+@media (max-width: 760px) { .checkout-grid { display: flex; flex-direction: column; } .checkout-summary { margin: 0 0 1rem; order: -1; } }

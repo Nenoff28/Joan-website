@@ -973,6 +973,15 @@ export default function Checkout() {
                     </Link>
                   </div>
                 )}
+                <div className="checkout-next-steps">
+                  <h2>{language === "bg" ? "Какво следва" : "What happens next"}</h2>
+                  <ol>
+                    <li>{language === "bg" ? "Оператор на Жоан се свързва с Вас, за да потвърди наличност, цена и доставка." : "A Joan operator contacts you to confirm availability, price and delivery."}</li>
+                    <li>{language === "bg" ? "Доставката е експресна и е за сметка на клиента." : "Delivery is express and paid by the customer."}</li>
+                    <li>{language === "bg" ? "Поръчка до 16:00 в работен ден се изпраща същия ден и пристига на следващия." : "Orders placed by 16:00 on a working day ship the same day and arrive the next day."}</li>
+                  </ol>
+                  <Link href="/delivery">{language === "bg" ? "Условия за доставка" : "Delivery terms"} <ArrowRight size={15} /></Link>
+                </div>
                 <div className="checkout-disclosure">
                   <LockKeyhole size={19} />
                   <p>

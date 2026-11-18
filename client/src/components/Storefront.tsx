@@ -301,7 +301,7 @@ function Header() {
         </div>
       )}
       {/* Catalogue, product and favourites pages render their own <Breadcrumbs>; a second rail there duplicated the trail. */}
-      {location !== "/" && !/^\/(products|category\/|product\/|favorites)/.test(location) && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{t("customerInfo")}</span></div>}
+      {location !== "/" && !/^\/(products|category\/|product\/|favorites)/.test(location) && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/checkout") ? t("checkoutNav") : t("customerInfo")}</span></div>}
     </header>
   );
 }
