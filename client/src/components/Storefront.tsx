@@ -206,6 +206,7 @@ function Header() {
           <Link href="/delivery" className="utility-delivery"><Truck size={14} /> {language === "bg" ? "Експресна доставка" : "Express delivery"}</Link>
           <div className="utility-actions">
             <a href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8" target="_blank" rel="noreferrer">{language === "bg" ? "Магазин" : "Store"}</a>
+            <Link href="/quick-order">{language === "bg" ? "Бърза поръчка" : "Quick order"}</Link>
             <Link href="/contact">{t("contacts")}</Link>
             <a href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`}><Phone size={13} /> {store.phones[2]}</a>
           </div>
@@ -293,6 +294,7 @@ function Header() {
             <Link href="/contact" onClick={() => setMobileOpen(false)}>{t("contacts")}</Link>
             <Link href="/faq" onClick={() => setMobileOpen(false)} aria-label={language === "en" ? "Frequently asked questions" : "Често задавани въпроси"}>{language === "en" ? "FAQ" : "ЧЗВ"}</Link>
             <Link href="/favorites" onClick={() => setMobileOpen(false)}><Heart size={18} /> {t("favorites")}{count > 0 && ` (${count})`}</Link>
+            <Link href="/quick-order" onClick={() => setMobileOpen(false)}>{language === "bg" ? "Бърза поръчка по код" : "Quick order by code"}</Link>
             <Link href="/checkout">{t("checkoutNav")}</Link>
           </div>
           <Link href="/products" onClick={() => setMobileOpen(false)} className="mobile-all-products">{t("viewAllProducts")} <ArrowRight size={17} /></Link>
@@ -302,7 +304,7 @@ function Header() {
         </div>
       )}
       {/* Catalogue, product and favourites pages render their own <Breadcrumbs>; a second rail there duplicated the trail. */}
-      {location !== "/" && !/^\/(products|category\/|product\/|favorites)/.test(location) && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/checkout") ? t("checkoutNav") : t("customerInfo")}</span></div>}
+      {location !== "/" && !/^\/(products|category\/|product\/|favorites)/.test(location) && <div className="page-frame breadcrumb-rail"><Link href="/">{t("home")}</Link><ChevronRight size={14} /><span>{location.startsWith("/checkout") ? t("checkoutNav") : location.startsWith("/quick-order") ? (language === "bg" ? "Бърза поръчка" : "Quick order") : t("customerInfo")}</span></div>}
     </header>
   );
 }

@@ -1,12 +1,13 @@
 import { publicMediaUrl } from "@/lib/media";
 import { displayPrice } from "@/lib/price";
+import { store } from "@/lib/storeData";
 /** DESIGN REMINDER — Product truth comes first: complete image, price/inquiry state, manufacturer identity and useful catalogue alternatives. */
 import { Breadcrumbs, brandLogoFor, JsonLd, Layout, PageMeta, ProductCard, SectionHeading, toastAddedToCart } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
 import { useCatalogue, useCatalogueProduct } from "@/hooks/useCatalogue";
-import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShieldCheck, ShoppingCart, Truck, X, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, Phone, ShieldCheck, ShoppingCart, Truck, X, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Link, useLocation, useRoute } from "wouter";
@@ -121,6 +122,7 @@ export default function Product() {
         </section>
         <section className={`product-information${product.description ? "" : " product-information-specs-only"}`}>{product.description ? <div><p className="eyebrow">{t("description")}</p><h2>{t("aboutProduct")}</h2><p>{product.description}</p></div> : null}<div className="spec-table"><p className="eyebrow">{t("availableInfo")}</p><h2>{t("technicalData")}</h2>{technicalSpecs.map((specification, index) => <div className={`specification-row ${index % 2 === 0 ? "is-muted" : ""}`} key={`${specification.label}-${specification.value}`}><span>{specification.label}</span><b>{specification.value}</b></div>)}<div className="specification-row"><span>{t("category")}</span><Link href={`/category/${product.category}`}>{category?.label}</Link></div></div></section>
 
+        <div className="mobile-buy-bar" aria-label={language === "en" ? "Quick purchase" : "Бърза покупка"}>{product.price && !isOutOfStock ? <><strong>{displayPrice(product.price)}</strong><button type="button" onClick={() => { addItem(product.slug, quantity); toastAddedToCart(language, () => setLocation("/checkout")); }}><ShoppingCart size={18} /> {language === "en" ? "Add" : "Добави"}</button></> : <Link href="/contact" className="mobile-buy-enquiry">{t("productEnquiry")}</Link>}<a href={`tel:${store.phones[2].replace(/[^0-9+]/g, "")}`} aria-label={language === "en" ? `Call ${store.phones[2]}` : `Обадете се на ${store.phones[2]}`}><Phone size={18} /></a></div>
         <section className="related-section"><SectionHeading eyebrow={t("catalogue")} title={t("recommendations")} text={t("recommendationsText")} /><div className="related-carousel"><div className="related-carousel-track" aria-live="polite">{carouselProducts.map((item) => <ProductCard key={item.slug} product={item} compact />)}</div>{related.length > 4 && <div className="related-carousel-controls"><button type="button" onClick={() => rotateRecommendations(-1)} aria-label={language === "en" ? "Show previous recommendations" : "Покажи предишни препоръчани продукти"}><ChevronLeft size={18} /></button><span>{language === "en" ? `Showing ${relatedStart + 1}–${Math.min(relatedStart + 4, related.length)} of ${related.length}` : `Показани ${relatedStart + 1}–${Math.min(relatedStart + 4, related.length)} от ${related.length}`}</span><button type="button" onClick={() => rotateRecommendations(1)} aria-label={language === "en" ? "Show next recommendations" : "Покажи следващи препоръчани продукти"}><ChevronRight size={18} /></button></div>}</div></section>
       </div>
       {isZoomed && <div className="image-zoom-modal" role="dialog" aria-modal="true" aria-label={language === "en" ? "Zoomed product view" : "Приближен изглед на продукта"} onClick={() => setIsZoomed(false)}><button type="button" className="image-zoom-close" onClick={() => setIsZoomed(false)} aria-label={language === "en" ? "Close zoomed view" : "Затвори приближения изглед"}><X size={20} /></button><img src={publicMediaUrl(activeImage)} alt={product.imageAlt || product.name} onClick={(event) => event.stopPropagation()} /></div>}

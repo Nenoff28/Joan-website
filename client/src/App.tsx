@@ -20,6 +20,7 @@ import Returns from "./pages/Returns";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
+import QuickOrder from "./pages/QuickOrder";
 import Favorites from "./pages/Favorites";
 import CustomerAccount, { CustomerActivation } from "./pages/CustomerAccount";
 
@@ -93,6 +94,7 @@ function AppRoutes() {
         <Route path="/privacy" component={Privacy} />
         <Route path={"/faq"} component={FAQ} />
         <Route path="/checkout" component={Checkout} />
+        <Route path="/quick-order" component={QuickOrder} />
         <Route path="/favorites" component={Favorites} />
         <Route path={"/returns"} component={Returns} />
         <Route path="/account/activate" component={CustomerActivation} />
