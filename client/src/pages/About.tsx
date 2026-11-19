@@ -54,7 +54,7 @@ export default function About() {
             }
           >
             <source
-              src="/media/joan-hero_0c2a067a.mp4"
+              src="/media/joan-hero-hd.mp4"
               type="video/mp4"
             />
           </video>
