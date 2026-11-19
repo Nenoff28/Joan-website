@@ -3,7 +3,6 @@ import { JsonLd, Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { store } from "@/lib/storeData";
-import { StoreMap } from "@/components/StoreMap";
 import { storeStatus } from "@/lib/storeStatus";
 import {
   CheckCircle2,
@@ -128,7 +127,6 @@ export default function Contact() {
         <section className="page-frame contact-grid">
           <aside className="contact-details">
             <div className="contact-card-main">
-              <StoreMap label={en ? "Map with the Joan store in Silistra" : "Карта с магазин Жоан в Силистра"} />
               <div className="contact-address">
                 <MapPin size={22} aria-hidden="true" />
                 <div>
