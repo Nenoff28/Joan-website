@@ -3,6 +3,8 @@ import { JsonLd, Layout, PageMeta } from "@/components/Storefront";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { store } from "@/lib/storeData";
+import { StoreMap } from "@/components/StoreMap";
+import { storeStatus } from "@/lib/storeStatus";
 import {
   CheckCircle2,
   Clock3,
@@ -13,7 +15,7 @@ import {
   Phone,
   Send,
 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const subjects = {
@@ -31,12 +33,22 @@ const subjects = {
   ],
 };
 
+// Computed after mount so server and client markup agree.
+function useStoreStatus() {
+  const [status, setStatus] = useState<{ open: boolean; today: number } | null>(null);
+  useEffect(() => {
+    setStatus(storeStatus(store.hours, new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Sofia" }))));
+  }, []);
+  return status;
+}
+
 export default function Contact() {
   const { language } = useLanguage();
   const en = language === "en";
   const [reference, setReference] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
+  const status = useStoreStatus();
   const enquiry = trpc.contact.createEnquiry.useMutation({
     onSuccess: result => {
       setReference(result.referenceNumber);
@@ -58,7 +70,9 @@ export default function Contact() {
     event.preventDefault();
     setReference(null);
     setFormError(null);
-    const form = new FormData(event.currentTarget);
+    // currentTarget is null once the event has finished, so keep the element for the async success callback.
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const fullName = String(form.get("name") ?? "").trim();
     const email = String(form.get("email") ?? "").trim();
     const subject = String(form.get("subject") ?? "").trim();
@@ -81,7 +95,7 @@ export default function Contact() {
       { fullName, email, phone: phone.trim() || null, subject, message },
       {
         onSuccess: () => {
-          event.currentTarget.reset();
+          formElement.reset();
           setPhone("");
         },
       }
@@ -100,7 +114,6 @@ export default function Contact() {
       <JsonLd />
       <main className="contact-page">
         <section className="page-frame contact-heading">
-          <p className="eyebrow">{en ? "Contact" : "Контакти"}</p>
           <h1>
             {en
               ? "Let’s find the right solution."
@@ -115,20 +128,24 @@ export default function Contact() {
         <section className="page-frame contact-grid">
           <aside className="contact-details">
             <div className="contact-card-main">
-              <MapPin size={24} />
-              <p className="eyebrow">{en ? "Joan store" : "Магазин Жоан"}</p>
-              <h2>{en ? "Silistra, 22 Tutrakan St." : store.address}</h2>
-              <p>{en ? "Bulgaria" : "България"}</p>
-              <a
-                href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {en ? "Open map" : "Отворете картата"}{" "}
-                <ExternalLink size={16} />
-              </a>
+              <StoreMap label={en ? "Map with the Joan store in Silistra" : "Карта с магазин Жоан в Силистра"} />
+              <div className="contact-address">
+                <MapPin size={22} aria-hidden="true" />
+                <div>
+                  <b>{en ? "Joan store" : "Магазин Жоан"}</b>
+                  <h2>{en ? "Silistra, 22 Tutrakan St." : store.address}</h2>
+                </div>
+                <a
+                  className="contact-map-link"
+                  href="https://maps.app.goo.gl/fJW7QuQC9hL4jtqQ8"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {en ? "Directions" : "Упътване"} <ExternalLink size={15} />
+                </a>
+              </div>
             </div>
-            <div className="contact-data">
+            <div className="contact-data contact-phones">
               <Phone size={20} />
               <div>
                 <b>{en ? "Call us" : "Обадете ни се"}</b>
@@ -144,6 +161,7 @@ export default function Contact() {
               <div>
                 <b>{en ? "Write to us" : "Пишете ни"}</b>
                 <a href={`mailto:${store.email}`}>{store.email}</a>
+                <small>{en ? "We reply on working days." : "Отговаряме в работни дни."}</small>
               </div>
             </div>
             <div className="contact-data opening-hours">
@@ -151,9 +169,10 @@ export default function Contact() {
               <div>
                 <b>
                   {en ? "Store opening hours" : "Работно време на магазина"}
+                  {status && <em className={status.open ? "is-open" : "is-closed"}>{status.open ? (en ? "Open now" : "Отворено сега") : en ? "Closed now" : "Затворено"}</em>}
                 </b>
-                {store.hours.map(([day, hour]) => (
-                  <p key={day}>
+                {store.hours.map(([day, hour], index) => (
+                  <p key={day} className={status?.today === index ? "is-today" : undefined}>
                     <span>
                       {en
                         ? day
@@ -174,9 +193,6 @@ export default function Contact() {
           </aside>
           <form className="contact-form" onSubmit={submit} noValidate>
             <div>
-              <p className="eyebrow">
-                {en ? "Send an enquiry" : "Изпратете запитване"}
-              </p>
               <h2>{en ? "How can we help?" : "Как можем да помогнем?"}</h2>
               <p>
                 {en
