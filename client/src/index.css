@@ -1641,3 +1641,5 @@ article.product-card .availability-on_request { color: #8a5410; }
 .site-footer .footer-brand .footer-contact-line { padding: .3rem 0 !important; }
 .site-footer .footer-brand .footer-contact-line:first-of-type { font-size: .95rem; font-weight: 400; margin-top: 0; }
 .site-footer .footer-brand a[href^="tel:"]:first-of-type { font-size: 1.4rem; font-weight: 800; margin-top: 1.1rem; }
+/* Footer phone: same scale as email and address, kept bold so it is still the first line. */
+.site-footer .footer-brand a[href^="tel:"], .site-footer .footer-brand a[href^="tel:"]:first-of-type { font-size: 1rem; font-weight: 700; letter-spacing: 0; margin-top: 1rem; }
