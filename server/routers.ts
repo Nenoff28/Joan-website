@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { additionalCustomerProcedures, assertCustomerSameOrigin } from "./customerAuthRouter";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
@@ -64,6 +65,9 @@ import {
   activateCustomerAccount,
   clearCustomerSession,
   getCustomerFromRequest,
+  getCustomerIdentityFromRequest,
+  getCustomerOrderRequests,
+  updateCustomerContact,
   importLegacyCustomers,
   loginCustomer,
   previewLegacyCustomerWorkbook,
@@ -172,6 +176,8 @@ export const appRouter = router({
   customer: router({
     ...additionalCustomerProcedures,
     me: publicProcedure.query(({ ctx }) => getCustomerFromRequest(ctx.req.headers.cookie)),
+    myRequests: publicProcedure.query(async ({ ctx }) => { const identity = await getCustomerIdentityFromRequest(ctx.req.headers.cookie); return identity ? getCustomerOrderRequests(identity.id) : { verified: false, requests: [] }; }),
+    updateContact: publicProcedure.input(z.object({ firstName: z.string().trim().min(1).max(120), lastName: z.string().trim().min(1).max(120), phone: z.string().trim().max(64).nullable() })).mutation(async ({ input, ctx }) => { assertCustomerSameOrigin(ctx.req); const identity = await getCustomerIdentityFromRequest(ctx.req.headers.cookie); if (!identity) throw new TRPCError({ code: "UNAUTHORIZED" }); return updateCustomerContact(identity.id, { ...input, phone: input.phone || null }); }),
     login: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(256) })).mutation(({ input, ctx }) => { assertCustomerSameOrigin(ctx.req); return loginCustomer(input.email, input.password, ctx.res); }),
     activate: publicProcedure.input(z.object({ token: z.string().trim().min(32).max(160), password: z.string().min(12).max(256) })).mutation(({ input, ctx }) => { assertCustomerSameOrigin(ctx.req); return activateCustomerAccount(input.token, input.password, ctx.res); }),
     logout: publicProcedure.mutation(({ ctx }) => { clearCustomerSession(ctx.res); return { success: true } as const; }),

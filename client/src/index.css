@@ -2075,3 +2075,28 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .account-profile-card .button-outline, .account-card .button-outline { align-items: center; border: 1px solid var(--line); border-radius: 999px; display: inline-flex; font-weight: 700; gap: .45rem; padding: .65rem 1.2rem; }
 .account-address-section, .account-history-section { border-top: 0; }
 .account-address-card, .account-history-order { border: 0; border-radius: 14px; box-shadow: 0 1px 0 rgba(29,35,35,.06), 0 8px 24px rgba(29,35,35,.05); }
+
+/* Account dashboard */
+.account-dash-head { align-items: center; display: flex; gap: 1rem; }
+.account-dash-head h1 { font-family: Manrope, sans-serif; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.03em; line-height: 1.1; }
+.account-dash-head a { color: var(--slate); font-size: .92rem; }
+.account-dash-head .button-outline { margin-left: auto; }
+.account-stats { display: grid; gap: .8rem; grid-template-columns: repeat(3, 1fr); margin: 1.6rem 0; }
+.account-stats > div { background: #fff; border-radius: 14px; box-shadow: 0 1px 0 rgba(29,35,35,.06), 0 8px 24px rgba(29,35,35,.05); display: grid; gap: .1rem; padding: 1rem 1.2rem; }
+.account-stats b { color: var(--red); font-family: Manrope, sans-serif; font-size: 1.7rem; }
+.account-stats span { color: var(--slate); font-size: .82rem; }
+.account-tabs { background: #f0f1ed; border-radius: 999px; display: inline-flex; gap: .2rem; padding: .25rem; }
+.account-tabs button { align-items: center; border-radius: 999px; color: var(--slate); display: inline-flex; font-weight: 700; gap: .4rem; padding: .6rem 1.1rem; }
+.account-tabs button.is-active { background: #fff; box-shadow: 0 2px 8px rgba(29,35,35,.1); color: var(--ink); }
+.account-panel { margin-top: 1.6rem; }
+.account-panel h2 { font-family: Manrope, sans-serif; font-size: 1.35rem; margin: 1.6rem 0 .9rem; }
+.account-panel h2:first-child { margin-top: 0; }
+.account-history-order em.status-confirmed, .account-history-order em.status-closed { color: #176b46; }
+.account-history-order em.status-cancelled { color: var(--slate); }
+.account-contact-form { background: #fff; border-radius: 16px; box-shadow: 0 8px 24px rgba(29,35,35,.06); display: grid; gap: 1rem; max-width: 520px; padding: 1.4rem; }
+.account-contact-form label { display: grid; font-size: .82rem; font-weight: 800; gap: .4rem; }
+.account-contact-form input { background: #f6f7f4; border: 1px solid transparent; border-radius: 12px; font: inherit; font-weight: 500; padding: .85rem 1rem; }
+.account-contact-form input:disabled { color: var(--slate); }
+.account-contact-form .button-solid { border-radius: 12px; justify-self: start; min-height: 48px; padding: 0 1.6rem; }
+@media (max-width: 760px) { .account-dash-head { flex-wrap: wrap; } .account-dash-head .button-outline { margin-left: 0; } .account-tabs { display: flex; overflow-x: auto; } .account-tabs button { flex: 1; justify-content: center; padding-inline: .6rem; white-space: nowrap; } }
+.account-dash-head .button-outline { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); display: inline-flex; font-weight: 700; gap: .45rem; padding: .6rem 1.2rem; }

@@ -1,8 +1,8 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
 import * as XLSX from "xlsx";
-import { customerActivationTokens, customerAddresses, customerCredentials, customerProfiles } from "../drizzle/schema";
+import { customerActivationTokens, customerAddresses, customerCredentials, customerProfiles, orderRequestItems, orderRequests, orderStatusHistory } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 import { getHistoricalOrdersForCustomer } from "./legacyOrders";
@@ -454,7 +454,7 @@ export async function activateCustomerAccount(token: string, password: string, r
   const passwordHash = hashCustomerPassword(password);
   await db.transaction(async (tx) => {
     await tx.update(customerActivationTokens).set({ usedAt: new Date() }).where(eq(customerActivationTokens.id, activation.id));
-    await tx.update(customerProfiles).set({ accountStatus: "active", activatedAt: new Date(), lastSignedInAt: new Date() }).where(eq(customerProfiles.id, activation.customerId));
+    await tx.update(customerProfiles).set({ accountStatus: "active", activatedAt: new Date(), emailVerifiedAt: new Date(), lastSignedInAt: new Date() }).where(eq(customerProfiles.id, activation.customerId));
     const [credential] = await tx.select().from(customerCredentials).where(eq(customerCredentials.customerId, activation.customerId)).limit(1);
     if (!credential) throw new Error("Липсва защитен запис за клиентския профил.");
     const sessionVersion = credential.sessionVersion + 1;
@@ -480,4 +480,34 @@ export async function loginCustomer(emailInput: string, password: string, respon
   await db.update(customerProfiles).set({ lastSignedInAt: new Date() }).where(eq(customerProfiles.id, row.profile.id));
   await setCustomerSession(response, row.profile.id, row.credential.sessionVersion);
   return { success: true };
+}
+
+/** Order requests placed with the account's email. Shown only once the email is verified (Google or emailed activation link):
+ * password registration does not verify ownership, so matching by email alone would expose someone else's orders. */
+export async function getCustomerOrderRequests(customerId: number) {
+  const db = await requiredDb();
+  const [profile] = await db.select({ email: customerProfiles.email, verified: customerProfiles.emailVerifiedAt }).from(customerProfiles).where(eq(customerProfiles.id, customerId)).limit(1);
+  if (!profile) return { verified: false, requests: [] };
+  if (!profile.verified) return { verified: false, requests: [] };
+  const requests = await db.select().from(orderRequests).where(and(eq(orderRequests.email, profile.email), eq(orderRequests.isDeleted, false))).orderBy(desc(orderRequests.createdAt)).limit(50);
+  if (!requests.length) return { verified: true, requests: [] };
+  const ids = requests.map((request) => request.id);
+  const [items, history] = await Promise.all([
+    db.select().from(orderRequestItems).where(inArray(orderRequestItems.orderRequestId, ids)),
+    db.select({ orderRequestId: orderStatusHistory.orderRequestId, status: orderStatusHistory.status, createdAt: orderStatusHistory.createdAt }).from(orderStatusHistory).where(inArray(orderStatusHistory.orderRequestId, ids)).orderBy(asc(orderStatusHistory.createdAt)),
+  ]);
+  return {
+    verified: true,
+    requests: requests.map((request) => {
+      const own = items.filter((item) => item.orderRequestId === request.id);
+      const lines = own.length ? own.map((item) => ({ name: item.productName, sku: item.productSku, quantity: item.quantity, total: item.totalEur })) : [{ name: request.productName, sku: request.productSku, quantity: request.quantity, total: request.totalEur }];
+      return { requestNumber: request.requestNumber, status: request.status, createdAt: request.createdAt, city: request.city, address: request.address, lines, events: history.filter((event) => event.orderRequestId === request.id).map((event) => ({ status: event.status, createdAt: event.createdAt })) };
+    }),
+  };
+}
+
+export async function updateCustomerContact(customerId: number, input: { firstName: string; lastName: string; phone: string | null }) {
+  const db = await requiredDb();
+  await db.update(customerProfiles).set({ firstName: input.firstName, lastName: input.lastName, phone: input.phone }).where(eq(customerProfiles.id, customerId));
+  return { success: true } as const;
 }
