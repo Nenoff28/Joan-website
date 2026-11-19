@@ -2121,3 +2121,23 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .terms-final h2, .terms-final p { color: var(--ink) !important; }
 .terms-final p { color: var(--slate) !important; font-size: 1rem !important; }
 .terms-final .button-solid { border-radius: 12px; }
+
+/* FAQ redesign: light, airy */
+.faq-hero { background: #fbfbf8 !important; clip-path: none !important; color: var(--ink) !important; min-height: 0 !important; padding: clamp(2.5rem, 6vw, 4.5rem) 0 1.5rem !important; }
+.faq-hero::before, .faq-hero::after { display: none !important; }
+.faq-hero .eyebrow, .faq-intro .eyebrow, .faq-contact-strip .eyebrow { display: none !important; }
+.faq-hero h1 { color: var(--ink) !important; font-size: clamp(2rem, 4.5vw, 3.2rem) !important; letter-spacing: -.04em; }
+.faq-hero p { color: var(--slate) !important; font-size: 1.1rem; line-height: 1.6; max-width: 620px; }
+.faq-hero-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.4rem; }
+.faq-hero-actions .button-solid, .faq-hero-actions .button-outline-dark { border-radius: 999px !important; min-height: 46px; }
+.faq-hero-actions .button-outline-dark { background: #fff !important; border: 1px solid var(--line) !important; color: var(--ink) !important; }
+.faq-page, .faq-content { background: #fbfbf8 !important; }
+.faq-intro h2 { font-size: clamp(1.5rem, 2.6vw, 2rem) !important; letter-spacing: -.03em; }
+.faq-intro > svg { display: none; }
+.faq-list { border-top: 0 !important; display: grid; gap: .7rem; }
+.faq-list > * { background: #fff; border: 0 !important; border-radius: 14px; box-shadow: 0 1px 0 rgba(29,35,35,.06), 0 8px 24px rgba(29,35,35,.05); overflow: hidden; }
+.faq-question { font-size: 1.02rem !important; min-height: 64px; padding-block: 1rem !important; }
+.faq-question:hover { color: var(--red); }
+.faq-answer { color: #3d4545 !important; font-size: 1rem !important; line-height: 1.7 !important; }
+.faq-contact-strip { background: #fff !important; border: 0 !important; border-radius: 20px; box-shadow: 0 16px 44px rgba(29,35,35,.08); }
+.faq-answer, .faq-answer p { color: #3d4545 !important; font-size: 1rem !important; line-height: 1.7 !important; }
