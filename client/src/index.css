@@ -1869,3 +1869,45 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
   .all-products-hero > div a { flex: 0 0 auto; }
 }
 .all-products-hero { padding-bottom: 0; } .category-shell .category-content-row { margin-top: 1.4rem; }
+
+/* ===== Category pages redesign: rounded photo banner, light subcategory cards, plain headings (product cards untouched) ===== */
+.category-hero { border-radius: 16px; margin-bottom: 1.6rem; min-height: 0; overflow: hidden; }
+.category-hero > img { height: 100%; object-fit: cover; }
+.category-hero-overlay { background: linear-gradient(90deg, rgba(14,20,20,.72) 0%, rgba(14,20,20,.38) 48%, rgba(14,20,20,.05) 100%) !important; }
+.category-hero-content { border-left: 0 !important; padding: clamp(2rem, 5vw, 3.6rem) clamp(1.4rem, 4vw, 3.2rem) !important; }
+.category-hero-content .eyebrow { display: none; }
+.category-hero-content h1 { font-size: clamp(2.2rem, 4.6vw, 3.4rem); font-weight: 700; letter-spacing: -.025em; line-height: 1.05; margin: 0 0 .6rem; }
+.category-hero-content > p:not(.eyebrow) { color: rgba(255,255,255,.92); font-size: 1.05rem; max-width: 46ch; }
+.category-hero-path { background: rgba(255,255,255,.14); border-radius: 999px; }
+.category-hierarchy-browser { background: none; border: 0; border-radius: 0; margin: 0 0 2rem; padding: 0; }
+.category-hierarchy-heading { align-items: end; border: 0; margin-bottom: 1.1rem; padding: 0; }
+.category-hierarchy-heading .eyebrow { display: none; }
+.category-hierarchy-heading h2 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); font-weight: 700; letter-spacing: -.02em; margin: 0; }
+.category-hierarchy-heading > button { background: #fff; border: 1px solid #d9ddd5; border-radius: 999px; color: var(--ink); font-family: "Manrope", sans-serif; font-size: .85rem; font-weight: 800; padding: .6rem 1.1rem; transition: border-color .15s, color .15s; }
+.category-hierarchy-heading > button:hover, .category-hierarchy-heading > button.is-active { background: #fff7f6; border-color: var(--red); color: var(--red); }
+.category-hierarchy-grid { align-items: start; gap: .9rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.category-hierarchy-card { background: #fff; border: 1px solid #e6e9e2; border-radius: 12px; overflow: hidden; transition: border-color .15s, box-shadow .2s; }
+.category-hierarchy-card:hover { border-color: #d3d8cf; box-shadow: 0 12px 26px -18px rgba(23,30,30,.35); }
+.category-hierarchy-card > button { align-items: center; background: none; border: 0; border-radius: 0; color: var(--ink); display: flex; font-family: "Manrope", sans-serif; gap: .6rem; justify-content: space-between; padding: 1rem 1.1rem .4rem; text-align: left; width: 100%; }
+.category-hierarchy-card > button > span { display: none; }
+.category-hierarchy-card > button > b { font-size: 1rem; font-weight: 800; }
+.category-hierarchy-card > button > svg { color: var(--red); flex: 0 0 auto; transition: transform .2s; }
+.category-hierarchy-card > button:hover > svg { transform: translateX(3px); }
+.category-hierarchy-leaves { background: none; border: 0; display: flex; flex-wrap: wrap; gap: .4rem; padding: .3rem 1.1rem 1.1rem; }
+.category-hierarchy-leaves button { background: #f3f4f0; border: 0; border-radius: 999px; color: #4d5853; font-family: "IBM Plex Sans", sans-serif; font-size: .8rem; font-weight: 500; padding: .35rem .8rem; transition: background-color .15s, color .15s; }
+.category-hierarchy-leaves button:hover, .category-hierarchy-leaves button.is-active { background: #fdeceb; color: var(--red); }
+.category-hierarchy-card > button.is-active { color: var(--red); }
+.listing-heading { border-left: 0 !important; margin-bottom: 1rem; padding-left: 0 !important; }
+.listing-heading .eyebrow { display: none; }
+.listing-heading h2 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); font-weight: 700; letter-spacing: -.02em; }
+.listing-heading p { color: var(--slate); }
+@media (max-width: 1000px) { .category-hierarchy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .category-hero-content { padding: 3.5rem 1.2rem 1.4rem !important; } .category-hierarchy-grid { grid-template-columns: 1fr; } .category-hierarchy-heading { align-items: start; flex-direction: column; gap: .8rem; } }
+.category-hierarchy-grid { column-gap: .9rem; columns: 3; display: block; }
+.category-hierarchy-card { break-inside: avoid; margin: 0 0 .9rem; }
+@media (max-width: 1000px) { .category-hierarchy-grid { columns: 2; } }
+@media (max-width: 640px) { .category-hierarchy-grid { columns: 1; } }
+.category-hero-path { align-items: center; background: rgba(255,255,255,.16); border: 0; border-radius: 999px; display: inline-flex; gap: .7rem; margin-top: .9rem; padding: .3rem .3rem .3rem 1rem; width: auto; }
+.category-hero-path span { color: #fff; font-family: "Manrope", sans-serif; font-size: .85rem; font-weight: 800; }
+.category-hero-path button { background: #fff; border: 0; border-radius: 999px; color: var(--ink); font-family: "Manrope", sans-serif; font-size: .8rem; font-weight: 800; padding: .45rem .9rem; text-decoration: none; }
+.category-hero-path button:hover { color: var(--red); }
