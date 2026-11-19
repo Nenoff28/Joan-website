@@ -2201,3 +2201,26 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .returns-deadline > span:first-of-type, .returns-deadline small { letter-spacing: 0 !important; text-transform: none !important; }
 .returns-condition-list b, .returns-condition-list strong { font-size: 1rem !important; }
 .returns-help-panel { margin-bottom: 3rem !important; }
+
+/* Privacy page redesign (same language as terms) */
+.privacy-page { background: #fbfbf8 !important; }
+.privacy-hero { background: #fbfbf8 !important; clip-path: none !important; color: var(--ink) !important; min-height: 0 !important; padding: clamp(2.5rem, 6vw, 4.5rem) 0 1rem !important; }
+.privacy-hero::before, .privacy-hero::after { display: none !important; }
+.privacy-hero .eyebrow, .privacy-index .eyebrow { display: none !important; }
+.privacy-hero h1 { color: var(--ink) !important; font-size: clamp(2rem, 4.5vw, 3.2rem) !important; letter-spacing: -.04em; }
+.privacy-hero p { color: var(--slate) !important; font-size: 1.1rem; line-height: 1.6; max-width: 640px; }
+.privacy-layout { align-items: start; gap: clamp(2rem, 5vw, 4.5rem) !important; }
+.privacy-index { background: #fff; border: 0 !important; border-radius: 16px; box-shadow: 0 8px 28px rgba(29,35,35,.06); padding: 1rem !important; }
+.privacy-index a { border-bottom: 0 !important; border-radius: 10px; color: var(--ink); font-size: .9rem !important; line-height: 1.35; padding: .6rem .75rem !important; }
+.privacy-index a:hover { background: #f3f4f1; color: var(--red); }
+.privacy-notice { background: #fff !important; border: 0 !important; border-radius: 14px; box-shadow: 0 1px 0 rgba(29,35,35,.06), 0 8px 24px rgba(29,35,35,.05); }
+.privacy-notice p { color: var(--ink) !important; font-size: 1rem !important; line-height: 1.6; }
+.privacy-section { border-top: 1px solid rgba(29,35,35,.08) !important; padding: 2.2rem 0 !important; }
+.privacy-section > span { color: var(--red); font-family: Manrope, sans-serif; font-size: 1rem !important; font-weight: 800; }
+.privacy-section h2 { font-size: clamp(1.4rem, 2.4vw, 1.8rem) !important; letter-spacing: -.03em; margin-bottom: 1rem; }
+.privacy-section p { color: #3d4545 !important; font-size: 1.05rem !important; line-height: 1.75 !important; max-width: 70ch; }
+.privacy-final { background: #fff !important; border-radius: 20px; box-shadow: 0 16px 44px rgba(29,35,35,.08); }
+.privacy-final h2 { color: var(--ink) !important; }
+.privacy-final p { color: var(--slate) !important; font-size: 1rem !important; }
+.privacy-final .button-solid { border-radius: 12px; }
+.privacy-updated { color: var(--slate); font-size: .85rem; }
