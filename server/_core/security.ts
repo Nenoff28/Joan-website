@@ -10,12 +10,13 @@ export function buildContentSecurityPolicy(nonce: string) {
     "object-src 'none'",
     "frame-ancestors 'self'",
     "form-action 'self'",
-    "img-src 'self' data: blob: https://d36hbw14aib5lz.cloudfront.net https://*.tile.openstreetmap.org",
+    "img-src 'self' data: blob: https://d36hbw14aib5lz.cloudfront.net https://tiles.openfreemap.org",
     "media-src 'self' https://d36hbw14aib5lz.cloudfront.net",
     "font-src 'self' data: https://fonts.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src 'self' 'nonce-${nonce}' https://manus-analytics.com`,
-    "connect-src 'self' https://manus-analytics.com",
+    "connect-src 'self' https://manus-analytics.com https://tiles.openfreemap.org",
+    "worker-src 'self' blob:",
     "manifest-src 'self'",
   ].join("; ");
 }

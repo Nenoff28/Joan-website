@@ -20,11 +20,14 @@ import {
   ChevronLeft,
   ClipboardCheck,
   LockKeyhole,
+  MapPin,
   Minus,
   PackageCheck,
   Plus,
   ShieldAlert,
+  Store,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
@@ -507,11 +510,6 @@ export default function Checkout() {
           {requestNumbers.length ? (
             <section className="checkout-success">
               <CheckCircle2 size={46} />
-              <p className="eyebrow">
-                {language === "bg"
-                  ? "Заявка за потвърждение"
-                  : "Confirmation request"}
-              </p>
               <h1>
                 {language === "bg"
                   ? "Заявката е регистрирана."
@@ -536,11 +534,6 @@ export default function Checkout() {
             <div className="checkout-grid">
               <section className="checkout-form-panel">
                 <div className="checkout-panel-heading">
-                  <p className="eyebrow">
-                    {language === "bg"
-                      ? "Заявка без плащане"
-                      : "Request without payment"}
-                  </p>
                   <h1>{flowTitle}</h1>
                   <p>{flowIntro}</p>
                 </div>
@@ -600,18 +593,21 @@ export default function Checkout() {
                   </fieldset>
                   <fieldset className="delivery-method-fieldset">
                     <legend>{language === "bg" ? "Как да получите поръчката" : "How you receive the order"}</legend>
-                    <div className="invoice-choice-group" role="radiogroup" aria-label={language === "bg" ? "Начин на получаване" : "Delivery method"}>
-                      <label className="invoice-choice">
+                    <div className="delivery-options" role="radiogroup" aria-label={language === "bg" ? "Начин на получаване" : "Delivery method"}>
+                      <label className="delivery-option">
                         <input type="radio" name="deliveryMethod" checked={deliveryMethod === "address"} onChange={() => setDeliveryMethod("address")} />
-                        <span>{language === "bg" ? "Експресна доставка до адрес" : "Express delivery to an address"}</span>
+                        <Truck size={22} aria-hidden="true" />
+                        <span><b>{language === "bg" ? "До адрес" : "To an address"}</b><small>{language === "bg" ? "Експресна доставка за Ваша сметка" : "Express delivery at your expense"}</small></span>
                       </label>
-                      <label className="invoice-choice">
+                      <label className="delivery-option">
                         <input type="radio" name="deliveryMethod" checked={deliveryMethod === "office"} onChange={() => { setDeliveryMethod("office"); setErrors(current => ({ ...current, address: undefined, region: undefined, city: undefined, postcode: undefined })); }} />
-                        <span>{language === "bg" ? "До офис на Спиди или Еконт" : "To a Speedy or Econt office"}</span>
+                        <MapPin size={22} aria-hidden="true" />
+                        <span><b>{language === "bg" ? "До офис на куриер" : "To a courier office"}</b><small>{language === "bg" ? "Спиди или Еконт, по Ваш избор" : "Speedy or Econt, your choice"}</small></span>
                       </label>
-                      <label className="invoice-choice">
+                      <label className="delivery-option">
                         <input type="radio" name="deliveryMethod" checked={pickup} onChange={() => { setDeliveryMethod("pickup"); setErrors(current => ({ ...current, address: undefined, region: undefined, city: undefined, postcode: undefined })); }} />
-                        <span>{language === "bg" ? "Вземане от магазина в Силистра" : "Pick up at the Silistra store"}</span>
+                        <Store size={22} aria-hidden="true" />
+                        <span><b>{language === "bg" ? "От магазина" : "From the store"}</b><small>{language === "bg" ? "Силистра, ул. Тутракан №22" : "Silistra, Tutrakan St. 22"}</small></span>
                       </label>
                     </div>
                     {pickup && <p className="pickup-note">{language === "bg" ? `Магазин ЖОАН, ${store.address}. Ще Ви се обадим, за да потвърдим кога поръчката е готова за вземане.` : `JOAN store, ${store.address}. We will call you to confirm when the order is ready for pickup.`}</p>}
@@ -933,7 +929,7 @@ export default function Checkout() {
                 </form>
               </section>
               <aside className="checkout-summary">
-                <p className="eyebrow">{t("orderSummary")}</p>
+                <h2 className="checkout-summary-title">{t("orderSummary")}</h2>
                 {checkoutRows.length ? (
                   <>
                     <div className="checkout-cart-list">
