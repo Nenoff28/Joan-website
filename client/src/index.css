@@ -2100,3 +2100,24 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .account-contact-form .button-solid { border-radius: 12px; justify-self: start; min-height: 48px; padding: 0 1.6rem; }
 @media (max-width: 760px) { .account-dash-head { flex-wrap: wrap; } .account-dash-head .button-outline { margin-left: 0; } .account-tabs { display: flex; overflow-x: auto; } .account-tabs button { flex: 1; justify-content: center; padding-inline: .6rem; white-space: nowrap; } }
 .account-dash-head .button-outline { align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); display: inline-flex; font-weight: 700; gap: .45rem; padding: .6rem 1.2rem; }
+
+/* Terms page redesign: calm, readable long-form text */
+.terms-hero { background: #fbfbf8 !important; border-bottom: 0 !important; padding: clamp(2.5rem, 6vw, 4.5rem) 0 1rem !important; }
+.terms-hero .eyebrow, .terms-index .eyebrow { display: none; }
+.terms-hero h1 { font-size: clamp(2rem, 4.5vw, 3.2rem); letter-spacing: -.04em; }
+.terms-hero p { color: var(--slate); font-size: 1.1rem; line-height: 1.6; max-width: 640px; }
+.terms-page { background: #fbfbf8; }
+.terms-layout { align-items: start; gap: clamp(2rem, 5vw, 4.5rem) !important; }
+.terms-index { background: #fff; border: 0 !important; border-radius: 16px; box-shadow: 0 8px 28px rgba(29,35,35,.06); padding: 1rem !important; }
+.terms-index a { border-bottom: 0 !important; border-radius: 10px; color: var(--ink); font-size: .9rem !important; line-height: 1.35; padding: .6rem .75rem !important; }
+.terms-index a:hover { background: #f3f4f1; color: var(--red); }
+.terms-notice { background: #fff !important; border: 0 !important; border-radius: 14px; box-shadow: 0 1px 0 rgba(29,35,35,.06), 0 8px 24px rgba(29,35,35,.05); }
+.terms-notice p { color: var(--ink) !important; font-size: 1rem !important; line-height: 1.6; }
+.terms-section { border-top: 1px solid rgba(29,35,35,.08) !important; padding: 2.2rem 0 !important; }
+.terms-section > span { color: var(--red); font-family: Manrope, sans-serif; font-size: 1rem !important; font-weight: 800; }
+.terms-section h2 { font-size: clamp(1.4rem, 2.4vw, 1.8rem) !important; letter-spacing: -.03em; margin-bottom: 1rem; }
+.terms-section p { color: #3d4545 !important; font-size: 1.05rem !important; line-height: 1.75 !important; max-width: 70ch; }
+.terms-final { background: #fff !important; border-radius: 20px; box-shadow: 0 16px 44px rgba(29,35,35,.08); color: var(--ink) !important; }
+.terms-final h2, .terms-final p { color: var(--ink) !important; }
+.terms-final p { color: var(--slate) !important; font-size: 1rem !important; }
+.terms-final .button-solid { border-radius: 12px; }
