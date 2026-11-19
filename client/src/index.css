@@ -2269,3 +2269,30 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .about-hero-inner { padding-block: clamp(2.5rem, 5vw, 4rem) !important; }
 .fact-band { padding: 0 0 clamp(2rem, 4vw, 3rem) !important; }
 .fact-grid { padding-bottom: 0 !important; }
+
+/* Product detail redesign: airy, rounded, no side stripes */
+.product-detail .eyebrow, .product-page .eyebrow, .related-section .eyebrow { display: none !important; }
+.gallery-accent { display: none !important; }
+.product-gallery, .gallery-stage { border-top: 0 !important; }
+.gallery-stage { background: #fff !important; border-radius: 22px; box-shadow: 0 18px 50px rgba(29,35,35,.08); overflow: hidden; }
+.product-detail-info { border-top: 0 !important; padding-top: 0 !important; }
+.product-detail-info h1 { letter-spacing: -.035em; }
+.operational-spec-strip { background: transparent !important; border: 0 !important; display: grid; gap: .7rem; grid-template-columns: repeat(3, 1fr); }
+.operational-spec-strip > * { background: #fff !important; border: 0 !important; border-radius: 14px; box-shadow: 0 1px 0 rgba(29,35,35,.06), 0 8px 24px rgba(29,35,35,.05); padding: .9rem 1rem !important; }
+.operational-spec-strip b, .operational-spec-strip strong, .operational-spec-strip dt { font-size: .78rem !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--slate) !important; font-weight: 700; }
+.operational-spec-strip span, .operational-spec-strip p, .operational-spec-strip dd { color: var(--ink) !important; font-size: .95rem !important; font-weight: 700; }
+.detail-price-box { background: #fff !important; border: 0 !important; border-radius: 16px; box-shadow: 0 12px 34px rgba(29,35,35,.07); padding: 1.2rem 1.4rem !important; }
+.detail-price-box strong, .detail-price-box b { font-size: 2.2rem !important; }
+.quantity-control { border-radius: 12px !important; overflow: hidden; }
+.buy-controls > button:not(.quantity-control button), .buy-controls .inquiry-button { border-radius: 12px !important; }
+.buy-controls { gap: .6rem; }
+.detail-assurances > * { font-size: 1rem; }
+.detail-assurances span, .detail-assurances p { font-size: .95rem !important; color: #3d4545 !important; }
+.product-spec-pills { color: var(--slate); font-size: .82rem; letter-spacing: 0 !important; text-transform: none !important; }
+.spec-table, .specification-row { font-size: 1rem; }
+.spec-table .specification-row { border-bottom: 1px solid rgba(29,35,35,.08); padding-block: .8rem; }
+.related-section h2 { letter-spacing: -.03em; }
+.related-carousel-controls button { border-radius: 50% !important; }
+@media (max-width: 760px) { .operational-spec-strip { grid-template-columns: 1fr; } }
+.product-gallery { background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.gallery-thumbs button, .gallery-thumbs img { border-radius: 10px; }
