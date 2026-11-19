@@ -19,10 +19,6 @@ import {
   Maximize2,
   Minimize2,
   ShieldCheck,
-  Barcode,
-  Receipt,
-  Store,
-  Truck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
@@ -365,12 +361,6 @@ export default function Home() {
               <ArrowRight size={16} />
             </Link>
           </div>
-        </section>
-        <section className="page-frame home-trust" aria-label={en ? "Why shop at Joan" : "Защо да пазарувате от Жоан"}>
-          <Link href="/delivery"><Truck size={24} aria-hidden="true" /><span><b>{en ? "Express delivery" : "Експресна доставка"}</b><small>{en ? "Order by 16:00, receive next day" : "Поръчка до 16:00 – получавате на другия ден"}</small></span></Link>
-          <Link href="/contact"><Store size={24} aria-hidden="true" /><span><b>{en ? "Pick up in Silistra" : "Вземане от магазина"}</b><small>{en ? "Tutrakan St. 22, Silistra" : "Силистра, ул. Тутракан №22"}</small></span></Link>
-          <Link href="/quick-order"><Barcode size={24} aria-hidden="true" /><span><b>{en ? "Quick order by code" : "Бърза поръчка по код"}</b><small>{en ? "Paste model codes, add all at once" : "Въведете кодове и добавете наведнъж"}</small></span></Link>
-          <Link href="/faq"><Receipt size={24} aria-hidden="true" /><span><b>{en ? "Company invoice" : "Фактура за фирми"}</b><small>{en ? "Request it with your order" : "Заявете я при поръчката"}</small></span></Link>
         </section>
         <section id="categories" className="page-frame category-section">
           <SectionHeading
