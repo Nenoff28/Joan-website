@@ -2411,3 +2411,28 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .admin-emergency.is-on { background: #fff6e5; }
 .admin-bulk-bar select { width: auto !important; min-width: 180px; flex: 0 1 220px; }
 .admin-bulk-bar b { margin-right: .4rem; }
+/* Mobile polish (<=760px) */
+@media (max-width: 760px) {
+  /* Product page: price + buy first, details after */
+  *:has(> .detail-price-box):has(> .buy-controls) { display: flex; flex-direction: column; }
+  .detail-price-box { order: 1; padding: .9rem 1.1rem !important; margin-top: .4rem; }
+  .detail-price-box strong { font-size: 2rem !important; }
+  .buy-controls { order: 2; }
+  .operational-spec-strip { order: 3; display: grid !important; grid-template-columns: 1fr !important; gap: 0 !important; padding: .3rem 1rem !important; background: #fff; border-radius: 14px; }
+  .operational-spec-strip > span { display: flex !important; justify-content: space-between; gap: 1rem; padding: .65rem 0 !important; border: 0 !important; border-bottom: 1px solid #eef0ea !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; font-size: .9rem; text-align: right; }
+  .operational-spec-strip > span:last-child { border-bottom: 0 !important; }
+  .operational-spec-strip > span b { font-weight: 600; color: #6b7570; text-align: left; }
+  .detail-assurances { order: 4; }
+  /* Header cart badge not clipped */
+  .mobile-cart-toggle { margin-right: 6px; overflow: visible; }
+  .mobile-cart-toggle i { top: -2px !important; right: -6px !important; }
+  /* Drawer: navigation first, cart last */
+  .mobile-drawer[role="dialog"] { display: flex !important; flex-direction: column; }
+  .mobile-drawer > * { flex: none; }
+  #mobile-mini-cart { order: 5; margin-top: 1rem; }
+  /* Touch targets */
+  .mobile-drawer-head button, .language-toggle button { min-width: 40px; min-height: 40px; }
+}
+/* Contact: directions link */
+.contact-map-link { display: inline-flex !important; align-items: center; justify-content: center; gap: .4rem; min-height: 44px; border-radius: 10px !important; line-height: 1.2; }
+.mobile-drawer-links a { display: flex; align-items: center; gap: .6rem; min-height: 48px; }
