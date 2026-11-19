@@ -216,7 +216,7 @@ function Header() {
       <div className="page-frame masthead">
         <Wordmark />
         <button type="button" className="catalogue-trigger masthead-catalogue-trigger" onClick={() => { if (window.matchMedia("(max-width: 760px)").matches) setMobileOpen(true); else setMegaOpen((open) => { if (!open && routeCategorySlug) setActiveMegaCategory(routeCategorySlug); return !open; }); }} aria-expanded={megaOpen || mobileOpen} aria-controls={mobileOpen ? "mobile-category-drawer" : "catalogue-mega-menu"} aria-label={t("allCategories")}>
-          <Menu size={22} aria-hidden="true" />
+          <Menu size={20} aria-hidden="true" /><span className="catalogue-trigger-label">{t("catalogue")}</span>
         </button>
         <form className="search-wrap" onSubmit={submitSearch} role="search">
           <label htmlFor="site-search" className="sr-only">{t("searchLabel")}</label>
