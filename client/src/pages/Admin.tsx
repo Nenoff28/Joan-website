@@ -1830,7 +1830,9 @@ function AdminProducts({ permissions }: AdminPageProps) {
 function AdminInventory({ permissions }: AdminPageProps) {
   const utils = trpc.useUtils();
   const canReadInventory = can(permissions, "inventory.read");
-  const canWriteInventory = can(permissions, "inventory.write");
+  const canEditInventoryPermission = can(permissions, "inventory.write");
+  const [emergencyMode, setEmergencyMode] = useState(false);
+  const canWriteInventory = canEditInventoryPermission && emergencyMode;
   const operations = trpc.admin.operations.useQuery(undefined, { enabled: canReadInventory });
   const [inventorySearchInput, setInventorySearchInput] = useState("");
   const [inventorySearch, setInventorySearch] = useState("");
@@ -1882,8 +1884,17 @@ function AdminInventory({ permissions }: AdminPageProps) {
         section="НАЛИЧНОСТИ"
         title="Контрол на складови записи"
         text="Работна зона за бърза корекция на количества и преглед на артикули, които изискват внимание."
-        action={!canWriteInventory ? <ReadOnlyBadge /> : undefined}
+        action={!canEditInventoryPermission ? <ReadOnlyBadge /> : undefined}
       />
+      {canEditInventoryPermission && (
+        <section className={`admin-emergency${emergencyMode ? " is-on" : ""}`} role="note">
+          <div>
+            <b>{emergencyMode ? "Авариен режим: ръчното редактиране е включено" : "Наличностите се обновяват от Zeron"}</b>
+            <p>{emergencyMode ? "Ръчните промени ще бъдат презаписани при следващата синхронизация със Zeron. Използвайте само при спешност и отразете същата промяна в Zeron." : "Ръчното редактиране е заключено, за да не се разминават количествата със Zeron."}</p>
+          </div>
+          <button type="button" className="admin-secondary" onClick={() => { if (emergencyMode) { if (stockChanges.length && !window.confirm("Имате незаписани промени. Да ги отхвърля ли?")) return; setEmergencyMode(false); } else if (window.confirm("Да включа ли авариен режим за ръчно редактиране на наличности? Количествата са по Zeron.")) setEmergencyMode(true); }}>{emergencyMode ? "Изключи авариен режим" : "Авариен режим"}</button>
+        </section>
+      )}
       <section className="admin-inventory-summary">
         <div>
           <span>КОНТРОЛНА ЗОНА</span>
@@ -2421,17 +2432,35 @@ function AdminOrders({ permissions }: AdminPageProps) {
   const orders = trpc.admin.orders.useQuery(undefined, { enabled: canReadOrders });
   const [filter, setFilter] = useState<"all" | OrderStatus>("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<OrderStatus>("contacted");
+  const utils = trpc.useUtils();
+  const bulk = trpc.admin.bulkUpdateOrders.useMutation({
+    onSuccess: async result => {
+      await utils.admin.orders.invalidate();
+      await utils.admin.summary.invalidate();
+      setSelected([]);
+      toast(`Обновени: ${result.updated}${result.skipped.length ? `, пропуснати (непозволен преход): ${result.skipped.length}` : ""}`);
+    },
+    onError: error => toast(error.message || "Статусите не бяха променени."),
+  });
+  const canWriteOrders = can(permissions, "orders.write");
+  const pageSize = 20;
   const needle = search.trim().toLowerCase();
-  const filtered = (orders.data ?? []).filter(
+  const allFiltered = (orders.data ?? []).filter(
     order =>
       (filter === "all" || order.status === filter) &&
       (!needle ||
         [order.requestNumber, order.fullName, order.email, order.phone, order.city, order.productName, ...(order.items ?? []).map(item => item.productName)]
           .some(value => String(value ?? "").toLowerCase().includes(needle)))
   );
+  const pageCount = Math.max(1, Math.ceil(allFiltered.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const filtered = allFiltered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const exportCsv = () => {
     const cell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const rows = [["Номер", "Дата", "Статус", "Клиент", "Email", "Телефон", "Адрес", "Град", "Артикули", "Сума EUR"], ...filtered.map(order => [order.requestNumber, formatDate(order.createdAt), statusLabels[order.status], order.fullName, order.email, order.phone, order.address, order.city, (order.items?.length ? order.items.map(item => `${item.productName} x${item.quantity}`).join("; ") : `${order.productName} x${order.quantity}`), order.totalEur ?? ""])];
+    const rows = [["Номер", "Дата", "Статус", "Клиент", "Email", "Телефон", "Адрес", "Град", "Артикули", "Сума EUR"], ...allFiltered.map(order => [order.requestNumber, formatDate(order.createdAt), statusLabels[order.status], order.fullName, order.email, order.phone, order.address, order.city, (order.items?.length ? order.items.map(item => `${item.productName} x${item.quantity}`).join("; ") : `${order.productName} x${order.quantity}`), order.totalEur ?? ""])];
     const blob = new Blob(["﻿" + rows.map(row => row.map(cell).join(",")).join(String.fromCharCode(13, 10))], { type: "text/csv;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -2465,7 +2494,7 @@ function AdminOrders({ permissions }: AdminPageProps) {
             key={status}
             type="button"
             className={filter === status ? "is-active" : ""}
-            onClick={() => setFilter(status)}
+            onClick={() => { setFilter(status); setPage(1); }}
           >
             <span>{status === "all" ? "Всички" : statusLabels[status]}</span>
             <b>
@@ -2483,22 +2512,37 @@ function AdminOrders({ permissions }: AdminPageProps) {
             <h2>Работна опашка</h2>
           </div>
           <div className="admin-list-tools">
-            <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Търсене по номер, име, имейл, телефон, артикул" aria-label="Търсене в заявките" />
-            <button type="button" className="admin-secondary" onClick={exportCsv} disabled={!filtered.length}><Download size={16} /> Експорт CSV</button>
-            <span className="admin-count">{filtered.length} записа</span>
+            <input type="search" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Търсене по номер, име, имейл, телефон, артикул" aria-label="Търсене в заявките" />
+            <button type="button" className="admin-secondary" onClick={exportCsv} disabled={!allFiltered.length}><Download size={16} /> Експорт CSV</button>
+            <span className="admin-count">{allFiltered.length} записа</span>
           </div>
         </div>
+        {canWriteOrders && selected.length > 0 && (
+          <div className="admin-bulk-bar" role="region" aria-label="Масови действия">
+            <b>Избрани: {selected.length}</b>
+            <select value={bulkStatus} onChange={event => setBulkStatus(event.target.value as OrderStatus)} aria-label="Нов статус">{(Object.keys(statusLabels) as OrderStatus[]).map(item => <option key={item} value={item}>{statusLabels[item]}</option>)}</select>
+            <button type="button" className="admin-primary" disabled={bulk.isPending} onClick={() => { if (window.confirm(`Да сменя статуса на „${statusLabels[bulkStatus]}“ за ${selected.length} заявки? Непозволените преходи ще бъдат пропуснати.`)) bulk.mutate({ ids: selected, status: bulkStatus }); }}>{bulk.isPending ? "Записване…" : "Приложи"}</button>
+            <button type="button" className="admin-secondary" onClick={() => setSelected([])}>Откажи избора</button>
+          </div>
+        )}
         {orders.isLoading ? (
           <LoadingState />
         ) : filtered.length ? (
-          <div className="admin-order-list">
+          <><div className="admin-order-list">
             {filtered.map(order => (
-              <OrderCard
-                key={order.id}
-                order={order}
-              />
+              <div key={order.id} className="admin-order-row">
+                {canWriteOrders && <input type="checkbox" className="admin-order-check" checked={selected.includes(order.id)} onChange={event => setSelected(current => event.target.checked ? [...current, order.id] : current.filter(id => id !== order.id))} aria-label={`Избери ${order.requestNumber}`} />}
+                <OrderCard order={order} />
+              </div>
             ))}
           </div>
+          {pageCount > 1 && (
+            <nav className="admin-pager" aria-label="Страници">
+              <button type="button" className="admin-secondary" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>← Назад</button>
+              <span>Страница {currentPage} от {pageCount}</span>
+              <button type="button" className="admin-secondary" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>Напред →</button>
+            </nav>
+          )}</>
         ) : (
           <EmptyState
             icon={ClipboardList}

@@ -2394,3 +2394,20 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .admin-panel-head .admin-list-tools { flex: 1 1 520px; justify-content: flex-end; }
 .admin-order-status-strip button.is-active { background: #fdecec !important; color: var(--red) !important; box-shadow: inset 0 0 0 1.5px rgba(215,25,32,.35); }
 .admin-order-status-strip button.is-active * { color: inherit !important; }
+/* Print: order detail and orders list */
+.ord-print-button { background: #fff !important; color: var(--ink) !important; border: 1px solid rgba(29,35,35,.16) !important; border-radius: 10px !important; }
+@media print {
+  [data-sidebar], header[role="banner"], .ord-detail-back-link, .ord-print-button, .ord-delete-button, .ord-status-form-card, .admin-bulk-bar, .cookie-consent, .site-header, .site-footer { display: none !important; }
+  body, .ord-detail-shell { background: #fff !important; }
+  .ord-detail-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+}
+.admin-order-row { display: flex; align-items: stretch; gap: .6rem; }
+.admin-order-row > .admin-order-card { flex: 1; min-width: 0; }
+.admin-order-check { width: 20px; height: 20px; margin-top: 1.4rem; flex: none; accent-color: var(--red); }
+.admin-bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 0 1.4rem 1rem; padding: .7rem 1rem; border-radius: 12px; background: #fdecec; position: sticky; top: .5rem; z-index: 5; }
+.admin-pager { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1.2rem; font-size: .9rem; }
+.admin-emergency { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.2rem; border-radius: 14px; background: #fff; box-shadow: 0 1px 0 rgba(29,35,35,.05), 0 8px 24px rgba(29,35,35,.05); }
+.admin-emergency p { margin: .2rem 0 0; font-size: .9rem; color: var(--muted, #5b6262); max-width: 60ch; }
+.admin-emergency.is-on { background: #fff6e5; }
+.admin-bulk-bar select { width: auto !important; min-width: 180px; flex: 0 1 220px; }
+.admin-bulk-bar b { margin-right: .4rem; }

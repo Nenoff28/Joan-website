@@ -13,6 +13,7 @@ import { brandKeys } from "../shared/brandKeys";
 import { campaignPrice } from "../shared/campaignPrice";
 
 export type ProductAvailability = "in_stock" | "on_request" | "out_of_stock";
+import { canTransitionOrderStatus } from "../shared/orderStatus";
 export type OrderRequestStatus = "new" | "contacted" | "confirmed" | "closed" | "cancelled";
 export type ContactEnquiryStatus = "new" | "contacted" | "closed";
 export type CatalogueLanguage = "bg" | "en";
@@ -1467,9 +1468,10 @@ export async function updateOrderRequest(id: number, status: OrderRequestStatus,
   const comment = adminNote?.trim() || null;
   const authorName = adminName.trim().slice(0, 255) || "Администратор";
   await db.transaction(async (tx) => {
-    const [order] = await tx.select({ id: orderRequests.id, isDeleted: orderRequests.isDeleted }).from(orderRequests).where(eq(orderRequests.id, id)).limit(1).for("update");
+    const [order] = await tx.select({ id: orderRequests.id, isDeleted: orderRequests.isDeleted, status: orderRequests.status }).from(orderRequests).where(eq(orderRequests.id, id)).limit(1).for("update");
     if (!order) throw new Error("Поръчката не е намерена.");
     if (order.isDeleted) throw new Error("Поръчката е изтрита и не може да се променя.");
+    if (!canTransitionOrderStatus(order.status as OrderRequestStatus, status)) throw new Error("Този преход на статуса не е позволен.");
     await tx.update(orderRequests).set({ status, adminNote: comment }).where(eq(orderRequests.id, id));
     await tx.insert(orderStatusHistory).values({ orderRequestId: id, status, comment, authorId: adminUserId, authorName });
     await tx.insert(adminActivities).values({ adminUserId, action: "order.updated", entityType: "order_request", entityId: id, metadataJson: JSON.stringify({ status }) });
@@ -1699,4 +1701,13 @@ export async function archiveAdminBrochure(id: number, adminUserId: number) {
   if (brochure.isActive) throw new Error("Activate another brochure before archiving the current one");
   await db.update(catalogueBrochures).set({ isArchived: true }).where(eq(catalogueBrochures.id, id));
   await logAdminActivity(adminUserId, "brochure.archived", "brochure", id, { title: brochure.title });
+}
+
+export async function bulkUpdateOrderStatus(ids: number[], status: OrderRequestStatus, adminUserId: number, adminName: string) {
+  let updated = 0;
+  const skipped: number[] = [];
+  for (const id of ids) {
+    try { await updateOrderRequest(id, status, null, adminUserId, adminName); updated += 1; } catch { skipped.push(id); }
+  }
+  return { updated, skipped };
 }

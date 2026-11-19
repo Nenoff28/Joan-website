@@ -1,3 +1,4 @@
+import { canTransitionOrderStatus } from "@shared/orderStatus";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -13,6 +14,7 @@ import {
   MapPin,
   Package,
   Phone,
+  Printer,
   Save,
   ShieldAlert,
   Trash2,
@@ -208,6 +210,7 @@ function RequestDetailContent() {
           <span>Получена на {formatDate(order.createdAt)}</span>
         </div>
         <div className="ord-detail-heading-actions">
+          <Button type="button" className="ord-print-button" onClick={() => window.print()}><Printer size={16} /> Печат</Button>
           <div className={`ord-status ord-status-${order.status}`}><CheckCircle2 size={17} /> {statusLabels[order.status]}</div>
           {order.isDeleted ? <span className="ord-deleted-badge">Изтрита</span> : canWrite && <Button type="button" className="ord-delete-button" disabled={remove.isPending} onClick={() => setDeleteOpen(true)}><Trash2 size={16} /> Изтрий</Button>}
         </div>
@@ -367,7 +370,7 @@ function RequestDetailContent() {
                     setStatus(event.target.value as OrderStatus)
                   }
                 >
-                  {(Object.keys(statusLabels) as OrderStatus[]).map(item => (
+                  {(Object.keys(statusLabels) as OrderStatus[]).filter(item => canTransitionOrderStatus(order.status, item)).map(item => (
                     <option key={item} value={item}>
                       {statusLabels[item]}
                     </option>
