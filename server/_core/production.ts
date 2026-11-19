@@ -56,7 +56,7 @@ export function serveProductionStatic(app: Express) {
   app.get("/sitemap.xml", async (_req, res, next) => {
     try {
       const entries = await getPublicSitemapEntries();
-      const fixed = ["/", "/products", "/quick-order", "/about", "/contact", "/delivery", "/terms", "/privacy", "/faq", "/returns"];
+      const fixed = ["/", "/products", "/about", "/contact", "/delivery", "/terms", "/privacy", "/faq", "/returns"];
       const urls = [...fixed.map((entryPath) => ({ path: entryPath, updatedAt: new Date() })), ...entries.categories.map((entry) => ({ path: `/category/${entry.slug}`, updatedAt: entry.updatedAt })), ...entries.products.map((entry) => ({ path: `/product/${entry.slug}`, updatedAt: entry.updatedAt }))];
       const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((entry) => `<url><loc>${escapeHtml(`${canonicalOrigin}${entry.path}`)}</loc><lastmod>${new Date(entry.updatedAt).toISOString().slice(0, 10)}</lastmod></url>`).join("")}</urlset>`;
       res.set("Cache-Control", "public, max-age=3600").type("application/xml").send(xml);

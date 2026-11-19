@@ -69,7 +69,6 @@ export async function prefetchForPath(url: string, queryClient: QueryClient, pre
   }
   const staticPages: Record<string, [string, string]> = { "/about": ["За ЖОАН", "Научете повече за строителен хипермаркет ЖОАН в Силистра."], "/contact": ["Контакти", "Свържете се с екипа на строителен хипермаркет ЖОАН."], "/delivery": ["Доставка", "Информация за доставка и потвърждение от екипа на ЖОАН."], "/terms": ["Условия за ползване", "Условия за ползване на онлайн каталога на ЖОАН."], "/privacy": ["Политика за поверителност", "Какви лични данни обработва ЖОАН, защо и какви права имате."], "/faq": ["Често задавани въпроси", "Отговори на често задавани въпроси за ЖОАН."], "/returns": ["Връщане", "Информация за връщане на продукти от ЖОАН."] };
   if (staticPages[path]) return { title: `${staticPages[path][0]} | ${SITE}`, description: staticPages[path][1], canonicalPath: path };
-  if (path === "/quick-order") return { title: `Бърза поръчка по код | ${SITE}`, description: "Добавете няколко продукта в количката по техния код.", canonicalPath: path };
   if (path === "/checkout" || path === "/favorites" || path.startsWith("/account") || path.startsWith("/admin")) return { title: SITE, description: DEFAULT_DESCRIPTION, noindex: true };
   return { title: SITE, description: DEFAULT_DESCRIPTION, notFound: true };
 }
