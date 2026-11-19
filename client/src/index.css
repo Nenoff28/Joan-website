@@ -2264,3 +2264,8 @@ main .section-heading, .brochure-heading { border-left: 0; padding-left: 0; }
 .about-hero .about-hero-figure strong { color: var(--red) !important; }
 .original-about-photo { margin-bottom: 2rem !important; padding-bottom: 0 !important; }
 .original-about-photo figure { margin: 0; }
+/* About: spacing fixes */
+.about-hero h2 { line-height: 1.08 !important; margin: 0 0 1.2rem !important; }
+.about-hero-inner { padding-block: clamp(2.5rem, 5vw, 4rem) !important; }
+.fact-band { padding: 0 0 clamp(2rem, 4vw, 3rem) !important; }
+.fact-grid { padding-bottom: 0 !important; }
