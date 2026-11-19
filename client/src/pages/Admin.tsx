@@ -1835,6 +1835,7 @@ function AdminInventory({ permissions }: AdminPageProps) {
   const [inventorySearchInput, setInventorySearchInput] = useState("");
   const [inventorySearch, setInventorySearch] = useState("");
   const [inventoryCategory, setInventoryCategory] = useState("");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
   const inventory = trpc.admin.inventory.useQuery({ query: inventorySearch || undefined, categoryId: inventoryCategory ? Number(inventoryCategory) : undefined }, { enabled: canReadInventory });
   const [stockDrafts, setStockDrafts] = useState<Record<number, string>>({});
   const [stockConfirmOpen, setStockConfirmOpen] = useState(false);
@@ -1909,18 +1910,20 @@ function AdminInventory({ permissions }: AdminPageProps) {
             <h2>Артикули за преглед и редакция</h2>
             <p className="admin-panel-caption">Въведете крайната наличност директно. Можете да промените няколко артикула и да ги запишете наведнъж.</p>
             <div className="admin-inventory-filters">
-              <label>Търсене по име или код<input type="search" value={inventorySearchInput} onChange={event => setInventorySearchInput(event.target.value)} placeholder="Например: бормашина или SKU-123" /></label>
-              <label>Категория<select value={inventoryCategory} onChange={event => setInventoryCategory(event.target.value)}><option value="">Всички категории</option>{inventory.data.categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+              <label>Търсене по име или код<input type="search" value={inventorySearchInput} onChange={event => { if (stockChanges.length && !window.confirm("Имате незаписани промени в наличностите. Ако смените търсенето, те ще бъдат загубени. Да продължа ли?")) return; setInventorySearchInput(event.target.value); }} placeholder="Например: бормашина или SKU-123" /></label>
+              <label>Категория<select value={inventoryCategory} onChange={event => { if (stockChanges.length && !window.confirm("Имате незаписани промени в наличностите. Ако смените категорията, те ще бъдат загубени. Да продължа ли?")) return; setInventoryCategory(event.target.value); }}><option value="">Всички категории</option>{inventory.data.categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+              <label className="admin-inline-check"><input type="checkbox" checked={lowStockOnly} onChange={event => setLowStockOnly(event.target.checked)} /> Само с наличност до 2</label>
             </div>
           </div>
           <div className="admin-inventory-actions">
             <span className="admin-count">{inventory.data.products.length}{inventory.data.hasMore ? "+" : ""} записа</span>
+            {inventory.data.hasMore && <small className="admin-panel-caption">Показани са първите 250 — стеснете търсенето.</small>}
             {canWriteInventory && <button type="button" className="admin-primary" disabled={!stockChanges.length || hasInvalidStockDraft || saveStock.isPending} onClick={() => { setStockSaveError(""); setStockConfirmOpen(true); }}>{saveStock.isPending ? "Записване…" : `Запиши промените${stockChanges.length ? ` (${stockChanges.length})` : ""}`}</button>}
           </div>
         </div>
         {inventory.data.products.length ? (
           <div className="admin-inventory-list">
-            {inventory.data.products.map(product => (
+            {inventory.data.products.filter(product => !lowStockOnly || (product.stockQuantity ?? 0) <= 2).map(product => (
               <article key={product.id}>
                 <img src={product.image} alt="" />
                 <div>
@@ -2417,9 +2420,25 @@ function AdminOrders({ permissions }: AdminPageProps) {
   const canReadOrders = can(permissions, "orders.read");
   const orders = trpc.admin.orders.useQuery(undefined, { enabled: canReadOrders });
   const [filter, setFilter] = useState<"all" | OrderStatus>("all");
+  const [search, setSearch] = useState("");
+  const needle = search.trim().toLowerCase();
   const filtered = (orders.data ?? []).filter(
-    order => filter === "all" || order.status === filter
+    order =>
+      (filter === "all" || order.status === filter) &&
+      (!needle ||
+        [order.requestNumber, order.fullName, order.email, order.phone, order.city, order.productName, ...(order.items ?? []).map(item => item.productName)]
+          .some(value => String(value ?? "").toLowerCase().includes(needle)))
   );
+  const exportCsv = () => {
+    const cell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = [["Номер", "Дата", "Статус", "Клиент", "Email", "Телефон", "Адрес", "Град", "Артикули", "Сума EUR"], ...filtered.map(order => [order.requestNumber, formatDate(order.createdAt), statusLabels[order.status], order.fullName, order.email, order.phone, order.address, order.city, (order.items?.length ? order.items.map(item => `${item.productName} x${item.quantity}`).join("; ") : `${order.productName} x${order.quantity}`), order.totalEur ?? ""])];
+    const blob = new Blob(["﻿" + rows.map(row => row.map(cell).join(",")).join(String.fromCharCode(13, 10))], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `zayavki-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
   const orderCounts = (orders.data ?? []).reduce<Record<OrderStatus, number>>((counts, order) => {
     counts[order.status] += 1;
     return counts;
@@ -2463,7 +2482,11 @@ function AdminOrders({ permissions }: AdminPageProps) {
             <p className="admin-kicker">ВХОДЯЩИ</p>
             <h2>Работна опашка</h2>
           </div>
-          <span className="admin-count">{filtered.length} записа</span>
+          <div className="admin-list-tools">
+            <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Търсене по номер, име, имейл, телефон, артикул" aria-label="Търсене в заявките" />
+            <button type="button" className="admin-secondary" onClick={exportCsv} disabled={!filtered.length}><Download size={16} /> Експорт CSV</button>
+            <span className="admin-count">{filtered.length} записа</span>
+          </div>
         </div>
         {orders.isLoading ? (
           <LoadingState />
@@ -2493,8 +2516,12 @@ function AdminContactEnquiries({ permissions }: AdminPageProps) {
   const canWriteEnquiries = can(permissions, "enquiries.write");
   const enquiries = trpc.admin.contactEnquiries.useQuery(undefined, { enabled: canReadEnquiries });
   const [filter, setFilter] = useState<"all" | ContactEnquiryStatus>("all");
+  const [search, setSearch] = useState("");
+  const needle = search.trim().toLowerCase();
   const filtered = (enquiries.data ?? []).filter(
-    enquiry => filter === "all" || enquiry.status === filter
+    enquiry =>
+      (filter === "all" || enquiry.status === filter) &&
+      (!needle || [enquiry.referenceNumber, enquiry.fullName, enquiry.email, enquiry.phone, enquiry.subject, enquiry.message].some(value => String(value ?? "").toLowerCase().includes(needle)))
   );
   return (
     <section className="admin-workspace">
@@ -2531,7 +2558,10 @@ function AdminContactEnquiries({ permissions }: AdminPageProps) {
             <p className="admin-kicker">ВХОДЯЩИ ОТ КОНТАКТИ</p>
             <h2>Запитвания от сайта</h2>
           </div>
-          <span className="admin-count">{filtered.length} записа</span>
+          <div className="admin-list-tools">
+            <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Търсене по номер, име, имейл, тема" aria-label="Търсене в запитванията" />
+            <span className="admin-count">{filtered.length} записа</span>
+          </div>
         </div>
         {enquiries.isLoading ? (
           <LoadingState />
