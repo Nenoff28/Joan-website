@@ -19,6 +19,10 @@ import {
   Maximize2,
   Minimize2,
   ShieldCheck,
+  Barcode,
+  Receipt,
+  Store,
+  Truck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
@@ -362,6 +366,57 @@ export default function Home() {
             </Link>
           </div>
         </section>
+        <section className="page-frame home-trust" aria-label={en ? "Why shop at Joan" : "Защо да пазарувате от Жоан"}>
+          <Link href="/delivery"><Truck size={24} aria-hidden="true" /><span><b>{en ? "Express delivery" : "Експресна доставка"}</b><small>{en ? "Order by 16:00, receive next day" : "Поръчка до 16:00 – получавате на другия ден"}</small></span></Link>
+          <Link href="/contact"><Store size={24} aria-hidden="true" /><span><b>{en ? "Pick up in Silistra" : "Вземане от магазина"}</b><small>{en ? "Tutrakan St. 22, Silistra" : "Силистра, ул. Тутракан №22"}</small></span></Link>
+          <Link href="/quick-order"><Barcode size={24} aria-hidden="true" /><span><b>{en ? "Quick order by code" : "Бърза поръчка по код"}</b><small>{en ? "Paste model codes, add all at once" : "Въведете кодове и добавете наведнъж"}</small></span></Link>
+          <Link href="/faq"><Receipt size={24} aria-hidden="true" /><span><b>{en ? "Company invoice" : "Фактура за фирми"}</b><small>{en ? "Request it with your order" : "Заявете я при поръчката"}</small></span></Link>
+        </section>
+        <section id="categories" className="page-frame category-section">
+          <SectionHeading
+            eyebrow={en ? "Start here" : "Започнете оттук"}
+            title={
+              en ? "Categories for every task" : "Категории за всяка задача"
+            }
+            text={
+              en
+                ? "Organise your renovation by stage, material or tool — without needless searching."
+                : "Подредете ремонта по етапи, материал или инструмент — без излишно търсене."
+            }
+            action={
+              <Link className="section-action" href="/products">
+                {en ? "All products" : "Всички продукти"}{" "}
+                <ArrowRight size={17} />
+              </Link>
+            }
+          />
+          <div className="feature-category-grid all-category-grid">
+            {categories.map(category => (
+              <Link
+                key={category.slug}
+                href={`/category/${category.slug}`}
+                className="feature-category-card"
+              >
+                <img
+                  src={publicMediaUrl(category.image)}
+                  alt={`${category.label} — ${category.description}`}
+                  loading="lazy"
+                />
+                <div className="feature-card-scrim" />
+                <div>
+                  <span className="feature-icon">
+                    <CategoryIcon icon={category.icon} size={20} />
+                  </span>
+                  <div className="feature-category-copy">
+                    <p>{category.label}</p>
+                    <small>{category.description}</small>
+                  </div>
+                </div>
+                <ArrowRight className="feature-arrow" size={19} />
+              </Link>
+            ))}
+          </div>
+        </section>
         <section
           id="brochure"
           className="brochure-section"
@@ -615,51 +670,6 @@ export default function Home() {
             </div>
           </div>
         </section>}
-        <section id="categories" className="page-frame category-section">
-          <SectionHeading
-            eyebrow={en ? "Start here" : "Започнете оттук"}
-            title={
-              en ? "Categories for every task" : "Категории за всяка задача"
-            }
-            text={
-              en
-                ? "Organise your renovation by stage, material or tool — without needless searching."
-                : "Подредете ремонта по етапи, материал или инструмент — без излишно търсене."
-            }
-            action={
-              <Link className="section-action" href="/products">
-                {en ? "All products" : "Всички продукти"}{" "}
-                <ArrowRight size={17} />
-              </Link>
-            }
-          />
-          <div className="feature-category-grid all-category-grid">
-            {categories.map(category => (
-              <Link
-                key={category.slug}
-                href={`/category/${category.slug}`}
-                className="feature-category-card"
-              >
-                <img
-                  src={publicMediaUrl(category.image)}
-                  alt={`${category.label} — ${category.description}`}
-                  loading="lazy"
-                />
-                <div className="feature-card-scrim" />
-                <div>
-                  <span className="feature-icon">
-                    <CategoryIcon icon={category.icon} size={20} />
-                  </span>
-                  <div className="feature-category-copy">
-                    <p>{category.label}</p>
-                    <small>{category.description}</small>
-                  </div>
-                </div>
-                <ArrowRight className="feature-arrow" size={19} />
-              </Link>
-            ))}
-          </div>
-        </section>
         <section className="page-frame final-service-card">
           <ShieldCheck size={32} />
           <div>
